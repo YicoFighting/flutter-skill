@@ -21,7 +21,7 @@ description: 途强（tuqiang）三端 Flutter 项目专属开发技能。面向
 
 ### 铁律一：命令只走统一入口
 
-本仓库有两个 Flutter App 工程、两套 SDK，**永远不要直接执行 `flutter run` / `flutter build` / `flutter pub get`**。
+本仓库有两个 Flutter App 工程、两套 SDK，**永远不要直接执行 `flutter run` / `flutter build` / `flutter pub get`**。统一入口 `tool/project.dart` 会按端自动选择正确的 Flutter SDK（读取各 app 的 `.fvmrc`，标准端 `3.35.7`，鸿蒙端 `custom_3.35.7_ohos`）。
 
 ```powershell
 # 标准端 = Android + iOS（SDK 3.35.7）
@@ -29,12 +29,16 @@ dart run tool/project.dart pub-get standard --enforce-lockfile
 dart run tool/project.dart analyze standard
 dart run tool/project.dart run standard
 dart run tool/project.dart build standard apk --debug
+dart run tool/project.dart test standard          # 跑迁移契约测试
 
-# 鸿蒙端 = HarmonyOS（SDK custom_3.35.7_ohos，入口会自动切换定制 SDK 和签名配置）
+# 鸿蒙端 = HarmonyOS（SDK custom_3.35.7_ohos，入口自动切换定制 SDK）
 dart run tool/project.dart pub-get ohos --enforce-lockfile
 dart run tool/project.dart analyze ohos
+dart run tool/project.dart test ohos
 dart run tool/project.dart build ohos hap --debug
 ```
+
+> ⚠️ 本机是 Windows PowerShell 5.1 时，直接运行 `.\tool\check_migration_boundaries.ps1` 可能因编码解析报错（脚本是无 BOM UTF-8）。CI 用的是 PowerShell 7（`pwsh`），以 CI 结果为准；本地跑不动时改用 `dart run tool/project.dart analyze` 双端全绿兜底。
 
 - 在 `apps/ohos` 目录裸跑 `flutter` 会用错 SDK、污染仓库签名配置——禁止。
 - 提交前必须保证 `analyze standard` 与 `analyze ohos` 都零 error（warning 尽量清零）。
@@ -42,7 +46,7 @@ dart run tool/project.dart build ohos hap --debug
 
 ### 铁律二：鸿蒙专属 API 永远不进公共 Dart 代码
 
-CI 会跑 `tool/check_migration_boundaries.ps1`，以下符号出现在 `apps/tuqiang_app/lib`、`packages/core/*/lib`、`packages/shared/**/lib`、`packages/feature/*/lib` 等公共代码里会**直接挂 CI**：
+以下符号出现在 `apps/tuqiang_app/lib`、`packages/core/*/lib`、`packages/shared/**/lib`、`packages/feature/*/lib` 等公共代码里**一律禁止**（官方 Flutter 编译器无法解析，就算用 if 包住也会分析整个文件；仓库红线脚本与 CI 也会拦截架构违规）：
 
 ```text
 Platform.isOhos   OhosView   flutter_blue_plus_ohos   screen_protector_ohos
@@ -79,9 +83,10 @@ tuqiang/
 │   │                    #   feature_camera / feature_mine / feature_message …
 │   ├── shared/          # shared_business：跨模块共享的业务层、模型、Provider
 │   ├── plugins/         # 自研平台插件 tq_*（含各自的原生 Android/iOS/ohos 实现）
-│   └── adapter/         # 三方库的 ohos 替代适配包
+│   ├── adapter/         # 三方库的 ohos 替代适配包
+│   └── assets_common/   # 跨端公共静态资源（隐私协议 HTML 等）
 ├── tool/project.dart    # 统一构建入口（铁律一）
-├── tool/check_migration_boundaries.ps1  # 鸿蒙边界检查（CI 红线）
+├── tool/check_migration_boundaries.ps1  # 迁移架构红线检查脚本（CI 执行）
 └── docs/                # 架构与迁移方案文档
 ```
 
@@ -146,7 +151,7 @@ AI 输出完整的 **实施方案文档与任务分解清单（Checklist）**，
 dart run tool/project.dart pub-get standard --enforce-lockfile   # 改依赖时
 dart run tool/project.dart analyze standard                    # 标准端类型语法检查
 dart run tool/project.dart analyze ohos                        # 鸿蒙端类型语法检查
-.\tool\check_migration_boundaries.ps1                          # 架构与鸿蒙边界红线检查
+.\tool\check_migration_boundaries.ps1                          # 架构红线检查（需 pwsh 7；CI 必跑）
 ```
 
 ### 阶段五：交付与审查（Code Review）

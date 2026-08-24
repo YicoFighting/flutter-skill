@@ -50,29 +50,46 @@ if (result.success) {
 
 ```dart
 class ResultModel {
-  final String? code;   // '0' 表示成功
-  final String? desc;
-  final dynamic data;
-  bool get success => code == '0';
+  final String? code;   // 可解析为 int 且等于 0 表示成功（'0'、'00' 均可）
+  final String? desc;   // 错误信息（已自动兼容后端 desc / msg 字段）
+  final dynamic data;   // 业务数据
+  bool get success => /* code 安全解析为整数后 == 0 */ true;  // 实现见 core_http/result_model.dart
 }
 ```
 
-- 成功判断**只认 `result.success`**，不要自己解析 code。
+- 成功判断**只认 `result.success`**，不要自己解析 code；
+- 失败信息优先读 `result.desc`，兼容后端 `msg` / `errorCode` 字段（fromJson 已处理）；
 - `data` 是 dynamic，取值一律走 `TCheck<T>(...)` 并给默认值：
   - `TCheck<String>(json['name'])`、`TCheck<int>(json['age'])`
-  - 它会自动处理 int/double 互转，类型不符返回 null 而不是抛异常——这是本项目防线上崩溃的核心手段。
-- 列表：`final list = TCheck<List>(result.data) ?? [];` 再 map 成 model。
-- model 必须提供 `fromJson` / `toJson`；字段可空 + 默认值，参考 `tq_beacon_item_model.dart`。
+  - 它会自动处理 int/double 互转，类型不符返回 null 而不是抛异常——这是本项目防线上崩溃的核心手段；
+- 列表：`final list = TCheck<List>(result.data) ?? [];` 再 map 成 model；
+- model 必须提供 `fromJson` / `toJson`；字段可空 + 默认值，参考 `tq_beacon_item_model.dart`；
 - 需要错误信息时读 `result.desc`（后端文案，一般已是多语言）。
 
-### 现代 Dart 3 模式匹配（Pattern Matching）解构响应
-在复杂业务返回或多字段结构化数据中，推荐使用 Dart 3 的模式匹配解构与校验：
+### 响应解构范式
+
+#### 1. 业务层标准写法（推荐）
+```dart
+if (result.success) {
+  final data = TCheck<Map<String, dynamic>>(result.data) ?? {};
+  final total = TCheck<int>(data['total']) ?? 0;
+  final records = TCheck<List>(data['records']) ?? [];
+  // 处理数据...
+} else {
+  // 失败提示兜底
+  final errMsg = result.desc?.isNotEmpty == true ? result.desc! : "网络异常，请稍后重试~".tr;
+  TQToast.show(errMsg);
+}
+```
+
+#### 2. Dart 3 模式匹配（Pattern Matching）写法
+若使用 Dart 3 模式匹配，请使用 `when` 守卫条件（避免在 `if` 括号内直接用 `&&` 混连 `case` 造成语法错误）：
 
 ```dart
-// 模式匹配安全解构 Map
-if (result.success && result.data case Map<String, dynamic> data) {
-  final count = TCheck<int>(data['totalCount']) ?? 0;
-  final items = TCheck<List>(data['items']) ?? [];
+// 模式匹配安全解构 Map（使用 when 守卫判断 success）
+if (result.data case Map data when result.success) {
+  final total = TCheck<int>(data['total']) ?? 0;
+  final records = TCheck<List>(data['records']) ?? [];
   // 处理数据...
 }
 ```

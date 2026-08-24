@@ -114,7 +114,9 @@ final petBathProvider =
     );
 ```
 
-页面级状态用 autoDispose；若是全局共享状态，记得注册 session 重置（state-management.md §3）。
+页面级状态用 autoDispose；若是全局共享状态，记得注册 session 重置（state-management.md §4）。
+
+> 注：`PageStatus` 这类页面级加载状态枚举仓库暂无统一封装，新页面可按需在本 feature 内定义；空态/加载动画组件直接用 core_ui 现成的 `TQNoDataWidget` / `EightRectLoading`。
 
 ## Step 4：路由名
 
@@ -163,7 +165,7 @@ class _PetBathListView extends StatelessWidget {
     return Scaffold(
       appBar: TQAppBar(title: '洗澡记录'.tr),
       body: state.baths.isEmpty
-          ? TQNoDataWidget()
+          ? const TQNoDataWidget(tipStr: '')
           : ListView.separated(
               padding: EdgeInsets.symmetric(horizontal: 15.sc, vertical: 12.sc),
               itemCount: state.baths.length,
@@ -238,8 +240,8 @@ static const String petBathList = FeaturePetRouter.petBathList;
 dart run tool/project.dart pub-get standard --enforce-lockfile   # 改了依赖才需要
 dart run tool/project.dart analyze standard
 dart run tool/project.dart analyze ohos        # 动了公共包必跑
-.\tool\check_migration_boundaries.ps1          # 动了依赖/平台相关必跑
-dart run tool/project.dart run standard        # 真机自检三语言切换
+.\tool\check_migration_boundaries.ps1          # 架构红线（需 pwsh 7；动了依赖/平台相关必跑）
+dart run tool/project.dart test standard       # 迁移契约测试
 ```
 
 ### 3. 交付审查与提交规范

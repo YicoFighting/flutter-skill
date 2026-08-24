@@ -39,7 +39,7 @@ Text('x', style: TextStyle(fontSize: 16.sc))
   // 方式 A：Padding 配合 Screen.bottomSafeHeight (最常用)
   Padding(
     padding: EdgeInsets.fromLTRB(16.sc, 8.sc, 16.sc, Screen.bottomSafeHeight),
-    child: TQButton(...),
+    child: TQConfirmButtonWidget(text: '确定', onTap: () {}),   // core_ui 主按钮组件
   )
 
   // 方式 B：外层包裹 SafeArea (指定只保护底部)
@@ -47,7 +47,7 @@ Text('x', style: TextStyle(fontSize: 16.sc))
     top: false,
     child: Padding(
       padding: EdgeInsets.all(16.sc),
-      child: TQButton(...),
+      child: TQConfirmButtonWidget(text: '确定', onTap: () {}),
     ),
   )
   ```
@@ -79,9 +79,10 @@ Text('x', style: TextStyle(fontSize: 16.sc))
 | `TQAppBar` | 统一标题栏 |
 | `TQToast.show('xxx')` | 全局 toast |
 | `TQAlert.*` | 十几种弹窗：showAlert / showEnsureAlert / showCustomContentDialog / showVersionUpgradeAlert… |
-| `TQLoading` | 全局 loading |
-| `TQNoDataWidget` | 空数据占位 |
-| `EightRectLoading` | 加载动画 |
+| `TQLoading` | 全局 loading（show/dismiss） |
+| `EightRectLoading` | 加载动画 Widget |
+| `TQNoDataWidget` | 空数据占位（`tipStr` 必填） |
+| `TQConfirmButtonWidget` | 主操作按钮（自带防抖/进度） |
 | `TQWarningAlert` | 警告弹窗 |
 | `TQSheet` | 底部弹出面板 |
 | `TQTabBar` | 标签栏 |
@@ -92,6 +93,7 @@ Text('x', style: TextStyle(fontSize: 16.sc))
 规则：
 
 - 新通用组件进 `core_ui`（命名 `tq_xxx.dart`、类名 TQ 前缀）；只属于一个 feature 的组件放该 feature 的 `src/widgets/`；
+- core_ui 没有统一 barrel 文件，import 具体组件文件即可，如 `import 'package:core_ui/tq_appbar.dart';`
 - 颜色用 `core_base/tq_colors.dart` 的品牌色常量，不要散落 `Color(0xFF...)`。
 
 ## 5. 验证方式

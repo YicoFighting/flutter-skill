@@ -146,16 +146,16 @@ class _TQMyBeaconView extends StatelessWidget {
   ```
 - 读一次不订阅用 `ref.read`；禁止在 build 里用 read 订阅数据。
 
-## 3. 状态分发与 Dart 3 穷尽匹配（Pattern Matching）
+## 3. 状态分发与穷尽匹配（Pattern Matching）
 
-在处理复杂的请求状态（加载中/成功/失败/空数据）或业务状态分支时，推荐使用 Dart 3 的 Switch 表达式保证**穷尽匹配**，杜绝漏写状态导致界面卡死：
+处理复杂请求状态（加载中/成功/失败/空数据）或业务状态分支时，推荐用 Dart 3 Switch 表达式保证**穷尽匹配**，杜绝漏写状态导致界面卡死。空态用现成的 `TQNoDataWidget`（注意 `tipStr` 是必填参数）：
 
 ```dart
-Widget _buildBody(BuildContext context, PageStatus status) {
+Widget _buildBody(BuildContext context) {
   return switch (status) {
-    PageStatus.loading => const TQLoadingWidget(),
-    PageStatus.empty   => const TQNoDataWidget(),
-    PageStatus.error   => TQErrorWidget(onRetry: controller.retry),
+    PageStatus.loading => const EightRectLoading(),          // core_ui 加载动画
+    PageStatus.empty   => const TQNoDataWidget(tipStr: ''),  // core_ui 空态
+    PageStatus.error   => TQNoDataWidget(tipStr: '加载失败，请重试'.tr),
     PageStatus.success => _buildContent(context),
   };
 }

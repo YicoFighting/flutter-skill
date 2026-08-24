@@ -18,7 +18,7 @@ if (AppTargetConfig.isOhos) {
 }
 ```
 
-CI 红线由 `tool/check_migration_boundaries.ps1` 把守，本地提交前可自行运行确认。
+CI 的架构红线由 `tool/check_migration_boundaries.ps1`（在 CI 的 pwsh 环境执行）把守；本地 Windows PowerShell 5.1 直接运行可能因无 BOM UTF-8 解析报错，以 CI 为准。
 
 ## 2. 平台差异的三种正解（全部来自仓库真实代码）
 
@@ -130,12 +130,12 @@ class SharedWebviewBridge {
 ## 7. 验证方式
 
 ```powershell
-.\tool\check_migration_boundaries.ps1
 dart run tool/project.dart analyze standard
 dart run tool/project.dart analyze ohos
+.\tool\check_migration_boundaries.ps1   # 架构红线，CI 必跑；本地需 pwsh 7
 ```
 
-三条全绿才允许提交涉及平台差异的改动。
+三条全绿才允许提交涉及平台差异的改动（本地脚本跑不动时以双端 analyze 全绿为底线，红线检查交给 CI）。
 
 ## 8. 验证方式（能力类改动附加）
 

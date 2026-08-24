@@ -23,8 +23,8 @@
 | 接口请求方法 | feature 内 `src/repository/xxx_repository.dart`，返回 `ResultModel` | `auth_repository.dart` |
 | 可复用 UI 组件 | `packages/core/core_ui/lib/` 根目录一个文件，命名 `tq_xxx.dart` | `tq_appbar.dart`、`tq_no_data_widget.dart` |
 | 字符串/数字/日期工具 | `core_base/lib/xxx_extension.dart` 或 `tq_xxx_util.dart`；日期相关放 `core_union` | `num_extension.dart`、`string_extension.dart` |
-| 图片/静态资源 | 对应 feature 的 `lib/src/assets/` 目录 + `feature_xxx_assets.dart` 注册路径 | `feature_pet_assets.dart` |
-| 全局单例 manager（登录态等） | `shared_business/lib/common/manager/` | `TQGlobalModel`、`TQInfoManager` |
+| 图片/静态资源 | 对应 feature 的 `lib/src/assets/` 目录 + `feature_xxx_assets.dart` 注册路径；跨端公共静态资源放 `packages/assets_common/` | `feature_pet_assets.dart` |
+| 全局单例 manager（登录态等） | `shared_business/lib/manager/`（存量 `lib/common/manager/` 仍有 TQInfoManager 等，跟随现状） | `TQGlobalModel`、`TQInfoManager` |
 | 新原生能力 | 先查 `plugins/` 有没有 tq_* 插件；没有→新建插件或走 adapter 替代 | `tq_push_plugin` |
 | 三方库 ohos 版替换 | `packages/adapter/` + `apps/ohos/pubspec.yaml` dependency_overrides | `share_plus_ohos` |
 | 多语言文案 | `apps/tuqiang_app/assets/i18n/*.json`（9 个语言文件 + manifest） | 见 i18n.md |

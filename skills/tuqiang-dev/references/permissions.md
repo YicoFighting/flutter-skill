@@ -66,7 +66,7 @@ Dart 申请之外，原生清单也要声明，否则真机永远 denied：
 
 - Android：`apps/standard/android/app/src/main/AndroidManifest.xml` 加 `<uses-permission>`；
 - iOS：`apps/standard/ios/Runner/Info.plist` 加 `NSxxxUsageDescription`（**必须写多语言用途说明**，缺失直接闪退）；
-- 鸿蒙：`apps/ohos/ohos/app.json5` 的 `requestPermissions`。
+- 鸿蒙：`apps/ohos/ohos/entry/src/main/module.json5` 的 `requestPermissions`。
 
 三端清单同步改，漏一端就是「这端永远申请不下来」。
 
