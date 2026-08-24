@@ -1,6 +1,6 @@
 ---
 name: flutter-to-web
-description: 专门为 Web 开发者（React/Vue 技术栈）讲解 Flutter 代码的专属指导技能。包含完整的前端类比映射表、代码讲解示例和官方最佳实践引用，适用于解释任何 Flutter/Dart 代码片段。
+description: 专门为 Web 开发者（React/Vue 技术栈）讲解 Flutter 代码的专属指导技能。包含完整的前端类比映射表、代码讲解示例和官方最佳实践引用，适用于解释任何 Flutter/Dart 代码片段。复杂主题（状态管理、路由、布局、异步网络、生命周期）的深度对照表见 references/ 目录。
 license: Apache 2.0
 ---
 
@@ -163,22 +163,33 @@ final users = json.map((e) => User.fromJson(e)).toList();
 
 ## 6. 深度追问时引用官方权威来源
 
-如果用户对某个概念想**深挖原理或最佳实践**，不要自己瞎编，引用 Flutter 官方的 Agent Skills 仓库（`flutter/agent-plugins`）作为权威知识来源：
+如果用户对某个概念想**深挖原理或最佳实践**，不要自己瞎编，按 [references/official-sources.md](references/official-sources.md) 的规范引用 Flutter 官方 Agent Skills 仓库（`flutter/agent-plugins`）作为权威知识来源。
+
+常用场景速查（完整表见 references）：
 
 | 用户追问的场景 | 引用的官方 Skill |
 |---|---|
-| "Flutter 项目应该怎么组织目录/分层？" | `flutter-apply-architecture-best-practices`（UI/Logic/Data 分层、MVVM、Repository 模式） |
-| "响应式布局怎么做？手机和平板怎么适配？" | `flutter-build-responsive-layout`（LayoutBuilder/MediaQuery/Expanded 的正确用法） |
-| "路由和深链（deep link）怎么配？" | `flutter-setup-declarative-routing`（go_router、嵌套导航、URL 策略） |
-| "列表/表单溢出报错怎么办？" | `flutter-fix-layout-issues`（RenderFlex overflow、约束问题排查） |
-| "JSON 序列化怎么写才对？" | `flutter-implement-json-serialization`（fromJson/toJson 最佳实践） |
-| "HTTP 请求用什么包？" | `flutter-use-http-package`（http 包 GET/POST/PUT/DELETE） |
-| "测试怎么写？" | `flutter-add-widget-test` / `dart-test-fundamentals` / `dart-add-unit-test` |
-| "本地化/多语言怎么配？" | `flutter-setup-localization`（flutter_localizations + intl + l10n.yaml） |
+| "Flutter 项目应该怎么组织目录/分层？" | `flutter-apply-architecture-best-practices` |
+| "路由和深链（deep link）怎么配？" | `flutter-setup-declarative-routing` |
+| "列表/表单溢出报错怎么办？" | `flutter-fix-layout-issues` |
+| "测试怎么写？" | `flutter-add-widget-test` / `dart-test-fundamentals` |
 
 引用方式：先用大白话给用户讲清楚"它是在干嘛"，再补一句"官方推荐的写法是 XXX（来源：`flutter/agent-plugins` 的 `flutter-xxx` skill）"，**不要**直接把官方 skill 的英文原文甩给用户。
 
-## 7. 讲解时的检查清单（自我校验）
+## 7. 参考文件索引（复杂代码按需深读）
+
+主文档（本文）足够覆盖日常讲解；遇到以下主题的复杂代码时，先读对应深度对照表再开口：
+
+| 文件 | 什么时候读 |
+|---|---|
+| [references/state-and-riverpod.md](references/state-and-riverpod.md) | 状态管理看不懂时：Provider 全家桶、read/watch/listen 三件套、StateNotifier 三板斧翻译 |
+| [references/routing.md](references/routing.md) | 路由跳转/守卫/传参相关代码：go_router 与 Vue Router 逐项对照、命名路由、常见坑 |
+| [references/layout-ui.md](references/layout-ui.md) | 复杂布局报错或嵌套过深时：CSS ↔ Widget 对照、容器三兄弟、overflow 排查 |
+| [references/async-networking.md](references/async-networking.md) | 异步/请求/序列化代码：Future/Stream、dio 与 axios、fromJson 手写映射 |
+| [references/widget-lifecycle.md](references/widget-lifecycle.md) | 组件生命周期与 context 相关问题：initState/dispose 对照、setState、Key |
+| [references/official-sources.md](references/official-sources.md) | 用户要深挖原理/最佳实践时的官方出处与引用话术 |
+
+## 8. 讲解时的检查清单（自我校验）
 
 每次讲解结束后，快速自查：
 - [ ] 是否所有 Flutter 术语都给了前端对应物？（没有学术词汇裸奔）

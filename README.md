@@ -1,52 +1,80 @@
-# flutter-to-web
+# flutter-skills
 
-专门为 Web 前端开发者（React/Vue 技术栈）**讲人话**的 Flutter 教学 Skill。
+一个仓库收录两个 Agent Skill：
 
-当你在 Claude Code 中贴出 Flutter/Dart 代码时，它会自动用你最熟悉的 Web 概念（v-model、Pinia、useEffect、Flexbox……）翻译给你听，而不是扔 Flutter 学术术语。
+| Skill | 一句话简介 | 适合谁 |
+|---|---|---|
+| [`flutter-to-web`](skills/flutter-to-web/) | 把 Flutter/Dart 代码用前端大白话（Vue/React）翻译出来讲解的**教学技能** | 有 Web 前端经验、正在学/读 Flutter 的开发者 |
+| [`tuqiang-dev`](skills/tuqiang-dev/) | 途强（`D:\Code\tuqiang`）三端 Flutter 项目专属的**开发规范技能** | 在该仓库干活的 AI 编码助手 + 会 Vue3 的同学 |
+
+两个 skill 均遵循 [Agent Skills](https://github.com/anthropics/skills) 的标准结构：
+`SKILL.md`（主文档，含 frontmatter）+ `references/`（按需深读的参考文件）+ `README.md`（安装与使用说明）+ `LICENSE.txt`。
+
+## 仓库结构
+
+```
+flutter-skills/
+├── README.md                  # 本文件：双 skill 导航
+├── CHANGELOG.md               # 变更记录
+└── skills/
+    ├── flutter-to-web/
+    │   ├── SKILL.md           # 映射表 + 讲解套路 + 官方出处
+    │   ├── references/        # 状态/路由/布局/异步/生命周期深度对照表
+    │   ├── README.md
+    │   └── LICENSE.txt
+    └── tuqiang-dev/
+        ├── SKILL.md           # 铁律 + 目录规范 + 五步开发闭环
+        ├── references/        # 网络/状态/i18n/适配/权限/路由/三端兼容模板
+        ├── README.md
+        └── LICENSE.txt
+```
 
 ## 安装
 
-### Claude Code（推荐）
+### Claude Code 插件市场
 
 ```bash
-/plugin marketplace add tuqiang/flutter-to-web
+/plugin marketplace add tuqiang/flutter-skills
 ```
 
-或直接复制到项目：
+安装后 `/plugin` 里会同时出现 `flutter-to-web` 与 `tuqiang-dev` 两个技能。
+
+### 手动复制到项目
 
 ```bash
-mkdir -p .agents/skills/flutter-to-web
-# 将 SKILL.md 和 LICENSE.txt 复制到该目录
+# 只要教学技能
+mkdir -p .agents/skills && cp -r skills/flutter-to-web .agents/skills/
+
+# 只要途强项目规范（仅限 D:\Code\tuqiang 仓库使用）
+mkdir -p .agents/skills && cp -r skills/tuqiang-dev .agents/skills/
+
+# 全都要
+cp -r skills/* .agents/skills/
 ```
 
-### 手动安装
-
-将 `flutter-to-web` 目录复制到全局 skills 目录：
+### 复制到全局 skills 目录
 
 ```bash
-cp -r flutter-to-web ~/.codex/skills/
+cp -r skills/* ~/.codex/skills/
 ```
 
 ## 使用
 
-在对话中通过 `@` 引用即可激活：
+在对话中通过 `@` 引用即可激活对应技能：
 
 ```
-@flutter-to-web 帮我解释这段 Flutter 代码
+@flutter-to-web   帮我解释这段 Riverpod 代码
+@tuqiang-dev      在设置页加一个"清除缓存"入口
 ```
 
-或在 Claude Code 中使用斜杠命令：
+Claude Code 中也可以用斜杠命令 `/flutter-to-web`、`/tuqiang-dev`。
 
-```
-/flutter-to-web
-```
+## 选哪个？
 
-## 适用场景
-
-- 从 Web 前端（Vue/React）转 Flutter 的开发者
-- 需要向前端团队解释 Flutter 代码
-- 阅读 Flutter 项目代码时希望快速理解
+- **看不懂别人的 Flutter 代码 / 在学前端转 Flutter** → `flutter-to-web`
+- **要在途强三端 monorepo 里真正改代码、加功能** → `tuqiang-dev`
+- 两者可以同时启用：先用 `flutter-to-web` 看懂代码，再按 `tuqiang-dev` 的规范动手。
 
 ## 许可证
 
-Apache 2.0 © tuqiang
+两个 skill 均以 Apache 2.0 发布（见各自目录内的 LICENSE.txt）。© tuqiang

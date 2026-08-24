@@ -1,0 +1,196 @@
+---
+name: tuqiang-dev
+description: 途强（tuqiang）三端 Flutter 项目专属开发技能。面向不会写代码或只会 Vue3 前端的人员，配合 AI 编码助手完整实现 Android / iOS / 鸿蒙三端需求。包含项目铁律、目录规范、dio 网络请求、Riverpod 全局状态、权限申请、sc 尺寸适配、tr 国际化、路由注册、三端兼容等全部规范，以及从零实现一个需求的完整步骤模板。凡在本仓库内开发新功能、改 Bug、加页面、加接口，一律先读本技能。
+---
+
+# 途强三端开发规范（tuqiang-dev）
+
+你正在 **D:\Code\tuqiang** 这个 Flutter monorepo 里工作。它同时产出 Android、iOS、HarmonyOS（鸿蒙）三个端的应用。
+
+本技能的读者可能是：① AI 编码助手；② 不会写 Dart/Flutter、只会 Vue3 甚至完全不懂代码的人。
+因此规则分两类：
+
+- **【铁律】** 违反会导致编译失败、CI 挂掉或线上事故，任何情况下不得违反；
+- **【规范】** 保证代码可迭代、三端兼容的固定套路，照抄模板即可，不需要理解原理。
+
+> 给人的话：你不需要"学会 Flutter"，你只需要**找一个同类旧页面 → 照着模板替换内容 → 跑验证命令**。给 AI 的话：所有代码必须符合本文与 references/ 内的模板，不确定时先读对应参考文件再动手。
+
+---
+
+## 1. 三条铁律（先背下来）
+
+### 铁律一：命令只走统一入口
+
+本仓库有两个 Flutter App 工程、两套 SDK，**永远不要直接执行 `flutter run` / `flutter build` / `flutter pub get`**。
+
+```powershell
+# 标准端 = Android + iOS（SDK 3.35.7）
+dart run tool/project.dart pub-get standard --enforce-lockfile
+dart run tool/project.dart analyze standard
+dart run tool/project.dart run standard
+dart run tool/project.dart build standard apk --debug
+
+# 鸿蒙端 = HarmonyOS（SDK custom_3.35.7_ohos，入口会自动切换定制 SDK 和签名配置）
+dart run tool/project.dart pub-get ohos --enforce-lockfile
+dart run tool/project.dart analyze ohos
+dart run tool/project.dart build ohos hap --debug
+```
+
+- 在 `apps/ohos` 目录裸跑 `flutter` 会用错 SDK、污染仓库签名配置——禁止。
+- 提交前必须保证 `analyze standard` 与 `analyze ohos` 都零 error（warning 尽量清零）。
+- 改了公共包（packages/**）之后，两端都要 analyze。
+
+### 铁律二：鸿蒙专属 API 永远不进公共 Dart 代码
+
+CI 会跑 `tool/check_migration_boundaries.ps1`，以下符号出现在 `apps/tuqiang_app/lib`、`packages/core/*/lib`、`packages/shared/**/lib`、`packages/feature/*/lib` 等公共代码里会**直接挂 CI**：
+
+```text
+Platform.isOhos   OhosView   flutter_blue_plus_ohos   screen_protector_ohos
+任意 xxx_ohos 包名   鸿蒙定制 Flutter SDK 独有类
+```
+
+原因：官方 Flutter 编译器无法解析这些符号，就算用 if 包住也会分析整个文件。
+正确做法见 [references/compatibility.md](references/compatibility.md)——三种注入模式（视图构建器 / 依赖注入回调 / 桥接注册），全部来自本仓库真实代码。
+
+### 铁律三：新依赖先查有没有鸿蒙替代品
+
+添加任何三方库之前，按顺序检查：
+
+1. `apps/ohos/pubspec.yaml` 的 `dependency_overrides` 里是否已有 ohos 适配版（如 `share_plus_ohos`、`umeng_common_sdk_ohos`、git 源的 `openharmony-tpc` 包）；
+2. `packages/adapter/` 下是否已有本项目封装的适配包（优先引适配包而不是原生包）;
+3. `packages/plugins/` 下是否已有 tq_* 自研插件覆盖该能力（推送、地图、日志、文件、蓝牙等都有）。
+
+加依赖要同时评估两端：标准端版本写进 `apps/standard/pubspec.yaml` 或对应 package 的 pubspec；鸿蒙端在 `apps/ohos/pubspec.yaml` 用 override 指到 ohos 版。**提交时两个 `pubspec.lock` 都不能被意外改写**（CI 会检查）。
+
+---
+
+## 2. 一分钟看懂这个仓库
+
+```text
+tuqiang/
+├── apps/
+│   ├── standard/        # Android + iOS 入口工程（官方 Flutter 3.35.7）
+│   ├── ohos/            # HarmonyOS 入口工程（定制 SDK custom_3.35.7_ohos）
+│   └── tuqiang_app/     # 公共业务 App 包（name: tuqiang），三端共享
+├── packages/
+│   ├── core/            # 基础库：网络 core_http、国际化 core_i18n、UI core_ui、
+│   │                    #   工具 core_base、尺寸适配、权限管理、webview、分享…
+│   ├── feature/         # 业务模块包：feature_auth / feature_pet / feature_gps /
+│   │                    #   feature_camera / feature_mine / feature_message …
+│   ├── shared/          # shared_business：跨模块共享的业务层、模型、Provider
+│   ├── plugins/         # 自研平台插件 tq_*（含各自的原生 Android/iOS/ohos 实现）
+│   └── adapter/         # 三方库的 ohos 替代适配包
+├── tool/project.dart    # 统一构建入口（铁律一）
+├── tool/check_migration_boundaries.ps1  # 鸿蒙边界检查（CI 红线）
+└── docs/                # 架构与迁移方案文档
+```
+
+一句话分工：**页面和业务写在 feature 包；跨模块复用的状态和模型放 shared_business；纯工具和 UI 组件放 core；只有碰原生能力才动 plugins / adapter。**
+
+详细「我想加 X 应该动哪个包」决策表 → [references/project-structure.md](references/project-structure.md)
+
+---
+
+## 3. Vue3 头脑映射表（看懂代码用）
+
+只会 Vue3 的人按这张表翻译概念，AI 解释代码时也必须用这套大白话：
+
+| Vue3 | 这个项目 | 说明 |
+|---|---|---|
+| 组件 `.vue` 文件 | `Widget` 类 | 页面就是一个 Widget 类 |
+| Pinia store | Riverpod `StateNotifierProvider` | 全局/模块状态仓库 |
+| store 的 state | 不可变 `XxxState` 类 | 字段全 final，改动靠整体替换 |
+| store 的 actions | `XxxController extends StateNotifier<XxxState>` 的方法 | 请求接口、改状态都写这里 |
+| `computed` / 响应式绑定 | `ref.watch(xxxProvider)` | 数据变了 UI 自动刷新 |
+| 方法里取一次值 | `ref.read(xxxProvider.notifier)` | 拿 controller 调方法，不订阅 |
+| `$t('key')` | `'中文原文'.tr` | key 直接写中文，详见 i18n 规范 |
+| `<style>` 里的 px | 数值后加 `.sc` | `15.sc`，设计稿宽 375 基准 |
+| `v-model` | `TextEditingController` | `controller.text` 取输入值 |
+| `onMounted` | `initState()` | 页面加载跑一次 |
+| `onUnmounted` | `dispose()` | 释放 controller/focusnode |
+| `props` + emit 回调 | 构造参数传函数 `onTap: () {}` | |
+| `router.push` | `Navigator.pushNamed(context, 名字)` | 字符串路由，需先注册 |
+
+深入版映射与示例 → 各 references 文件。
+
+---
+
+## 4. 标准开发闭环（人机协同 SOP）
+
+为了防止 AI 盲目猜测修改代码导致返工，所有需求必须严格执行 **「先对齐方案 ➔ 审批后编码 ➔ 动态同步 ➔ 全绿交付」** 的五步闭环：
+
+### 阶段一：需求调研与反向拉扯（AI 严禁立即写码）
+1. **AI 预检与调研**：AI 检索代码库相似功能与 `references/` 规范（尤其是三端兼容预检表）。
+2. **主动质疑与对齐（Karpathy Think Before Coding）**：
+   - 严禁暗箱假设与脑补业务逻辑，凡有模糊或多解处，必须主动列出选项向用户提问；
+   - 主动评估三端兼容风险（如蓝牙/权限/原生调用/鸿蒙差异）。
+3. **来回拉扯确认**：双方沟通直至业务逻辑、技术边界与**可证伪验证标准**（如何证明功能正确）100% 清晰。
+
+### 阶段二：出具实施方案 + 任务 Checklist
+AI 输出完整的 **实施方案文档与任务分解清单（Checklist）**，包含：
+- 涉及改动的包与文件列表（按 Model / Controller / Page / i18n / Router 拆解）；
+- 涉及的三端兼容处理与平台差异方案；
+- **极简优先（Simplicity First）**：方案必须是解决问题的最小代码量，严禁加入未经要求的“未来扩展性”和多余抽象；
+- 可执行的任务 Checklist（包含每一步的明确验证标准）。
+> ⚠️ **强制卡点：方案必须获得用户的明确同意（Approval）后，AI 才允许开始编写代码！**
+
+### 阶段三：分步编码与 Checklist 实时同步
+1. **外科手术式精准修改（Surgical Changes）**：
+   - 严格限定改动范围（Blast Radius），只修改与当前任务直接相关的代码行；
+   - 严禁借修 Bug 之名“顺手重构”周边无关代码或大面积重格式化文件（No drive-by refactoring）。
+2. **分步实现与实时打勾**：严格按 Checklist 逐步实现各子模块，每完成一项**实时更新任务 Checklist 状态**（如 `- [x]`），让用户随时掌握进展。
+3. **遇阻即问**：编码过程中若发现未预期的问题、接口变动或设计冲突，**立即暂停并主动向用户提问**，根据讨论结果同步更新方案与 Checklist。
+
+### 阶段四：本地全量验证（三道护身符）
+```powershell
+dart run tool/project.dart pub-get standard --enforce-lockfile   # 改依赖时
+dart run tool/project.dart analyze standard                    # 标准端类型语法检查
+dart run tool/project.dart analyze ohos                        # 鸿蒙端类型语法检查
+.\tool\check_migration_boundaries.ps1                          # 架构与鸿蒙边界红线检查
+```
+
+### 阶段五：交付与审查（Code Review）
+- **交付前防御性自检**：
+  - [ ] 是否触碰了与需求无关的文件？（保持变动最小化）
+  - [ ] 是否所有异步操作都做了 `if (!mounted) return;` 保护？
+  - [ ] 是否所有 Controller / FocusNode / 订阅都在 `dispose` 中成对释放？
+  - [ ] 是否所有中文字符串都在 9 语言 JSON 文件中补齐了翻译？
+  - [ ] 鸿蒙端是否有未隔离的独有符号或缺失 ohos 适配的三方库？
+- ⚠️ **验证全绿后，严禁擅自自动执行 `git commit`**，保持工作区干净，交付给用户或其他大模型进行 Code Review 审查。
+- 审查通过后，由用户或由用户指示使用 **Angular 中文规范** 提交：
+
+| 前缀 | 场景 | 示例 |
+|---|---|---|
+| `feat:` | 新功能 | `feat: 新增宠物洗澡记录页` |
+| `fix:` | 修复 Bug | `fix: 修复信标列表越界崩溃` |
+| `refactor:` | 重构 | `refactor: 提取设备卡片公共组件` |
+| `docs:` | 文档/说明 | `docs: 补充接口文档` |
+| `style:` | 样式/UI 调整 | `style: 解绑按钮上下居中` |
+| `chore:` | 构建/工具/配置 | `chore: 升级依赖版本` |
+| `perf:` | 性能优化 | `perf: 优化地图渲染流畅度` |
+| `test:` | 测试 | `test: 补充信标数据解析单测` |
+
+---
+
+## 5. 参考文件索引（按需阅读）
+
+| 文件 | 内容 |
+|---|---|
+| [references/project-structure.md](references/project-structure.md) | 目录地图、「加东西动哪个包」决策表、pubspec 注意事项 |
+| [references/networking.md](references/networking.md) | dio/TQHttp 封装、ResultModel、TCheck 安全取值、请求头与 token |
+| [references/state-management.md](references/state-management.md) | Riverpod State+Controller+Provider 三板斧、Consumer 接线、session 重置 |
+| [references/i18n.md](references/i18n.md) | tr/keyTr/multiKeyTr、9 语言 JSON 维护、manifest 校验 |
+| [references/sizing-ui.md](references/sizing-ui.md) | sc 适配原理与限制、verticalSpace/horizontalSpace、安全区与 core_ui 清单 |
+| [references/permissions.md](references/permissions.md) | TQPermissionManager 全量权限申请、定位双关检查、永久拒绝引导 |
+| [references/routing.md](references/routing.md) | 字符串路由注册四步、传参约定、nativeRouters |
+| [references/compatibility.md](references/compatibility.md) | 三端兼容铁律细则、平台差异三种注入模式、插件选型路径 |
+| [references/new-feature-walkthrough.md](references/new-feature-walkthrough.md) | 从零实现一个完整页面的分步模板（复制即用） |
+
+---
+
+## 6. 给人类操作者的协同心法
+
+1. **需求拉扯期**：把需求告诉 AI ➔ 认真回答 AI 提出的边界与疑点 ➔ 审阅方案文档与任务 Checklist。
+2. **方案审批点**：确认方案可行后再回复“同意/开始执行”，牢牢把握架构控制权。
+3. **编码观察期**：观察 AI 实时打勾更新的 Checklist 进度，遇到 AI 提问时及时对齐决策。
+4. **验证与审查**：督促 AI 跑通 §4 的三条验证命令全绿 ➔ 使用其他模型或人工进行 Code Review ➔ 确认无误后按规范提交。
