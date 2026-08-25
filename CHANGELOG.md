@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-08-25
+
+### Added
+- `skills/tuqiang-dev/references/state-management.md`：新增【生命周期防修改红线（极其重要，违者必崩）】规范与标准代码：
+  - **生命周期防修改红线**：严禁在 `initState` 或 `build` 阶段直接同步触发修改 Provider 状态的方法（例如在 `initState` 里直接调 `controller.fetchData()` 且方法内同步执行了 `state = state.copyWith(...)`），杜绝 Flutter 运行时 `Tried to modify a provider while the widget tree was building.` 严重崩溃；
+  - **标准解法与代码示例**：明确唯一正确写法为必须包裹在 `WidgetsBinding.instance.addPostFrameCallback((_) { ... })` 中，将修改推迟至首帧渲染挂载完成之后；
+- `skills/flutter-to-web/references/state-and-riverpod.md`：在常见疑问答疑中新增【为什么在 `initState` 里调请求会报 `Tried to modify a provider...` 崩溃？】大白话解答（类比 Web 挂载计算首帧 DOM 时的生命周期死锁与 `nextTick` 解决机制）；
+- `skills/tuqiang-dev/SKILL.md`：
+  - 在【阶段五：交付与审查】Checklist 中新增「生命周期与 Provider 赋值红线」自检项；
+  - 在【参考文件索引】中更新 `state-management.md` 描述。
+
+### Changed
+- `skills/tuqiang-dev` 版本升级至 `1.7.0`；
+- `skills/flutter-to-web` 版本升级至 `1.3.0`；
+- 根目录 `package.json` 版本升级至 `1.7.0`；
+- 更新根目录 `README.md` 与 `skills/tuqiang-dev/README.md` 中的版本与文档说明。
+
 ## [1.6.0] - 2026-08-25
 
 ### Added

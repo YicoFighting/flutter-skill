@@ -82,3 +82,4 @@ class LoginPage extends ConsumerWidget {
 | `autoDispose` 是干嘛的 | 页面没人看了就自动销毁状态，≈ 组件卸载时清空对应 store 分片 |
 | `family` 是干嘛的 | 同一个 provider 按参数缓存多份，≈ `useQuery(['user', id], ...)` 按 key 缓存 |
 | 状态类为什么要 `copyWith` | Dart 没有 spread 更新对象的习惯用法，`copyWith(loading: false)` ≈ `{...state, loading:false}` |
+| 为什么在 `initState` 里调请求会报 `Tried to modify a provider...` 崩溃？ | **生命周期死锁**：组件正在首帧挂载计算 DOM 时，不能同步修改全局 Store。解决办法：用 `WidgetsBinding.instance.addPostFrameCallback((_) { ... })` 包一层（≈ `nextTick`），等首帧渲染完成后再触发。 |

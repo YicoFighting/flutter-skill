@@ -144,6 +144,19 @@ class _TQMyBeaconView extends StatelessWidget {
     super.dispose();
   }
   ```
+- **生命周期防修改红线（极其重要，违者必崩）**：
+  - **严禁在 `initState` 或 `build` 阶段直接同步触发修改 Provider 状态的方法**（例如在 `initState` 里直接调 `controller.fetchData()`，且方法第一句同步执行了 `state = state.copyWith(...)`），否则会触发 Flutter 运行时严重崩溃：`Tried to modify a provider while the widget tree was building.`！
+  - **唯一正确写法**：必须包裹在 `WidgetsBinding.instance.addPostFrameCallback` 中，将修改推迟至首帧渲染挂载完成之后：
+  ```dart
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(myBeaconProvider.notifier).requestBeaconList();
+    });
+  }
+  ```
 - 读一次不订阅用 `ref.read`；禁止在 build 里用 read 订阅数据。
 
 ## 3. 状态分发与穷尽匹配（Pattern Matching）

@@ -1,6 +1,6 @@
 ---
 name: tuqiang-dev
-version: 1.6.0
+version: 1.7.0
 description: 途强（tuqiang）三端 Flutter 项目专属开发技能。面向不会写代码或只会 Vue3 前端的人员，配合 AI 编码助手完整实现 Android / iOS / 鸿蒙三端需求。包含项目铁律、目录规范、dio 网络请求、Riverpod 全局状态、权限申请、sc 尺寸适配、tr 国际化、路由注册、三端兼容等全部规范，以及从零实现一个需求的完整步骤模板。凡在本仓库内开发新功能、改 Bug、加页面、加接口，一律先读本技能。
 ---
 
@@ -183,6 +183,7 @@ dart run tool/project.dart test standard                       # 运行单测（
   - [ ] **i18n 规范与防坑**：是否所有中文字符串都在 9 语言 JSON 文件中补齐了翻译？**是否杜绝了在 Widget/State 成员属性中使用 `final` 缓存 `.tr` 国际化文本？**
   - [ ] **编码与安全防线**：所有文件读写是否显式使用 UTF-8（无 BOM）？是否存在任何 Token、密码、私钥等敏感信息泄露风险？
   - [ ] 是否所有异步操作都做了 `if (!mounted) return;` 保护？
+  - [ ] **生命周期与 Provider 赋值红线**：是否杜绝了在 `initState` / `build` 中直接同步修改 Provider 状态？（`initState` 中触发拉取必须包在 `WidgetsBinding.instance.addPostFrameCallback` 内）
   - [ ] 是否所有 Controller / FocusNode / 订阅都在 `dispose` 中成对释放？
   - [ ] 鸿蒙端是否有未隔离的独有符号或缺失 ohos 适配的三方库？
 - ⚠️ **验证全绿后，严禁擅自自动执行 `git commit`**，保持工作区干净，交付给用户或其他大模型进行 Code Review 审查。
@@ -209,7 +210,7 @@ dart run tool/project.dart test standard                       # 运行单测（
 | [references/assets-guide.md](references/assets-guide.md) | **UI 设计源决策、蓝湖 MCP 接入与静态资源切图全景规范**：事前必问蓝湖链接、lanhu-mcp 自动化读取、无设计稿自适应规范、杜绝 Icons 脑补、2x/3x 倍图、命名与常量注册 |
 | [references/testing.md](references/testing.md) | **测试规范与提测交付标准**：按需生成必问原则、Unit/Widget 测试模板、提测交付单 Markdown |
 | [references/networking.md](references/networking.md) | dio/TQHttp 封装、ResultModel、TCheck 安全取值、Model 四大铁律与代码模板、动态接口暂缺异步 Mock |
-| [references/state-management.md](references/state-management.md) | Riverpod State+Controller+Provider 三板斧、Consumer 接线、session 重置 |
+| [references/state-management.md](references/state-management.md) | Riverpod State+Controller+Provider 三板斧、Consumer 接线、生命周期防修改红线、session 重置 |
 | [references/i18n.md](references/i18n.md) | tr/keyTr/multiKeyTr、9 语言 JSON 维护、禁止 `final` 成员变量缓存 `.tr` |
 | [references/sizing-ui.md](references/sizing-ui.md) | sc 适配原理与限制、verticalSpace/horizontalSpace、安全区与 core_ui 清单 |
 | [references/permissions.md](references/permissions.md) | TQPermissionManager 全量权限申请、定位双关检查、永久拒绝引导 |
