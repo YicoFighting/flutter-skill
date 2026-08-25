@@ -5,7 +5,17 @@
 
 ## [Unreleased]
 
-## [1.1.0] - 2026-08-25
+## [1.2.0] - 2026-08-25
+
+### Added
+- 根目录新增 `AGENTS.md`：建立仓库级多技能维护规范、四联动变更铁律（Skill / package.json / CHANGELOG / README / 全局同步）与中文详尽 Commit Message 提交规范；
+- `skills/tuqiang-dev/references/i18n.md`：新增【国际化禁止 `final` 成员变量缓存】规则与正反代码示例（解决在 Widget/State 成员属性中定义 `final title = 'xxx'.tr` 导致语言切换不刷新的高频暗坑）；
+- `skills/tuqiang-dev/references/project-structure.md`：新增【所有文件强制使用 UTF-8（无 BOM）】规范与 Python/Dart/Node 读写标准代码，新增【敏感信息零泄露防线】；
+- `skills/tuqiang-dev/SKILL.md`：在阶段三编码基线与阶段五交付审查 Checklist 中增加 UTF-8、敏感信息脱敏与 `final` 国际化缓存的自检项。
+
+### Changed
+- `skills/tuqiang-dev` 版本升级至 `1.2.0`；
+- 根目录 `package.json` 版本升级至 `1.2.0`。
 
 ### Added
 - 根目录新增 `package.json`：建立仓库级统一元数据与语义化版本（SemVer）管理体系；

@@ -66,7 +66,18 @@ packages/feature/feature_xxx/
 - `apps/ohos/pubspec.yaml` 靠大段 `dependency_overrides` 把三方库换成 ohos 版；改标准端依赖后必须检查鸿蒙端是否也要同步 override。
 - 提交不得包含 `pubspec.lock` 的意外变更；CI 会校验 lock 未被改写。
 
-## 5. 验证方式
+## 5. 文件编码与环境安全规范
+
+- **【所有文件强制使用 UTF-8（无 BOM）】**：
+  在 Windows 和各平台工具脚本中，所有新增、修改或自动生成的文件（特别是 JSON/Dart/YAML/Shell 脚本）必须显式强制 UTF-8 编码，禁止保存为 GBK/ANSI 或带 BOM 格式：
+  - Dart: `await file.readAsString(encoding: utf8);` / `await file.writeAsString(content, encoding: utf8);`
+  - Python: `open(path, 'r', encoding='utf-8')`
+  - Node.js: `fs.readFileSync(path, 'utf8')`
+- **【敏感信息零泄露防线】**：
+  - 严禁在代码、日志、回复中明文记录或硬编码生产 Token、密钥、密码、Cookie 或私有证书；
+  - 遇到含敏感信息的配置，必须通过脱敏或本地环境变量处理，严禁上传至外部未经授权的服务。
+
+## 6. 验证方式
 
 ```powershell
 dart run tool/project.dart analyze standard
