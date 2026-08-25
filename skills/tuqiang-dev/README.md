@@ -16,6 +16,7 @@
 | 文件 | 内容 |
 |---|---|
 | `project-structure.md` | 目录地图、「加东西动哪个包」决策表 |
+| `assets-guide.md` | **UI 切图与静态资源规范**：杜绝 Icons 脑补、索要模板、2x/3x 倍图、命名与常量注册 |
 | `networking.md` | dio/TQHttp 封装、ResultModel、TCheck 安全取值 |
 | `state-management.md` | Riverpod State+Controller+Provider 三板斧 |
 | `i18n.md` | tr/keyTr/multiKeyTr、9 语言 JSON 维护 |
@@ -31,7 +32,7 @@
 
 ```bash
 # 方式一：从本插件市场安装（含两个 skill）
-/plugin marketplace add tuqiang/flutter-to-web
+/plugin marketplace add tuqiang/flutter-skill
 
 # 方式二：直接复制到项目
 mkdir -p .agents/skills/tuqiang-dev

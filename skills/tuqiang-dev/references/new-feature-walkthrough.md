@@ -4,12 +4,13 @@
 
 > 给人类操作者：把本文件连同需求描述一起发给 AI 助手，让它逐步执行；每步完成跑一次对应验证命令。
 
-## Step 0：明确四件事再动手
+## Step 0：明确五件事再动手
 
 1. 页面属于哪个 feature 包？（新业务域才需要建包，见 project-structure.md）
 2. 接口地址和字段（找后端要接口文档）
 3. 设计稿（确认是 375 宽基准标注）
-4. 是否要新权限/新原生能力？（要→先读 permissions.md / compatibility.md）
+4. **UI 切图是否已对齐？**（**严禁私自使用 `Icons.xxx`**！先向用户索要 2.0x/3.0x 切图并放入 `packages/feature/feature_xxx/assets/images/`，见 [assets-guide.md](assets-guide.md)）
+5. 是否要新权限/新原生能力？（要→先读 permissions.md / compatibility.md）
 
 ## Step 1：接口地址
 
@@ -228,6 +229,7 @@ static const String petBathList = FeaturePetRouter.petBathList;
 ### 1. 交付前自检清单（Pre-delivery Checklist）
 在执行验证命令与交付 Review 前，AI 必须完成以下逐项自检：
 - [ ] **改动范围控制**：是否做到了外科手术式精准修改，没有误改或顺手格式化无关文件？
+- [ ] **切图规范**：是否杜绝了擅自使用 `Icons.xxx`？切图命名是否规范？是否在常量类声明并指定了 `package:`？
 - [ ] **异步与生命周期安全**：所有异步网络请求后是否都有 `if (!mounted) return;` 保护？
 - [ ] **资源释放**：StatefulWidget 中的 Controller、FocusNode、Subscription 是否在 `dispose()` 中成对释放？
 - [ ] **UI 与适配**：所有尺寸间距字号是否都使用了 `.sc`？底部按钮/面板是否适配了 `Screen.bottomSafeHeight`？

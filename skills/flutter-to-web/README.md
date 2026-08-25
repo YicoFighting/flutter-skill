@@ -9,7 +9,7 @@
 ### Claude Code（推荐）
 
 ```bash
-/plugin marketplace add tuqiang/flutter-to-web
+/plugin marketplace add tuqiang/flutter-skill
 ```
 
 或直接复制到项目：

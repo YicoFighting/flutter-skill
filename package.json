@@ -1,0 +1,38 @@
+{
+  "name": "flutter-skill",
+  "version": "1.1.0",
+  "description": "Flutter 专属 Agent Skills 集合：包含面向 Web 前端开发者的教学技能 (flutter-to-web) 与途强三端 monorepo 开发规范 (tuqiang-dev)",
+  "keywords": [
+    "antigravity",
+    "claude-code",
+    "agent-skills",
+    "flutter",
+    "dart",
+    "vue3",
+    "react",
+    "flutter-to-web",
+    "tuqiang",
+    "harmonyos"
+  ],
+  "author": "tuqiang",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/YicoFighting/flutter-skill",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YicoFighting/flutter-skill.git"
+  },
+  "skills": [
+    {
+      "name": "flutter-to-web",
+      "path": "skills/flutter-to-web",
+      "version": "1.1.0",
+      "description": "把 Flutter/Dart 代码用 Web 前端（Vue/React）大白话翻译讲解的教学技能"
+    },
+    {
+      "name": "tuqiang-dev",
+      "path": "skills/tuqiang-dev",
+      "version": "1.1.0",
+      "description": "途强（tuqiang）三端 Flutter 项目专属开发规范技能"
+    }
+  ]
+}

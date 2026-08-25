@@ -1,5 +1,6 @@
 ---
 name: tuqiang-dev
+version: 1.1.0
 description: 途强（tuqiang）三端 Flutter 项目专属开发技能。面向不会写代码或只会 Vue3 前端的人员，配合 AI 编码助手完整实现 Android / iOS / 鸿蒙三端需求。包含项目铁律、目录规范、dio 网络请求、Riverpod 全局状态、权限申请、sc 尺寸适配、tr 国际化、路由注册、三端兼容等全部规范，以及从零实现一个需求的完整步骤模板。凡在本仓库内开发新功能、改 Bug、加页面、加接口，一律先读本技能。
 ---
 
@@ -128,12 +129,13 @@ tuqiang/
 1. **AI 预检与调研**：AI 检索代码库相似功能与 `references/` 规范（尤其是三端兼容预检表）。
 2. **主动质疑与对齐（Karpathy Think Before Coding）**：
    - 严禁暗箱假设与脑补业务逻辑，凡有模糊或多解处，必须主动列出选项向用户提问；
+   - **UI 切图预检与索要【强制卡点】**：凡蓝湖设计稿中的图标/插画/背景，**严禁私自使用 `Icons.xxx` 或 `CupertinoIcons.xxx` 代替**！AI 必须先列出切图清单，向用户指明**建议命名、存放包路径（`packages/feature/feature_xxx/assets/images/`）及 2.0x/3.0x 多倍图要求**（详见 [references/assets-guide.md](references/assets-guide.md)）；
    - 主动评估三端兼容风险（如蓝牙/权限/原生调用/鸿蒙差异）。
-3. **来回拉扯确认**：双方沟通直至业务逻辑、技术边界与**可证伪验证标准**（如何证明功能正确）100% 清晰。
+3. **来回拉扯确认**：双方沟通直至业务逻辑、技术边界、静态切图资产与**可证伪验证标准**（如何证明功能正确）100% 清晰。
 
 ### 阶段二：出具实施方案 + 任务 Checklist
 AI 输出完整的 **实施方案文档与任务分解清单（Checklist）**，包含：
-- 涉及改动的包与文件列表（按 Model / Controller / Page / i18n / Router 拆解）；
+- 涉及改动的包与文件列表（按 Model / Controller / Page / Assets / i18n / Router 拆解）；
 - 涉及的三端兼容处理与平台差异方案；
 - **极简优先（Simplicity First）**：方案必须是解决问题的最小代码量，严禁加入未经要求的“未来扩展性”和多余抽象；
 - 可执行的任务 Checklist（包含每一步的明确验证标准）。
@@ -157,6 +159,7 @@ dart run tool/project.dart analyze ohos                        # 鸿蒙端类型
 ### 阶段五：交付与审查（Code Review）
 - **交付前防御性自检**：
   - [ ] 是否触碰了与需求无关的文件？（保持变动最小化）
+  - [ ] **切图规范**：是否杜绝了擅自使用 `Icons.xxx`？切图命名是否为 `snake_case`？是否在常量类声明并传了 `package:`？
   - [ ] 是否所有异步操作都做了 `if (!mounted) return;` 保护？
   - [ ] 是否所有 Controller / FocusNode / 订阅都在 `dispose` 中成对释放？
   - [ ] 是否所有中文字符串都在 9 语言 JSON 文件中补齐了翻译？
@@ -182,6 +185,7 @@ dart run tool/project.dart analyze ohos                        # 鸿蒙端类型
 | 文件 | 内容 |
 |---|---|
 | [references/project-structure.md](references/project-structure.md) | 目录地图、「加东西动哪个包」决策表、pubspec 注意事项 |
+| [references/assets-guide.md](references/assets-guide.md) | **UI 切图与静态资源规范**：杜绝 Icons 脑补、索要模板、2x/3x 倍图、命名与常量注册 |
 | [references/networking.md](references/networking.md) | dio/TQHttp 封装、ResultModel、TCheck 安全取值、请求头与 token |
 | [references/state-management.md](references/state-management.md) | Riverpod State+Controller+Provider 三板斧、Consumer 接线、session 重置 |
 | [references/i18n.md](references/i18n.md) | tr/keyTr/multiKeyTr、9 语言 JSON 维护、manifest 校验 |

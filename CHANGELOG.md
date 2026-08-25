@@ -5,17 +5,22 @@
 
 ## [Unreleased]
 
-### Changed
-- 仓库重组为多 skill 结构：原有 `flutter-to-web` 移入 `skills/flutter-to-web/`，
-  新增 `tuqiang-dev`（SKILL.md + references/）至 `skills/tuqiang-dev/`。
+## [1.1.0] - 2026-08-25
 
 ### Added
+- 根目录新增 `package.json`：建立仓库级统一元数据与语义化版本（SemVer）管理体系；
+- `skills/flutter-to-web/SKILL.md` 与 `skills/tuqiang-dev/SKILL.md`：在 YAML frontmatter 中显式声明 `version: 1.1.0`；
+- `skills/tuqiang-dev/references/assets-guide.md`：新增 UI 切图与静态资源规范（严禁私自使用系统 Icons 脑补、阶段一/二主动索要切图 SOP、2.0x/3.0x 多倍图与蓝湖导出设置、小写下划线命名规范、常量注册与 `package:` 跨包引用）；
 - `skills/flutter-to-web/references/`：新增 5 篇深度对照表
   （`state-and-riverpod.md`、`routing.md`、`layout-ui.md`、`async-networking.md`、
   `widget-lifecycle.md`、`official-sources.md`），并在 SKILL.md 增加按需阅读索引；
-- `skills/tuqiang-dev/`：途强三端开发规范技能（含 9 篇 references 模板）；
+- `skills/tuqiang-dev/`：途强三端开发规范技能（含 10 篇 references 模板与人机协同闭环）；
 - 两个 skill 各自的 `README.md` 与 `LICENSE.txt`；
 - 仓库级 `README.md`（双 skill 导航与安装说明）与本 `CHANGELOG.md`。
+
+### Changed
+- 仓库重组为 multi-skill 架构：原有 `flutter-to-web` 移入 `skills/flutter-to-web/`，
+  新增 `tuqiang-dev`（SKILL.md + references/）至 `skills/tuqiang-dev/`。
 
 ## [1.0.0] - 2025-08-21
 

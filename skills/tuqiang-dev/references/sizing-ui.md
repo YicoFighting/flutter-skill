@@ -52,6 +52,10 @@ Text('x', style: TextStyle(fontSize: 16.sc))
   )
   ```
 - 字体缩放保护：如需屏蔽系统大字体的页面，可用 `Screen.fixedFontSize(16)`，但仅限确实会被顶爆的紧凑 UI；
+- **图标与切图规范【严禁脑补】**：
+  - 严禁私自使用 `Icons.xxx` 代替蓝湖设计稿切图；
+  - 切图标注宽高一律加 `.sc`（如 `width: 24.sc, height: 24.sc`），跨 package 引用必须带 `package: 'feature_xxx'` 参数；
+  - 切图索要 SOP、2x/3x 多倍图、命名与常量注册详见 [assets-guide.md](assets-guide.md)；
 - **折叠屏/平板特殊场景**：仅在开发**视频播放器/监控摄像头全屏旋转**等场景才需判断折叠屏（参考 `bootstrap.dart` 的 `_isWideFoldable` 600.sc 阈值，大屏展开态不强制转横屏）；普通业务页面直接使用 `.sc` 即可（已内建 1.2 倍缩放上限保护，无需手动判断）。
 
 ## 3. UI 性能与布局防御规范（Flutter 官方最佳实践）

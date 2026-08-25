@@ -1,5 +1,6 @@
 ---
 name: flutter-to-web
+version: 1.1.0
 description: 专门为 Web 开发者（React/Vue 技术栈）讲解 Flutter 代码的专属指导技能。包含完整的前端类比映射表、代码讲解示例和官方最佳实践引用，适用于解释任何 Flutter/Dart 代码片段。复杂主题（状态管理、路由、布局、异步网络、生命周期）的深度对照表见 references/ 目录。
 license: Apache 2.0
 ---
