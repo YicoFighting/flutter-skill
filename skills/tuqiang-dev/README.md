@@ -25,6 +25,7 @@
 | `permissions.md` | TQPermissionManager 权限申请、永久拒绝引导 |
 | `routing.md` | 字符串路由注册四步、传参约定 |
 | `compatibility.md` | 三端兼容铁律细则、平台差异三种注入模式 |
+| `code-review-checklist.md` | **Code Review 高频缺陷对照清单**：静默 catch、双重非空断言、TOCTOU、宽类型参数、布尔-回调耦合、i18n 换行等 8+ 项真实审查案例，交付前防御性自检用 |
 | `new-feature-walkthrough.md` | 从零实现一个完整页面的分步模板 |
 
 ## 安装

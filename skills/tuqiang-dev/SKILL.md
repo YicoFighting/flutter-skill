@@ -1,6 +1,6 @@
 ---
 name: tuqiang-dev
-version: 1.7.0
+version: 1.8.0
 description: 途强（tuqiang）三端 Flutter 项目专属开发技能。面向不会写代码或只会 Vue3 前端的人员，配合 AI 编码助手完整实现 Android / iOS / 鸿蒙三端需求。包含项目铁律、目录规范、dio 网络请求、Riverpod 全局状态、权限申请、sc 尺寸适配、tr 国际化、路由注册、三端兼容等全部规范，以及从零实现一个需求的完整步骤模板。凡在本仓库内开发新功能、改 Bug、加页面、加接口，一律先读本技能。
 ---
 
@@ -176,6 +176,7 @@ dart run tool/project.dart test standard                       # 运行单测（
 ### 阶段五：交付与审查（Code Review）
 - **交付前防御性自检**：
   - [ ] 是否触碰了与需求无关的文件？（保持变动最小化）
+  - [ ] **代码审查高频缺陷**：对照 [code-review-checklist.md](references/code-review-checklist.md) 逐项检查新代码是否存在静默 catch、双重非空断言、TOCTOU、宽类型参数、布尔-回调耦合等常见缺陷
   - [ ] **UI 与切图规范**：是否已事前询问蓝湖链接？有蓝湖稿是否通过 `lanhu-mcp` 像素级还原？无蓝湖稿是否严格贴合项目设计规范？是否杜绝了擅自使用 `Icons.xxx`？切图是否按 1x/2x/3x 放入对应目录并在常量类声明？
   - [ ] **测试文件与提测单**：是否严格遵守按需触发原则（未确认不生成，已确认则全量伴生）？已开启测试时是否所有测试均通过并附带《提测交付单》？
   - [ ] **接口与数据源规范**：是否杜绝了私自脑补假 URL？静态数据是否已陈述理由并确认收敛？动态接口暂缺时是否已按标准 Repository 异步 Mock？
@@ -206,6 +207,7 @@ dart run tool/project.dart test standard                       # 运行单测（
 
 | 文件 | 内容 |
 |---|---|
+| [references/code-review-checklist.md](references/code-review-checklist.md) | **Code Review 高频缺陷对照清单**：静默 catch、双重非空断言、TOCTOU、宽类型参数、布尔-回调耦合、i18n 换行等 8+ 项真实审查案例，交付前防御性自检用 |
 | [references/project-structure.md](references/project-structure.md) | 目录地图、「加东西动哪个包」决策表、pubspec 注意事项 |
 | [references/assets-guide.md](references/assets-guide.md) | **UI 设计源决策、蓝湖 MCP 接入与静态资源切图全景规范**：事前必问蓝湖链接、lanhu-mcp 自动化读取、无设计稿自适应规范、杜绝 Icons 脑补、2x/3x 倍图、命名与常量注册 |
 | [references/testing.md](references/testing.md) | **测试规范与提测交付标准**：按需生成必问原则、Unit/Widget 测试模板、提测交付单 Markdown |

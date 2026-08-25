@@ -5,6 +5,28 @@
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-08-25
+
+### Added
+- `skills/tuqiang-dev/references/code-review-checklist.md`：新增【代码审查高频缺陷对照清单】参考文档，收录 8 项真实代码审查中反复出现的缺陷模式：
+  - **静默 catch（🔴 吞异常）**：`catch (_) {}` 必须改为 debugPrint + HTTP 层 showErrorToast；
+  - **双重非空断言 `!.`（🔴 运行时崩溃）**：连续 `!.` 必须改为先 `?? ''` 取值再判断；
+  - **`canLaunchUrl` + `launchUrl` 双检查（TOCTOU）**：移除预检查，直接 `launchUrl` + catch 兜底；
+  - **宽类型参数 + 运行时 `is` 判断**：`List<dynamic>` 改为具体泛型 `List<Map<String, dynamic>>`；
+  - **Widget 布尔参数与回调耦合**：`showCopy` + `onCopy` 两态合一，用 `onCopy != null` 推断；
+  - **为单个函数导入整个库**：`dart:math` 的 `max` 用三元表达式替代；
+  - **i18n JSON 文件末尾缺换行**：`tail -c 1` 检查并补 `0a`；
+  - **State getter 死代码**：未使用的便捷 getter 按 YAGNI 删除或统一使用；
+  - **💡 页面 loading 闪烁**：手动 `TQLoading.show()` 推荐改用 State 内嵌 loading。
+- `skills/tuqiang-dev/SKILL.md`：
+  - 在【阶段五：交付与审查】防御性自检清单中新增「代码审查高频缺陷」自检项；
+  - 在【参考文件索引】中新增 `code-review-checklist.md` 条目。
+
+### Changed
+- `skills/tuqiang-dev` 版本升级至 `1.8.0`；
+- 根目录 `package.json` 版本升级至 `1.8.0`；
+- 更新 `skills/tuqiang-dev/README.md` 与根目录 `README.md` 中的 references 索引。
+
 ## [1.7.0] - 2026-08-25
 
 ### Added

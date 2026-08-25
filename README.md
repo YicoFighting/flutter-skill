@@ -24,9 +24,9 @@ flutter-skills/
     │   ├── references/        # 状态/路由/布局/异步/生命周期深度对照表
     │   ├── README.md
     │   └── LICENSE.txt
-    └── tuqiang-dev/           # 途强项目规范技能 (v1.7.0)
+    └── tuqiang-dev/           # 途强项目规范技能 (v1.8.0)
         ├── SKILL.md           # 铁律 + 目录规范 + 五步开发闭环
-        ├── references/        # 切图资源/测试/网络/状态/i18n/适配/权限/路由/三端兼容 11 篇模板
+        ├── references/        # 切图资源/测试/网络/状态/i18n/适配/权限/路由/三端兼容/Code Review 12 篇模板
         ├── README.md
         └── LICENSE.txt
 ```
