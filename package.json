@@ -1,6 +1,6 @@
 {
   "name": "flutter-skill",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Flutter 专属 Agent Skills 集合：包含面向 Web 前端开发者的教学技能 (flutter-to-web) 与途强三端 monorepo 开发规范 (tuqiang-dev)",
   "keywords": [
     "antigravity",
@@ -31,7 +31,7 @@
     {
       "name": "tuqiang-dev",
       "path": "skills/tuqiang-dev",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "description": "途强（tuqiang）三端 Flutter 项目专属开发规范技能"
     }
   ]

@@ -16,13 +16,15 @@
 ```text
 已分析 UI 设计稿，检测到以下视觉元素需要切图资源，请在蓝湖中导出并放入对应目录：
 
-1. 【返回/关闭图标】：建议命名 `icon_nav_back.png`
-2. 【电话客服图标】：建议命名 `icon_phone_contact.png`
-3. 【微信图标】：建议命名 `icon_wechat.png`
-4. 【空数据插画】：建议命名 `img_empty_records.png`
+1. 【返回图标】：建议命名 `icon_nav_back.png` | 尺寸：1x (24x24px), 2x (48x48px), 3x (72x72px)
+2. 【电话客服图标】：建议命名 `icon_phone_contact.png` | 尺寸：1x (20x20px), 2x (40x40px), 3x (60x60px)
+3. 【微信图标】：建议命名 `icon_wechat.png` | 尺寸：1x (20x20px), 2x (40x40px), 3x (60x60px)
+4. 【空数据插画】：建议命名 `img_empty_records.png` | 尺寸：1x (120x120px), 2x (240x240px), 3x (360x360px)
 
 📁 推荐存放位置：`packages/feature/feature_xxx/assets/images/`
-📐 倍图要求：请导出 2.0x 与 3.0x 多倍图（或蓝湖一键 Flutter 导出）
+📐 蓝湖导出要求：
+   - 切图平台请选择【iOS】或【Web/通用】（切勿选择 Android 的 mipmap，避免产生奇数尺寸与多余倍率）；
+   - 勾选 1x、2x、3x 三种倍率导出，分别放入主目录、2.0x/、3.0x/。
 ```
 
 ---
@@ -38,10 +40,10 @@ tuqiang/
 │   │   └── feature_auth/                   # 业务模块包
 │   │       ├── assets/
 │   │       │   └── images/                 # 模块私有图片
-│   │       │       ├── icon_phone.png      # 1.0x 基准图（可选）
-│   │       │       ├── 2.0x/               # 2 倍图
+│   │       │       ├── icon_phone.png      # 1.0x 基准图（设计稿标注逻辑尺寸，如 20x20）
+│   │       │       ├── 2.0x/               # 2 倍图（40x40）
 │   │       │       │   └── icon_phone.png
-│   │       │       └── 3.0x/               # 3 倍图
+│   │       │       └── 3.0x/               # 3 倍图（60x60）
 │   │       │           └── icon_phone.png
 │   │       ├── lib/
 │   │       │   ├── feature_auth.dart       # 对外 export
@@ -63,24 +65,28 @@ tuqiang/
 
 ---
 
-## 4. 多倍图（Asset Variants）与蓝湖导出指引
+## 4. 多倍图（Asset Variants）与蓝湖导出避坑指引
 
 Flutter 通过子目录自动识别屏幕像素密度（DPI/DPR）：
 
-1. **目录层级结构**：
+1. **目录层级与倍率关系**：
    ```text
    assets/images/
-   ├── icon_service.png          # 1.0x 基准（375 设计稿原始标注尺寸，例如 24x24）
+   ├── icon_service.png          # 1.0x 基准（设计稿 1x 标注逻辑点尺寸，如 24x24）
    ├── 2.0x/
-   │   └── icon_service.png      # 2.0x 图（48x48）
+   │   └── icon_service.png      # 2.0x 图（48x48，尺寸为 1x 的 2 倍）
    └── 3.0x/
-       └── icon_service.png      # 3.0x 图（72x72）
+       └── icon_service.png      # 3.0x 图（72x72，尺寸为 1x 的 3 倍）
    ```
-2. **蓝湖切图导出设置**：
-   - 设计稿基准为 **375px（@1x）**；
-   - 导出平台选择 **Flutter**（蓝湖会自动生成 `2.0x` 和 `3.0x` 文件夹）；
-   - 若手动导出 PNG，请勾选 **2x** 与 **3x**，分别放入 `2.0x/` 和 `3.0x/` 子目录；
-   - 若只有单张超高清图，可直接放入 `3.0x/` 或根目录，Flutter 会自动按比例缩小下采样。
+
+2. **蓝湖切图平台选择（⚠️ 避坑红线）**：
+   - **严禁选择 Android 平台**：Android 导出模式会按照 `mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi`（1x/1.5x/2x/3x/4x）导出，不仅会产生 `19x19`、`37x37` 等不可控的奇数/小数像素，而且目录名为 `mipmap-`，与 Flutter 标准不兼容；
+   - **正确选择【iOS】或【Web/通用】**：导出的 `@1x`、`@2x`、`@3x` 完美对应 Flutter 的 1.0x、2.0x、3.0x；
+   - 将导出的切图分别放入主目录、`2.0x/` 与 `3.0x/`。
+
+3. **切图尺寸规整与透明外框规范**：
+   - **尺寸必须为偶数**：1x 基础切图尺寸必须为偶数（如 `16x16`、`20x20`、`24x24`、`32x32` 等），保证 2x、3x 能被整除，避免边缘抗锯齿发虚；
+   - **统一透明外框（Bounding Box）**：若同一列表内图标图形本身长宽不一，UI 切图必须带上统一尺寸的透明外框（如统一 `24x24` 框），杜绝在 Flutter 页面中因图形微小尺寸差异导致排版抖动与偏移。
 
 ---
 

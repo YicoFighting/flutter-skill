@@ -16,10 +16,11 @@
 | 文件 | 内容 |
 |---|---|
 | `project-structure.md` | 目录地图、「加东西动哪个包」决策表 |
-| `assets-guide.md` | **UI 切图与静态资源规范**：杜绝 Icons 脑补、索要模板、2x/3x 倍图、命名与常量注册 |
-| `networking.md` | dio/TQHttp 封装、ResultModel、TCheck 安全取值 |
+| `assets-guide.md` | **UI 切图与静态资源规范**：杜绝 Icons 脑补、蓝湖导出避坑、2x/3x 倍图、命名与常量注册 |
+| `testing.md` | **测试规范与提测交付标准**：按需生成必问原则、Unit/Widget 测试模板、提测交付单 Markdown |
+| `networking.md` | dio/TQHttp 封装、ResultModel、TCheck 安全取值、动态接口暂缺异步 Mock |
 | `state-management.md` | Riverpod State+Controller+Provider 三板斧 |
-| `i18n.md` | tr/keyTr/multiKeyTr、9 语言 JSON 维护 |
+| `i18n.md` | tr/keyTr/multiKeyTr、9 语言 JSON 维护、禁止 `final` 成员变量缓存 `.tr` |
 | `sizing-ui.md` | sc 尺寸适配原理、安全区与 core_ui 清单 |
 | `permissions.md` | TQPermissionManager 权限申请、永久拒绝引导 |
 | `routing.md` | 字符串路由注册四步、传参约定 |

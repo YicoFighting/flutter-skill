@@ -1,6 +1,6 @@
 ---
 name: tuqiang-dev
-version: 1.3.0
+version: 1.4.0
 description: 途强（tuqiang）三端 Flutter 项目专属开发技能。面向不会写代码或只会 Vue3 前端的人员，配合 AI 编码助手完整实现 Android / iOS / 鸿蒙三端需求。包含项目铁律、目录规范、dio 网络请求、Riverpod 全局状态、权限申请、sc 尺寸适配、tr 国际化、路由注册、三端兼容等全部规范，以及从零实现一个需求的完整步骤模板。凡在本仓库内开发新功能、改 Bug、加页面、加接口，一律先读本技能。
 ---
 
@@ -129,7 +129,11 @@ tuqiang/
 1. **AI 预检与调研**：AI 检索代码库相似功能与 `references/` 规范（尤其是三端兼容预检表）。
 2. **主动质疑与对齐（Karpathy Think Before Coding）**：
    - 严禁暗箱假设与脑补业务逻辑，凡有模糊或多解处，必须主动列出选项向用户提问；
-   - **UI 切图预检与索要【强制卡点】**：凡蓝湖设计稿中的图标/插画/背景，**严禁私自使用 `Icons.xxx` 或 `CupertinoIcons.xxx` 代替**！AI 必须先列出切图清单，向用户指明**建议命名、存放包路径（`packages/feature/feature_xxx/assets/images/`）及 2.0x/3.0x 多倍图要求**（详见 [references/assets-guide.md](references/assets-guide.md)）；
+   - **UI 切图预检与尺寸索要【强制卡点】**：凡蓝湖设计稿中的图标/插画/背景，**严禁私自使用 `Icons.xxx` 或 `CupertinoIcons.xxx` 代替**！AI 必须先列出切图清单，明确指明**建议命名、存放包路径（`packages/feature/feature_xxx/assets/images/`）、蓝湖导出平台（iOS/Web）与具体 1x/2x/3x 偶数像素尺寸要求**（详见 [references/assets-guide.md](references/assets-guide.md)）；
+   - **测试文件需求事前必问【强制卡点】**：
+     - AI **必须主动向用户询问本次需求是否需要生成对应的测试文件/测试用例**；
+     - **用户不同意或未明确回答需要**：严禁擅自生成任何测试代码，保持交付精简高效；
+     - **用户明确同意或主动提及需要**：后续每一次代码编写/变更后，AI **必须强制同步生成或更新对应的测试文件（`test/`）**，并在交付时出具《提测交付单》（详见 [references/testing.md](references/testing.md)）；
    - **数据源动静判定与接口对齐【强制卡点】**：
      - **静态数据**：AI 判定为纯客户端本地配置时，必须向用户陈述理由并确认（如说明为什么无需服务端动态下发），确认后收敛在常量配置中，禁止零散写死在 Widget 内部；
      - **动态接口**：若用户已提供接口文档，按规范编写 Endpoints/Repository/Model；**若用户暂未提供接口，严禁私自编造假 URL**！必须预留标准方法并使用 `Future.delayed` 结构化异步 Mock 数据，保证后续接入真实接口时 UI 与 Controller 零改动（详见 [references/networking.md](references/networking.md)）；
@@ -152,21 +156,25 @@ AI 输出完整的 **实施方案文档与任务分解清单（Checklist）**，
    - 所有文件读写与配置脚本必须显式强制 UTF-8 编码（无 BOM），杜绝 Windows 下的 GBK/ANSI 编码损坏；
    - 严禁擅自篡改依赖版本与锁文件，严禁擅自启动未经授权的外部长期后台进程；
    - 严格防范敏感信息泄漏，严禁在代码、日志、终端或回复中暴露未脱敏的 Token、密码、私钥或生产环境配置。
-3. **分步实现与实时打勾**：严格按 Checklist 逐步实现各子模块，每完成一项**实时更新任务 Checklist 状态**（如 `- [x]`），让用户随时掌握进展。
-4. **遇阻即问**：编码过程中若发现未预期的问题、接口变动或设计冲突，**立即暂停并主动向用户提问**，根据讨论结果同步更新方案与 Checklist。
+3. **测试代码同步伴生（若开启测试要求）**：
+   - 若阶段一已确认需要测试文件，每完成或修改一个业务文件（Model / Notifier / Page），必须**同步创建或修改 `test/` 目录下对应的测试文件**。
+4. **分步实现与实时打勾**：严格按 Checklist 逐步实现各子模块，每完成一项**实时更新任务 Checklist 状态**（如 `- [x]`），让用户随时掌握进展。
+5. **遇阻即问**：编码过程中若发现未预期的问题、接口变动或设计冲突，**立即暂停并主动向用户提问**，根据讨论结果同步更新方案与 Checklist。
 
 ### 阶段四：本地全量验证（三道护身符）
 ```powershell
 dart run tool/project.dart pub-get standard --enforce-lockfile   # 改依赖时
 dart run tool/project.dart analyze standard                    # 标准端类型语法检查
 dart run tool/project.dart analyze ohos                        # 鸿蒙端类型语法检查
+dart run tool/project.dart test standard                       # 运行单测（若生成了测试文件）
 .\tool\check_migration_boundaries.ps1                          # 架构红线检查（需 pwsh 7；CI 必跑）
 ```
 
 ### 阶段五：交付与审查（Code Review）
 - **交付前防御性自检**：
   - [ ] 是否触碰了与需求无关的文件？（保持变动最小化）
-  - [ ] **切图规范**：是否杜绝了擅自使用 `Icons.xxx`？切图命名是否为 `snake_case`？是否在常量类声明并传了 `package:`？
+  - [ ] **切图规范**：是否杜绝了擅自使用 `Icons.xxx`？切图是否按 1x/2x/3x 偶数尺寸及 iOS/Web 平台导出并放入对应目录？是否在常量类声明并传了 `package:`？
+  - [ ] **测试文件与提测单**：是否严格遵守按需触发原则（未确认不生成，已确认则全量伴生）？已开启测试时是否所有测试均通过并附带《提测交付单》？
   - [ ] **接口与数据源规范**：是否杜绝了私自脑补假 URL？静态数据是否已陈述理由并确认收敛？动态接口暂缺时是否已按标准 Repository 异步 Mock？
   - [ ] **i18n 规范与防坑**：是否所有中文字符串都在 9 语言 JSON 文件中补齐了翻译？**是否杜绝了在 Widget/State 成员属性中使用 `final` 缓存 `.tr` 国际化文本？**
   - [ ] **编码与安全防线**：所有文件读写是否显式使用 UTF-8（无 BOM）？是否存在任何 Token、密码、私钥等敏感信息泄露风险？
@@ -194,10 +202,11 @@ dart run tool/project.dart analyze ohos                        # 鸿蒙端类型
 | 文件 | 内容 |
 |---|---|
 | [references/project-structure.md](references/project-structure.md) | 目录地图、「加东西动哪个包」决策表、pubspec 注意事项 |
-| [references/assets-guide.md](references/assets-guide.md) | **UI 切图与静态资源规范**：杜绝 Icons 脑补、索要模板、2x/3x 倍图、命名与常量注册 |
-| [references/networking.md](references/networking.md) | dio/TQHttp 封装、ResultModel、TCheck 安全取值、请求头与 token |
+| [references/assets-guide.md](references/assets-guide.md) | **UI 切图与静态资源规范**：杜绝 Icons 脑补、蓝湖导出避坑、2x/3x 倍图、命名与常量注册 |
+| [references/testing.md](references/testing.md) | **测试规范与提测交付标准**：按需生成必问原则、Unit/Widget 测试模板、提测交付单 Markdown |
+| [references/networking.md](references/networking.md) | dio/TQHttp 封装、ResultModel、TCheck 安全取值、动态接口暂缺异步 Mock |
 | [references/state-management.md](references/state-management.md) | Riverpod State+Controller+Provider 三板斧、Consumer 接线、session 重置 |
-| [references/i18n.md](references/i18n.md) | tr/keyTr/multiKeyTr、9 语言 JSON 维护、manifest 校验 |
+| [references/i18n.md](references/i18n.md) | tr/keyTr/multiKeyTr、9 语言 JSON 维护、禁止 `final` 成员变量缓存 `.tr` |
 | [references/sizing-ui.md](references/sizing-ui.md) | sc 适配原理与限制、verticalSpace/horizontalSpace、安全区与 core_ui 清单 |
 | [references/permissions.md](references/permissions.md) | TQPermissionManager 全量权限申请、定位双关检查、永久拒绝引导 |
 | [references/routing.md](references/routing.md) | 字符串路由注册四步、传参约定、nativeRouters |
@@ -208,7 +217,7 @@ dart run tool/project.dart analyze ohos                        # 鸿蒙端类型
 
 ## 6. 给人类操作者的协同心法
 
-1. **需求拉扯期**：把需求告诉 AI ➔ 认真回答 AI 提出的边界与疑点 ➔ 审阅方案文档与任务 Checklist。
+1. **需求拉扯期**：把需求告诉 AI ➔ 认真回答 AI 提出的边界与疑点（包括是否需要测试文件） ➔ 审阅方案文档与任务 Checklist。
 2. **方案审批点**：确认方案可行后再回复“同意/开始执行”，牢牢把握架构控制权。
 3. **编码观察期**：观察 AI 实时打勾更新的 Checklist 进度，遇到 AI 提问时及时对齐决策。
-4. **验证与审查**：督促 AI 跑通 §4 的三条验证命令全绿 ➔ 使用其他模型或人工进行 Code Review ➔ 确认无误后按规范提交。
+4. **验证与审查**：督促 AI 跑通 §4 的验证命令全绿 ➔ 使用其他模型或人工进行 Code Review ➔ 确认无误后按规范提交。
