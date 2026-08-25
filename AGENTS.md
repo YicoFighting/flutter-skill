@@ -11,9 +11,11 @@
 1. **版本号递增（SemVer）**：
    - 更新对应 `skills/<skill-name>/SKILL.md` frontmatter 中的 `version`（小改动升 patch，新功能/规范增补升 minor）。
    - 同步更新根目录 `package.json` 的顶层 `version` 以及 `skills` 列表中对应项的 `version`。
-2. **详细更新 CHANGELOG.md**：
+2. **详细更新 CHANGELOG.md（严禁覆盖历史版本标题）**：
    - 严格遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 格式。
-   - 在对应版本号（如 `## [1.2.0] - YYYY-MM-DD`）下，按 `### Added`、`### Changed`、`### Fixed` 详细分类记录变更条目。
+   - **严格增量插入**：新版本记录必须**纯增量插入在 `## [Unreleased]` 与上一最新版本（如 `## [1.2.0]`）之间**，必须完整保留原有所有历史版本的 `## [X.Y.Z] - YYYY-MM-DD` 独立二级标题与内容，**严禁在编辑时误删或连带覆盖上一版本的标题行**。
+   - 在对应新版本号下，按 `### Added`、`### Changed`、`### Fixed` 详细分类记录变更条目。
+   - **Diff 防御自检**：编辑完成后必须检查 diff，确认不存在历史版本标题被错误删除（如 `- ## [旧版本]`）的情况。
 3. **同步更新 README.md**：
    - 若涉及版本号、目录结构、特性概览或新增 reference 文件索引，必须同步更新根目录 `README.md` 以及对应 skill 的 `README.md`。
 4. **全局自动同步（Sync to Global）**：

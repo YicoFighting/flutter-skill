@@ -5,6 +5,20 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-25
+
+### Added
+- `skills/tuqiang-dev/references/networking.md`：新增【动态接口 vs 静态数据与 Mock 规范】章节：
+  - **静态数据判定原则**：明确本地配置场景，AI 必须向用户陈述理由并确认，确认后收敛在常量配置中，杜绝散落硬编码；
+  - **动态接口暂缺处理范式**：严禁暗箱脑补假 URL，必须采用标准架构预留（Model / Repository）+ 结构化异步 Mock 数据（`Future.delayed` 模拟延迟并返回符合规范的 `ResultModel`），实现后续提供真实接口时上层 UI 与 Controller 零改动无缝平替；
+- `skills/tuqiang-dev/SKILL.md`：
+  - 在【阶段一：需求调研与反向拉扯】中将【数据源动静判定与接口对齐】升格为强制卡点（与 UI 切图预检并列）；
+  - 在【阶段五：交付与审查】Checklist 中新增接口与数据源规范自检项。
+
+### Changed
+- `skills/tuqiang-dev` 版本升级至 `1.3.0`；
+- 根目录 `package.json` 版本升级至 `1.3.0`。
+
 ## [1.2.0] - 2026-08-25
 
 ### Added
@@ -16,6 +30,8 @@
 ### Changed
 - `skills/tuqiang-dev` 版本升级至 `1.2.0`；
 - 根目录 `package.json` 版本升级至 `1.2.0`。
+
+## [1.1.0] - 2026-08-25
 
 ### Added
 - 根目录新增 `package.json`：建立仓库级统一元数据与语义化版本（SemVer）管理体系；

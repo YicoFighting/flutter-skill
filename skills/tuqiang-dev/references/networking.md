@@ -127,7 +127,57 @@ class XxxRepository {
 }
 ```
 
-## 6. 你不需要管的事（框架已处理）
+## 6. 动态接口 vs 静态数据与 Mock 规范【必须遵守】
+
+### ① 数据源动静判定原则
+- **静态数据（Static Data）**：
+  - 适用场景：纯客户端本地配置（如“关于我们”固定菜单、帮助中心固定 QA、本地协议入口、固定功能枚举）；
+  - **AI 协同铁律**：AI 判定为静态数据时，**必须向用户陈述理由并请求确认**（如：*“该关于我们列表属于纯客户端固定入口，无需后端接口下发，建议作为本地静态数据内置，是否确认？”*）；确认后收敛在对应 feature 的 `src/common/` 或常量配置中，禁止零散写死在 Widget 内部。
+- **动态接口（Dynamic API）**：
+  - 适用场景：设备状态、用户资产、列表分页、业务表单提交等随服务端变化的数据；
+  - **【严禁私自脑补假 URL】**：AI 严禁暗箱猜测或编造未提供的后端 URL 路径及入参字段。
+
+### ② 动态接口暂缺时的标准 Mock 范式（解耦与 0 改动无缝切换）
+若功能属于动态数据，但用户/后端**暂未提供真实接口**时，不得阻塞开发，必须采用 **「标准架构预留 + Repository 异步 Mock」**：
+
+```dart
+// feature_xxx/src/repository/xxx_repository.dart
+class XxxRepository {
+  XxxRepository({XxxApiEndpoints? endpoints})
+    : endpoints = endpoints ?? const XxxApiEndpoints();
+
+  final XxxApiEndpoints endpoints;
+
+  /// 获取洗澡记录列表
+  /// [待接入真实接口] 目前为 Mock 数据，接口就绪后替换为 TQHttp.post
+  Future<ResultModel> fetchBathList(Map<String, dynamic> params) async {
+    // 1. 模拟真实网络延时（500ms）
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    // 2. 构造符合 ResultModel 规范的 Mock 字典（结构严格与 Model 一致）
+    final mockMap = {
+      "code": "0",
+      "desc": "success",
+      "data": {
+        "total": 2,
+        "records": [
+          {"id": "1001", "petName": "旺财", "bathDate": "2026-08-25", "price": 88.0},
+          {"id": "1002", "petName": "咪咪", "bathDate": "2026-08-20", "price": 66.0}
+        ]
+      }
+    };
+    
+    // 3. 返回 ResultModel（UI 和 Controller 零感知）
+    return ResultModel.fromJson(mockMap);
+    
+    /* 真实接口就绪后直接换成以下一行即可，上层 UI 与 Controller 零改动：
+    return TQHttp.postWithLoadingAndErrTip(endpoints.petBathList, params: params);
+    */
+  }
+}
+```
+
+## 7. 你不需要管的事（框架已处理）
 
 - 请求头（Version/System/screctMethod、企业版 saas-ent-token 等）：`AppHttpDelegate.staticHeaders` 统一加。
 - token 失效跳登录：拦截器回调 `checkInvalidToken` 自动处理。
@@ -136,7 +186,7 @@ class XxxRepository {
 
 **禁止**在业务代码里手工塞 token 到 header 或自己处理 401。
 
-## 7. 验证方式
+## 8. 验证方式
 
 - 新增接口后跑 `dart run tool/project.dart analyze standard`；
 - 真机联调看 Talker 日志页确认请求/响应；

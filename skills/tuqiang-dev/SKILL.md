@@ -1,6 +1,6 @@
 ---
 name: tuqiang-dev
-version: 1.2.0
+version: 1.3.0
 description: 途强（tuqiang）三端 Flutter 项目专属开发技能。面向不会写代码或只会 Vue3 前端的人员，配合 AI 编码助手完整实现 Android / iOS / 鸿蒙三端需求。包含项目铁律、目录规范、dio 网络请求、Riverpod 全局状态、权限申请、sc 尺寸适配、tr 国际化、路由注册、三端兼容等全部规范，以及从零实现一个需求的完整步骤模板。凡在本仓库内开发新功能、改 Bug、加页面、加接口，一律先读本技能。
 ---
 
@@ -130,8 +130,11 @@ tuqiang/
 2. **主动质疑与对齐（Karpathy Think Before Coding）**：
    - 严禁暗箱假设与脑补业务逻辑，凡有模糊或多解处，必须主动列出选项向用户提问；
    - **UI 切图预检与索要【强制卡点】**：凡蓝湖设计稿中的图标/插画/背景，**严禁私自使用 `Icons.xxx` 或 `CupertinoIcons.xxx` 代替**！AI 必须先列出切图清单，向用户指明**建议命名、存放包路径（`packages/feature/feature_xxx/assets/images/`）及 2.0x/3.0x 多倍图要求**（详见 [references/assets-guide.md](references/assets-guide.md)）；
+   - **数据源动静判定与接口对齐【强制卡点】**：
+     - **静态数据**：AI 判定为纯客户端本地配置时，必须向用户陈述理由并确认（如说明为什么无需服务端动态下发），确认后收敛在常量配置中，禁止零散写死在 Widget 内部；
+     - **动态接口**：若用户已提供接口文档，按规范编写 Endpoints/Repository/Model；**若用户暂未提供接口，严禁私自编造假 URL**！必须预留标准方法并使用 `Future.delayed` 结构化异步 Mock 数据，保证后续接入真实接口时 UI 与 Controller 零改动（详见 [references/networking.md](references/networking.md)）；
    - 主动评估三端兼容风险（如蓝牙/权限/原生调用/鸿蒙差异）。
-3. **来回拉扯确认**：双方沟通直至业务逻辑、技术边界、静态切图资产与**可证伪验证标准**（如何证明功能正确）100% 清晰。
+3. **来回拉扯确认**：双方沟通直至业务逻辑、技术边界、静态切图资产、数据源接口方案与**可证伪验证标准**（如何证明功能正确）100% 清晰。
 
 ### 阶段二：出具实施方案 + 任务 Checklist
 AI 输出完整的 **实施方案文档与任务分解清单（Checklist）**，包含：
@@ -164,6 +167,7 @@ dart run tool/project.dart analyze ohos                        # 鸿蒙端类型
 - **交付前防御性自检**：
   - [ ] 是否触碰了与需求无关的文件？（保持变动最小化）
   - [ ] **切图规范**：是否杜绝了擅自使用 `Icons.xxx`？切图命名是否为 `snake_case`？是否在常量类声明并传了 `package:`？
+  - [ ] **接口与数据源规范**：是否杜绝了私自脑补假 URL？静态数据是否已陈述理由并确认收敛？动态接口暂缺时是否已按标准 Repository 异步 Mock？
   - [ ] **i18n 规范与防坑**：是否所有中文字符串都在 9 语言 JSON 文件中补齐了翻译？**是否杜绝了在 Widget/State 成员属性中使用 `final` 缓存 `.tr` 国际化文本？**
   - [ ] **编码与安全防线**：所有文件读写是否显式使用 UTF-8（无 BOM）？是否存在任何 Token、密码、私钥等敏感信息泄露风险？
   - [ ] 是否所有异步操作都做了 `if (!mounted) return;` 保护？
