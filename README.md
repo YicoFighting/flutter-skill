@@ -14,17 +14,17 @@
 
 ```
 flutter-skills/
-├── package.json               # 仓库元数据与统一版本号（v1.4.0）
+├── package.json               # 仓库元数据与统一版本号（v1.5.0）
 ├── AGENTS.md                  # 仓库维护规范、四联动变更铁律与提交约定
 ├── README.md                  # 本文件：双 skill 导航与安装说明
 ├── CHANGELOG.md               # 变更记录（Keep a Changelog 规范）
 └── skills/
-    ├── flutter-to-web/        # 教学技能 (v1.1.0)
+    ├── flutter-to-web/        # 教学技能 (v1.2.0)
     │   ├── SKILL.md           # 映射表 + 讲解套路 + 官方出处
     │   ├── references/        # 状态/路由/布局/异步/生命周期深度对照表
     │   ├── README.md
     │   └── LICENSE.txt
-    └── tuqiang-dev/           # 途强项目规范技能 (v1.4.0)
+    └── tuqiang-dev/           # 途强项目规范技能 (v1.5.0)
         ├── SKILL.md           # 铁律 + 目录规范 + 五步开发闭环
         ├── references/        # 切图资源/测试/网络/状态/i18n/适配/权限/路由/三端兼容 11 篇模板
         ├── README.md

@@ -1,6 +1,6 @@
 ---
 name: tuqiang-dev
-version: 1.4.0
+version: 1.5.0
 description: 途强（tuqiang）三端 Flutter 项目专属开发技能。面向不会写代码或只会 Vue3 前端的人员，配合 AI 编码助手完整实现 Android / iOS / 鸿蒙三端需求。包含项目铁律、目录规范、dio 网络请求、Riverpod 全局状态、权限申请、sc 尺寸适配、tr 国际化、路由注册、三端兼容等全部规范，以及从零实现一个需求的完整步骤模板。凡在本仓库内开发新功能、改 Bug、加页面、加接口，一律先读本技能。
 ---
 
@@ -176,6 +176,7 @@ dart run tool/project.dart test standard                       # 运行单测（
   - [ ] **切图规范**：是否杜绝了擅自使用 `Icons.xxx`？切图是否按 1x/2x/3x 偶数尺寸及 iOS/Web 平台导出并放入对应目录？是否在常量类声明并传了 `package:`？
   - [ ] **测试文件与提测单**：是否严格遵守按需触发原则（未确认不生成，已确认则全量伴生）？已开启测试时是否所有测试均通过并附带《提测交付单》？
   - [ ] **接口与数据源规范**：是否杜绝了私自脑补假 URL？静态数据是否已陈述理由并确认收敛？动态接口暂缺时是否已按标准 Repository 异步 Mock？
+  - [ ] **Model 规范**：是否严格遵守四大铁律（纯业务数据无 UI 文案、字段全可空、`TCheck` 防崩、`toJson` 集合 if 过滤 null）？
   - [ ] **i18n 规范与防坑**：是否所有中文字符串都在 9 语言 JSON 文件中补齐了翻译？**是否杜绝了在 Widget/State 成员属性中使用 `final` 缓存 `.tr` 国际化文本？**
   - [ ] **编码与安全防线**：所有文件读写是否显式使用 UTF-8（无 BOM）？是否存在任何 Token、密码、私钥等敏感信息泄露风险？
   - [ ] 是否所有异步操作都做了 `if (!mounted) return;` 保护？
@@ -204,7 +205,7 @@ dart run tool/project.dart test standard                       # 运行单测（
 | [references/project-structure.md](references/project-structure.md) | 目录地图、「加东西动哪个包」决策表、pubspec 注意事项 |
 | [references/assets-guide.md](references/assets-guide.md) | **UI 切图与静态资源规范**：杜绝 Icons 脑补、蓝湖导出避坑、2x/3x 倍图、命名与常量注册 |
 | [references/testing.md](references/testing.md) | **测试规范与提测交付标准**：按需生成必问原则、Unit/Widget 测试模板、提测交付单 Markdown |
-| [references/networking.md](references/networking.md) | dio/TQHttp 封装、ResultModel、TCheck 安全取值、动态接口暂缺异步 Mock |
+| [references/networking.md](references/networking.md) | dio/TQHttp 封装、ResultModel、TCheck 安全取值、Model 四大铁律与代码模板、动态接口暂缺异步 Mock |
 | [references/state-management.md](references/state-management.md) | Riverpod State+Controller+Provider 三板斧、Consumer 接线、session 重置 |
 | [references/i18n.md](references/i18n.md) | tr/keyTr/multiKeyTr、9 语言 JSON 维护、禁止 `final` 成员变量缓存 `.tr` |
 | [references/sizing-ui.md](references/sizing-ui.md) | sc 适配原理与限制、verticalSpace/horizontalSpace、安全区与 core_ui 清单 |

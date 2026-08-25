@@ -56,7 +56,59 @@ class User {
 安全取值习惯：后端可能给 null 时用 `j['name'] as String?` 接住，
 等价于 TS 可选链的心智——「别信接口，先判空」。
 
-## 4. Stream：会持续推送的 Promise
+## 4. Dart 请求参数组装语法糖（前端大白话）
+
+在组装发给后端的请求体（`toJson`）或按渠道构建入参时，Dart 有两个非常常用的语法糖：
+
+### ① 集合内部 if（Collection If）
+在 Map 对象字面量内直接写 `if (xxx != null)`，只有条件满足时该属性才会被塞进对象：
+
+```dart
+Map<String, dynamic> toJson() {
+  return {
+    if (phone != null) 'phone': phone,
+    if (email != null) 'email': email,
+    if (serviceTime != null) 'serviceTime': serviceTime,
+  };
+}
+```
+
+> **前端等价写法**：相当于 JS 里的**对象展开运算符 + 三元表达式**：
+> ```javascript
+> const toJson = () => ({
+>   ...(phone ? { phone } : {}),
+>   ...(email ? { email } : {}),
+>   ...(serviceTime ? { serviceTime } : {}),
+> });
+> ```
+
+### ② Switch 表达式（Dart 3 模式匹配）
+按渠道或类型直接作为对象表达式返回，无需写一堆 `case` 和 `break`：
+
+```dart
+Map<String, dynamic> toLoginParamsJson() {
+  return switch (type) {
+    OAuthType.wechat => {
+      if (wxOpenid?.isNotEmpty == true) 'wxOpenid': wxOpenid,
+    },
+    OAuthType.apple => {
+      if (appleId?.isNotEmpty == true) 'appleId': appleId,
+    },
+  };
+}
+```
+
+> **前端等价写法**：
+> ```javascript
+> function toLoginParamsJson() {
+>   switch (this.type) {
+>     case 'wechat': return { ...(this.wxOpenid ? { wxOpenid: this.wxOpenid } : {}) };
+>     case 'apple':  return { ...(this.appleId ? { appleId: this.appleId } : {}) };
+>   }
+> }
+> ```
+
+## 5. Stream：会持续推送的 Promise
 
 | 场景 | Future | Stream |
 |---|---|---|
@@ -77,10 +129,11 @@ Stream<int> countdown() async* {          // async* ≈ 生成器函数 function
 - `.listen((v) {...})` ≈ subscribe；
 - UI 里直接 `StreamBuilder` ≈ 订阅 + 模板渲染二合一。
 
-## 5. 常见坑速查
+## 6. 常见坑速查
 
 | 现象 | 大白话解释 |
 |---|---|
 | `type 'Null' is not a subtype...` | 接口字段是 null 但你按非空接了；用可空类型 + 默认值兜底 |
 | `setState after dispose` | 组件已销毁还敢刷 UI；异步回来先判 `mounted`（≈ 清理过的 effect 别再 setState） |
 | await 卡死不返回 | 忘了 await 或者请求没走拦截器的 mock 分支，看 Network/日志确认 |
+

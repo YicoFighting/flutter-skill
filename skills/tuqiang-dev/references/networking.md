@@ -94,7 +94,61 @@ if (result.data case Map data when result.success) {
 }
 ```
 
-## 4. 接口地址写法
+## 4. 业务数据模型（Model）标准范式与四大铁律【必须遵守】
+
+在编写网络数据模型时，必须严格遵守以下四大铁律与标准模板：
+
+### 📋 四大铁律
+1. **【纯粹性铁律】** 字段必须只包含后端接口业务数据，**严禁将客户端 UI 结构文案（如页面标题、副标题、按钮文字、备注说明）塞进 Model**！UI 固定文案统一在 Widget 内部通过 `.tr` 动态求值。
+2. **【全可空铁律】** 网络字段全部使用可空类型（`final String? phone;`、`final int? count;`），构造函数使用命名参数（如 `required this.phone`）。**严禁在构造函数中硬编码假数据/默认值**。
+3. **【TCheck 防崩铁律】** `fromJson` 统一使用 `TCheck<T>(json['xxx'])` 进行类型安全提取，类型不符或缺失时安全返回 `null` 而不是抛出异常。
+4. **【Collection If 规范】** `toJson()` 统一使用 Dart 集合 if（`if (field != null) 'field': field`）过滤 `null` 字段，避免向后端发送包含 `null` 的脏数据导致接口报错。
+
+### 📦 标准实体 Model 代码模板（直接复制即用）
+```dart
+import 'package:core_base/safe_utils.dart';
+
+class XxxInfoModel {
+  const XxxInfoModel({
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.status,
+    required this.avatarUrl,
+  });
+
+  // 1. 字段纯粹代表后端业务数据，全可空安全设计
+  final String? id;
+  final String? name;
+  final String? phone;
+  final int? status;
+  final String? avatarUrl;
+
+  // 2. fromJson 统一走 TCheck 防线上崩溃
+  factory XxxInfoModel.fromJson(Map<String, dynamic> json) {
+    return XxxInfoModel(
+      id: TCheck<String>(json['id']),
+      name: TCheck<String>(json['name']),
+      phone: TCheck<String>(json['phone']),
+      status: TCheck<int>(json['status']),
+      avatarUrl: TCheck<String>(json['avatarUrl']),
+    );
+  }
+
+  // 3. toJson 统一走 Collection If 过滤 null
+  Map<String, dynamic> toJson() {
+    return {
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (phone != null) 'phone': phone,
+      if (status != null) 'status': status,
+      if (avatarUrl != null) 'avatarUrl': avatarUrl,
+    };
+  }
+}
+```
+
+## 5. 接口地址写法
 
 新代码优先在 feature 包内建 Endpoints 类（可测试、可注入）：
 
@@ -111,7 +165,7 @@ class XxxApiEndpoints {
 - 个人版接口 host 用 `AppConfig.iotHost`，企业版 `entHost`，聚合 `mergeHost`，H5 页面 `iotH5Host`。
 - 存量代码里还有 `shared_business/lib/common/address.dart` 的 `TQAddress` getter 写法，改旧功能时跟随原文件风格即可。
 
-## 5. Repository 层（接口 ≥3 个建议拆）
+## 6. Repository 层（接口 ≥3 个建议拆）
 
 ```dart
 // feature_xxx/src/repository/xxx_repository.dart
@@ -127,7 +181,7 @@ class XxxRepository {
 }
 ```
 
-## 6. 动态接口 vs 静态数据与 Mock 规范【必须遵守】
+## 7. 动态接口 vs 静态数据与 Mock 规范【必须遵守】
 
 ### ① 数据源动静判定原则
 - **静态数据（Static Data）**：
@@ -177,7 +231,7 @@ class XxxRepository {
 }
 ```
 
-## 7. 你不需要管的事（框架已处理）
+## 8. 你不需要管的事（框架已处理）
 
 - 请求头（Version/System/screctMethod、企业版 saas-ent-token 等）：`AppHttpDelegate.staticHeaders` 统一加。
 - token 失效跳登录：拦截器回调 `checkInvalidToken` 自动处理。
@@ -186,7 +240,7 @@ class XxxRepository {
 
 **禁止**在业务代码里手工塞 token 到 header 或自己处理 401。
 
-## 8. 验证方式
+## 9. 验证方式
 
 - 新增接口后跑 `dart run tool/project.dart analyze standard`；
 - 真机联调看 Talker 日志页确认请求/响应；

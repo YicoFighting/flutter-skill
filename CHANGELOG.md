@@ -5,6 +5,26 @@
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-08-25
+
+### Added
+- `skills/tuqiang-dev/references/networking.md`：新增【业务数据模型（Model）标准范式与四大铁律】章节及标准代码模板：
+  - **纯粹性铁律**：Model 字段必须只包含后端业务数据，严禁将客户端 UI 结构文案（页面标题、副标题、按钮文字等）塞进 Model，UI 文案统一由 Widget 内 `.tr` 动态求值；
+  - **全可空铁律**：网络字段全部使用可空类型（`final String? phone;` 等），构造函数使用命名参数，严禁硬编码默认值/假数据；
+  - **TCheck 防崩铁律**：`fromJson` 统一使用 `TCheck<T>(json['xxx'])` 进行类型安全提取，缺失或类型不符时安全返回 `null`；
+  - **Collection If 规范**：`toJson()` 统一使用 Dart 集合 if（`if (field != null) 'field': field`）过滤 `null` 字段，避免向后端发送脏数据；
+  - **标准实体 Model 模板**：提供开箱即用的标准不可变 Model 实体类代码模板；
+- `skills/flutter-to-web/references/async-networking.md`：新增【Dart 请求参数组装语法糖（前端大白话）】章节：
+  - **集合内部 if（Collection If）**：对照讲解 JS 展开运算符 + 三元表达式（`...(phone ? { phone } : {})`）；
+  - **Switch 表达式（Dart 3 模式匹配）**：对照讲解按渠道/类型构建入参的表达式化写法；
+- `skills/tuqiang-dev/SKILL.md`：在【阶段五：交付与审查】Checklist 中新增 Model 四大铁律自检项。
+
+### Changed
+- `skills/tuqiang-dev` 版本升级至 `1.5.0`；
+- `skills/flutter-to-web` 版本升级至 `1.2.0`；
+- 根目录 `package.json` 版本升级至 `1.5.0`；
+- 更新根目录 `README.md`、`skills/tuqiang-dev/README.md` 与两个 skill 的 `SKILL.md` 索引。
+
 ## [1.4.0] - 2026-08-25
 
 ### Added

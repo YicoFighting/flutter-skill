@@ -1,6 +1,6 @@
 ---
 name: flutter-to-web
-version: 1.1.0
+version: 1.2.0
 description: 专门为 Web 开发者（React/Vue 技术栈）讲解 Flutter 代码的专属指导技能。包含完整的前端类比映射表、代码讲解示例和官方最佳实践引用，适用于解释任何 Flutter/Dart 代码片段。复杂主题（状态管理、路由、布局、异步网络、生命周期）的深度对照表见 references/ 目录。
 license: Apache 2.0
 ---
@@ -186,7 +186,7 @@ final users = json.map((e) => User.fromJson(e)).toList();
 | [references/state-and-riverpod.md](references/state-and-riverpod.md) | 状态管理看不懂时：Provider 全家桶、read/watch/listen 三件套、StateNotifier 三板斧翻译 |
 | [references/routing.md](references/routing.md) | 路由跳转/守卫/传参相关代码：go_router 与 Vue Router 逐项对照、命名路由、常见坑 |
 | [references/layout-ui.md](references/layout-ui.md) | 复杂布局报错或嵌套过深时：CSS ↔ Widget 对照、容器三兄弟、overflow 排查 |
-| [references/async-networking.md](references/async-networking.md) | 异步/请求/序列化代码：Future/Stream、dio 与 axios、fromJson 手写映射 |
+| [references/async-networking.md](references/async-networking.md) | 异步/请求/序列化代码：Future/Stream、dio 与 axios、fromJson/toJson 映射、Collection If/Switch 请求参数语法糖 |
 | [references/widget-lifecycle.md](references/widget-lifecycle.md) | 组件生命周期与 context 相关问题：initState/dispose 对照、setState、Key |
 | [references/official-sources.md](references/official-sources.md) | 用户要深挖原理/最佳实践时的官方出处与引用话术 |
 
