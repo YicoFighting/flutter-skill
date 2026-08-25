@@ -1,6 +1,6 @@
 ---
 name: tuqiang-dev
-version: 1.5.0
+version: 1.6.0
 description: 途强（tuqiang）三端 Flutter 项目专属开发技能。面向不会写代码或只会 Vue3 前端的人员，配合 AI 编码助手完整实现 Android / iOS / 鸿蒙三端需求。包含项目铁律、目录规范、dio 网络请求、Riverpod 全局状态、权限申请、sc 尺寸适配、tr 国际化、路由注册、三端兼容等全部规范，以及从零实现一个需求的完整步骤模板。凡在本仓库内开发新功能、改 Bug、加页面、加接口，一律先读本技能。
 ---
 
@@ -129,7 +129,10 @@ tuqiang/
 1. **AI 预检与调研**：AI 检索代码库相似功能与 `references/` 规范（尤其是三端兼容预检表）。
 2. **主动质疑与对齐（Karpathy Think Before Coding）**：
    - 严禁暗箱假设与脑补业务逻辑，凡有模糊或多解处，必须主动列出选项向用户提问；
-   - **UI 切图预检与尺寸索要【强制卡点】**：凡蓝湖设计稿中的图标/插画/背景，**严禁私自使用 `Icons.xxx` 或 `CupertinoIcons.xxx` 代替**！AI 必须先列出切图清单，明确指明**建议命名、存放包路径（`packages/feature/feature_xxx/assets/images/`）、蓝湖导出平台（iOS/Web）与具体 1x/2x/3x 偶数像素尺寸要求**（详见 [references/assets-guide.md](references/assets-guide.md)）；
+   - **UI 设计源决策与蓝湖 MCP 接入【强制卡点】**：
+     - **新页面事前必问**：AI **必须在开工前主动询问用户是否有该页面的蓝湖设计稿链接**；
+     - **分支 A（有蓝湖链接）**：检查并调用 `lanhu-mcp`（`lanhu_get_designs` ➔ `lanhu_get_ai_analyze_design_result` 提取精确 HTML/CSS 样式与参数 ➔ `lanhu_get_design_slices` 提取多倍切图），**严禁私自使用 `Icons.xxx` 或 `CupertinoIcons.xxx` 代替切图**，严格执行像素级还原；
+     - **分支 B（无蓝湖链接）**：必须遵循项目现有整体 UI 风格（`#F5F6F8` 灰底、白色圆角卡片、`.sc` 间距规范、`core_ui` 公共组件如 `CommonAppBar` / 统一按钮 / 空状态），向用户简述 UI 骨架确认后再编码（详见 [references/assets-guide.md](references/assets-guide.md)）；
    - **测试文件需求事前必问【强制卡点】**：
      - AI **必须主动向用户询问本次需求是否需要生成对应的测试文件/测试用例**；
      - **用户不同意或未明确回答需要**：严禁擅自生成任何测试代码，保持交付精简高效；
@@ -173,7 +176,7 @@ dart run tool/project.dart test standard                       # 运行单测（
 ### 阶段五：交付与审查（Code Review）
 - **交付前防御性自检**：
   - [ ] 是否触碰了与需求无关的文件？（保持变动最小化）
-  - [ ] **切图规范**：是否杜绝了擅自使用 `Icons.xxx`？切图是否按 1x/2x/3x 偶数尺寸及 iOS/Web 平台导出并放入对应目录？是否在常量类声明并传了 `package:`？
+  - [ ] **UI 与切图规范**：是否已事前询问蓝湖链接？有蓝湖稿是否通过 `lanhu-mcp` 像素级还原？无蓝湖稿是否严格贴合项目设计规范？是否杜绝了擅自使用 `Icons.xxx`？切图是否按 1x/2x/3x 放入对应目录并在常量类声明？
   - [ ] **测试文件与提测单**：是否严格遵守按需触发原则（未确认不生成，已确认则全量伴生）？已开启测试时是否所有测试均通过并附带《提测交付单》？
   - [ ] **接口与数据源规范**：是否杜绝了私自脑补假 URL？静态数据是否已陈述理由并确认收敛？动态接口暂缺时是否已按标准 Repository 异步 Mock？
   - [ ] **Model 规范**：是否严格遵守四大铁律（纯业务数据无 UI 文案、字段全可空、`TCheck` 防崩、`toJson` 集合 if 过滤 null）？
@@ -203,7 +206,7 @@ dart run tool/project.dart test standard                       # 运行单测（
 | 文件 | 内容 |
 |---|---|
 | [references/project-structure.md](references/project-structure.md) | 目录地图、「加东西动哪个包」决策表、pubspec 注意事项 |
-| [references/assets-guide.md](references/assets-guide.md) | **UI 切图与静态资源规范**：杜绝 Icons 脑补、蓝湖导出避坑、2x/3x 倍图、命名与常量注册 |
+| [references/assets-guide.md](references/assets-guide.md) | **UI 设计源决策、蓝湖 MCP 接入与静态资源切图全景规范**：事前必问蓝湖链接、lanhu-mcp 自动化读取、无设计稿自适应规范、杜绝 Icons 脑补、2x/3x 倍图、命名与常量注册 |
 | [references/testing.md](references/testing.md) | **测试规范与提测交付标准**：按需生成必问原则、Unit/Widget 测试模板、提测交付单 Markdown |
 | [references/networking.md](references/networking.md) | dio/TQHttp 封装、ResultModel、TCheck 安全取值、Model 四大铁律与代码模板、动态接口暂缺异步 Mock |
 | [references/state-management.md](references/state-management.md) | Riverpod State+Controller+Provider 三板斧、Consumer 接线、session 重置 |

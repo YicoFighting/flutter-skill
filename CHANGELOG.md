@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-08-25
+
+### Added
+- skills/tuqiang-dev/references/assets-guide.md：升级为 UI 设计源决策、蓝湖 MCP 接入与静态资源切图全景规范：
+  - **UI-First SOP 决策闭环**：新页面/UI 功能开工前，强制主动询问用户是否有蓝湖设计稿链接；
+  - **分支 A（有蓝湖链接）**：检查并调用 lanhu-mcp（lanhu_get_designs ➔ lanhu_get_ai_analyze_design_result 提取精准 HTML/CSS 样式与参数 ➔ lanhu_get_design_slices 提取多倍切图），严禁擅自使用系统 Icon 替代，严格执行像素级还原；
+  - **分支 B（无蓝湖链接）**：遵循项目现有整体 UI 风格（#F5F6F8 灰底、白色圆角卡片、.sc 间距规范、core_ui 公共组件如 CommonAppBar / 统一按钮 / 空状态），向用户简述 UI 骨架确认后再编码；
+- skills/tuqiang-dev/SKILL.md：
+  - 在【阶段一：需求调研与反向拉扯】中新增「UI 设计源决策与蓝湖 MCP 接入【强制卡点】」；
+  - 在【阶段五：交付与审查】Checklist 中增加 UI 设计源与切图自检卡点；
+  - 在【参考文件索引】中更新 ssets-guide.md 说明。
+
+### Changed
+- skills/tuqiang-dev 版本升至 1.6.0；
+- 根目录 package.json 版本升至 1.6.0；
+- 更新根目录 README.md 与 skills/tuqiang-dev/README.md 中的文档说明。
+
 ## [1.5.0] - 2026-08-25
 
 ### Added

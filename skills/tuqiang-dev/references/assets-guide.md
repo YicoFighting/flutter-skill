@@ -1,35 +1,83 @@
-# UI 切图与静态资源规范（assets）
+# UI 设计源决策、蓝湖 MCP 接入与切图资源规范（assets）
 
-## 1. 核心红线：严禁擅自使用系统 Icon 脑补
+## 1. UI 设计源决策闭环（UI-First SOP）
 
-> 🚫 **【严禁行为】** 凡蓝湖设计稿中的图标、插画、装饰图、空状态配图、按钮背景，**严禁私自使用 `Icons.xxx` 或 `CupertinoIcons.xxx` 替代**。
-> 
-> 原因：商业应用有统一严格的 UI 视觉语言。自带图标库在比例、描边粗细、视觉风格上与设计稿差异巨大，会直接导致 UI 走样和二次返工。
+在开始编写任何新页面/新功能 UI 之前，AI 必须严格执行 **「先问设计源 ➔ 分支处理 ➔ 像素级对齐/符合项目规范」** 的流程，严禁未经询问直接盲目手写 UI。
 
----
-
-## 2. 需求拉扯期：AI 主动索要切图 SOP
-
-当用户提供蓝湖设计稿截图时，AI 在进入编码之前，**必须**按以下模板主动列出切图清单向用户索要：
-
-### 📋 切图索要标准回复模板（AI 必须执行）
-```text
-已分析 UI 设计稿，检测到以下视觉元素需要切图资源，请在蓝湖中导出并放入对应目录：
-
-1. 【返回图标】：建议命名 `icon_nav_back.png` | 尺寸：1x (24x24px), 2x (48x48px), 3x (72x72px)
-2. 【电话客服图标】：建议命名 `icon_phone_contact.png` | 尺寸：1x (20x20px), 2x (40x40px), 3x (60x60px)
-3. 【微信图标】：建议命名 `icon_wechat.png` | 尺寸：1x (20x20px), 2x (40x40px), 3x (60x60px)
-4. 【空数据插画】：建议命名 `img_empty_records.png` | 尺寸：1x (120x120px), 2x (240x240px), 3x (360x360px)
-
-📁 推荐存放位置：`packages/feature/feature_xxx/assets/images/`
-📐 蓝湖导出要求：
-   - 切图平台请选择【iOS】或【Web/通用】（切勿选择 Android 的 mipmap，避免产生奇数尺寸与多余倍率）；
-   - 勾选 1x、2x、3x 三种倍率导出，分别放入主目录、2.0x/、3.0x/。
+```mermaid
+flowchart TD
+    Start[开始写新页面 / UI功能] --> Ask{主动询问用户是否有蓝湖链接}
+    
+    Ask -->|有蓝湖链接| CheckMCP{检查是否配置 lanhu-mcp}
+    CheckMCP -->|未配置/未连接| GuideSetup[提示用户配置/登录 lanhu-mcp] --> ParseLanhu
+    CheckMCP -->|已配置| ParseLanhu[读取并解析蓝湖设计稿]
+    
+    ParseLanhu --> GetCSS[获取精准 HTML/CSS 样式与参数]
+    ParseLanhu --> GetSlices[获取切图标注与下载资源 1x/2x/3x]
+    GetSlices & GetCSS --> CodeGenA[严格按照设计规范像素级还原]
+    
+    Ask -->|无蓝湖链接| CheckDesignSystem[读取项目现有设计系统]
+    CheckDesignSystem --> TokenAlign[提取主色/圆角/间距/卡片/字体等设计Token]
+    TokenAlign --> ReuseCoreUI[优先复用项目公共组件库 如 core_ui/通用卡片]
+    ReuseCoreUI --> ConfirmWireframe[向用户简述 UI 结构与布局方案]
+    ConfirmWireframe --> CodeGenB[符合项目统一设计风格进行自主绘制]
 ```
 
+### 💬 启动阶段标准询问话术（AI 必问）
+> “在开始编写新页面前，请问是否有该页面的**蓝湖设计稿链接**？
+> - **如果有**：请把蓝湖链接提供给我，我将通过 `lanhu-mcp` 自动读取精准样式参数（颜色、尺寸、间距、圆角等）并提取切图资源；
+> - **如果没有**：我将参考项目现有的整体 UI 规范（主题色系、圆角卡片、`.sc` 间距、`core_ui` 公共组件）为您自主设计并绘制符合项目风格的页面。”
+
 ---
 
-## 3. 资源落位与 Monorepo 目录结构
+## 2. 分支 A：有蓝湖链接（设计稿驱动模式）
+
+### 步骤一：检查 `lanhu-mcp` 状态
+1. 检查当前环境是否已配置并连接 `lanhu` MCP Server（包含 `lanhu_get_designs`、`lanhu_get_ai_analyze_design_result`、`lanhu_get_design_slices` 等工具）。
+2. 若未配置或无法调用，立即提示用户配置/开启 `lanhu-mcp`，或引导用户粘贴具体设计参数/切图。
+
+### 步骤二：读取并解析设计稿（精准样式）
+1. 调用 `lanhu_get_designs` 匹配对应页面的 `image_id` 或页面名称。
+2. 调用 `lanhu_get_ai_analyze_design_result` 获取精准设计规格：
+   - **最高权威性**：返回的 HTML/CSS 规格参数（包括 `rgba()` 色值、`padding/margin` 间距、`fontSize/fontWeight`、`borderRadius`、`linear-gradient` 等）是唯一的真实设计标准；
+   - **严格映射**：直接将 CSS 参数转换为 Flutter 等效属性（如 `Color.fromRGBO(...)`、`EdgeInsets`、`15.sc`），**严禁擅自四舍五入或随意简化数值**；
+   - **预览图仅供校验**：设计图仅作为视觉辅助对齐，不得覆盖精确的 CSS 参数。
+
+### 步骤三：提取切图资源（杜绝系统 Icon 脑补）
+1. 调用 `lanhu_get_design_slices` 获取该页面下的所有切图。
+2. **严禁行为**：凡设计稿中的图标、插画、装饰、按钮图标，**严禁私自使用 `Icons.xxx` 或 `CupertinoIcons.xxx` 替代**。
+3. 确认切图倍率（Web 1x/2x/3x 或 iOS @1x/@2x/@3x），并按本规范落盘至对应 Feature 包的 `assets/images/` 目录中。
+
+---
+
+## 3. 分支 B：无蓝湖链接（项目设计规范自适应模式）
+
+当用户确认没有蓝湖链接时，UI 绘制必须遵循本项目的统一设计语言与现存模式：
+
+### ① 提取项目既有 Design Tokens
+- **颜色体系**：
+  - 页面主背景色：`#F5F6F8`（或项目中既定的灰底卡片背景）；
+  - 主题主色：品牌主色（橙色/主强调色）；
+  - 文字色彩梯度：主标题色（深黑/高对比）、副标题/正文色（次级深灰）、提示/弱化色（浅灰）；
+  - 分割线/边框色：项目通用的浅灰分割线。
+- **尺寸与间距网格**：
+  - 所有尺寸必须添加 `.sc` 屏幕适配扩展（如 `16.sc`、`24.sc`）；
+  - 间距遵循项目标准梯度（如 `4.sc` / `8.sc` / `12.sc` / `16.sc` / `24.sc`），避免随意的奇数大边距。
+- **卡片与圆角**：
+  - 内容块必须收敛在白色圆角卡片中（常见圆角 `8.sc` 或 `12.sc`，背景为白色 `Colors.white`，外带微弱阴影或浅边框）。
+
+### ② 优先复用公共组件（`core_ui` & Feature 公共组件）
+- 顶部导航栏：统一使用 `CommonAppBar` / 标准顶栏；
+- 按钮：统一使用项目主按钮/次按钮样式（圆角主色实心按钮、白底描边按钮）；
+- 列表项：统一使用标准 Row 布局（左侧图标/标题 + 中间内容 + 右侧箭头 `ic_arrow_right` / 操作项）；
+- 空状态/加载态：统一使用项目标准的 Loading 与 EmptyWidget。
+
+### ③ 布局结构确认（对齐后再写）
+- 简述页面结构（如：“页面由 3 部分构成：顶部用户信息概览卡片 + 中间快捷功能网格 + 底部退出登录操作按钮”），获得用户首肯后进行组件化拆解与编码。
+
+---
+
+## 4. 资源落位与 Monorepo 目录结构
 
 在 `tuqiang` monorepo 中，资源文件按作用域严格分层：
 
@@ -65,7 +113,7 @@ tuqiang/
 
 ---
 
-## 4. 多倍图（Asset Variants）与蓝湖导出避坑指引
+## 5. 多倍图（Asset Variants）与切图导出规范
 
 Flutter 通过子目录自动识别屏幕像素密度（DPI/DPR）：
 
@@ -80,17 +128,17 @@ Flutter 通过子目录自动识别屏幕像素密度（DPI/DPR）：
    ```
 
 2. **蓝湖切图平台选择（⚠️ 避坑红线）**：
-   - **严禁选择 Android 平台**：Android 导出模式会按照 `mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi`（1x/1.5x/2x/3x/4x）导出，不仅会产生 `19x19`、`37x37` 等不可控的奇数/小数像素，而且目录名为 `mipmap-`，与 Flutter 标准不兼容；
+   - **严禁选择 Android 模式导出**：Android 模式会按照 `mdpi/hdpi/xhdpi/xxhdpi/xxxhdpi` 导出，容易产生奇数小数像素且目录命名不兼容；
    - **正确选择【iOS】或【Web/通用】**：导出的 `@1x`、`@2x`、`@3x` 完美对应 Flutter 的 1.0x、2.0x、3.0x；
    - 将导出的切图分别放入主目录、`2.0x/` 与 `3.0x/`。
 
 3. **切图尺寸规整与透明外框规范**：
    - **尺寸必须为偶数**：1x 基础切图尺寸必须为偶数（如 `16x16`、`20x20`、`24x24`、`32x32` 等），保证 2x、3x 能被整除，避免边缘抗锯齿发虚；
-   - **统一透明外框（Bounding Box）**：若同一列表内图标图形本身长宽不一，UI 切图必须带上统一尺寸的透明外框（如统一 `24x24` 框），杜绝在 Flutter 页面中因图形微小尺寸差异导致排版抖动与偏移。
+   - **统一透明外框（Bounding Box）**：同一列表中并列的图标，切图必须带上统一尺寸的透明外框（如统一 `24x24` 框），防止在 Flutter 页面中因图形微小尺寸差异导致排版抖动。
 
 ---
 
-## 5. 命名规范（必须遵守）
+## 6. 命名规范（必须遵守）
 
 - **全部小写字母 + 下划线（`snake_case`）**，**严禁使用中文、空格或大写驼峰**（避免 iOS/Android/鸿蒙跨端构建时文件名大小写敏感冲突）；
 - **前缀语义化分类**：
@@ -104,7 +152,7 @@ Flutter 通过子目录自动识别屏幕像素密度（DPI/DPR）：
 
 ---
 
-## 6. 代码注册与调用标准模板
+## 7. 代码注册与调用标准模板
 
 ### ① 在 `pubspec.yaml` 声明资源路径
 ```yaml
@@ -184,11 +232,15 @@ FeatureAuthAssets.image(
 
 ---
 
-## 7. 交付前切图自检 Checklist
+## 8. 交付前切图与 UI 自检 Checklist
 
+- [ ] 新建页面前已向用户明确询问是否有蓝湖设计稿；
+- [ ] 有蓝湖稿时，已通过 `lanhu-mcp` 提取精确 CSS 样式与多倍切图，并严格执行像素级还原；
+- [ ] 无蓝湖稿时，已严格契合项目现有的主题色、背景色、卡片圆角、`.sc` 网格及 `core_ui` 公共组件；
 - [ ] UI 中的所有图标/配图均已使用切图，没有私自残留 `Icons.xxx`；
 - [ ] 所有图片文件名使用英文小写下划线（`snake_case`）；
 - [ ] 图片资源已放入 `assets/images/`（及 `2.0x/`、`3.0x/`）；
 - [ ] 对应 package 的 `pubspec.yaml` 中已包含该 assets 路径；
 - [ ] 已在 `feature_xxx_assets.dart` 定义常量并在 `feature_xxx.dart` 中 export；
 - [ ] 调用处已显式指定 `package: 'feature_xxx'` 参数，且尺寸加上了 `.sc`。
+
