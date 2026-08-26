@@ -13,7 +13,7 @@
 | `flex: 1; flex-shrink: 0`（按内容收缩） | `Flexible` | 子项可以比分配额小 |
 | 主轴对齐 `justify-content` | `mainAxisAlignment` | `center / spaceBetween ...` |
 | 交叉轴对齐 `align-items` | `crossAxisAlignment` | `center / stretch ...` |
-| `gap`（flex 间距） | `SizedBox(width:, height:)` 或 `gap` 包 | Flutter 没有原生 gap，塞空盒子 |
+| `gap`（flex 间距） | `SizedBox(width:, height:)`，或按当前 Flutter SDK 使用 Flex 的 `spacing` | 途强现有代码以 SizedBox 和项目组件为准，不要假设所有 SDK 都支持同一 API |
 | `padding` | `Padding` 或 `Container(padding:)` | |
 | `margin` | 外面再套一层 `Container(margin:)` | Flutter 只有 padding，margin 是"外面的 padding" |
 | `position: relative + absolute` | `Stack` + `Positioned` | 图层堆叠（角标、浮层按钮） |

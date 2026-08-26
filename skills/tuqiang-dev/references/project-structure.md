@@ -1,88 +1,61 @@
-# 目录规范与「加东西动哪个包」
+# 目录与归属决策
 
-## 1. 分层规则
+## 1. 分层和依赖方向
 
-依赖方向必须单向：`apps → feature → shared_business / core`，`core 包之间不互相依赖业务包`。
-
-| 层 | 位置 | 放什么 | 不放什么 |
-|---|---|---|---|
-| App 入口 | `apps/standard`、`apps/ohos` | 平台配置、签名、渠道、pubspec 差异、dependency_overrides | 业务代码 |
-| 公共 App | `apps/tuqiang_app/lib/app/**` | 路由总表 `app_router.dart`、启动编排 `bootstrap.dart`、i18n 资产加载、HTTP delegate、session 协调器 | 可复用的业务页面（该下沉到 feature） |
-| 业务模块 | `packages/feature/feature_xxx` | 该业务域的 pages / controller / state / model / router / widgets / assets / callbacks | 其他模块的私有实现 |
-| 共享业务 | `packages/shared/shared_business/lib` | 跨模块模型、全局 Provider、manager、device/location 等领域层 | 单个 feature 私有的东西 |
-| 基础库 | `packages/core/core_*` | 网络(core_http)、国际化(core_i18n)、UI 组件(core_ui)、工具与权限(core_base)、尺寸适配、webview、分享、地区 core_region | 任何具体业务 |
-| 平台插件 | `packages/plugins/tq_*` | 需要原生能力的自研插件（推送、地图、日志、文件、蓝牙、信号、P2P…），内含 android/ios/(ohos) 原生代码 | 纯 Dart 业务 |
-| 适配包 | `packages/adapter/*` | 三方库的 ohos 替代实现与封装 | — |
-
-## 2. 「我想加 X，动哪里」决策表
-
-| 你要加的东西 | 动哪里 | 参考范例 |
-|---|---|---|
-| 某业务的普通页面+状态 | 对应 feature 包的 `src/pages` + `src/state` + `src/controller` | `feature_pet` 的我的信标页四件套 |
-| 新接口地址 | 新做法：feature 内建 `src/api/xxx_api_endpoints.dart`；存量做法：`shared_business/lib/common/address.dart` 的 `TQAddress` 加 getter | `feature_auth/src/api/auth_api_endpoints.dart` |
-| 接口请求方法 | feature 内 `src/repository/xxx_repository.dart`，返回 `ResultModel` | `auth_repository.dart` |
-| 可复用 UI 组件 | `packages/core/core_ui/lib/` 根目录一个文件，命名 `tq_xxx.dart` | `tq_appbar.dart`、`tq_no_data_widget.dart` |
-| 字符串/数字/日期工具 | `core_base/lib/xxx_extension.dart` 或 `tq_xxx_util.dart`；日期相关放 `core_union` | `num_extension.dart`、`string_extension.dart` |
-| 图片/静态资源 | 业务切图放对应 feature 的 `assets/images/`（含 2.0x/3.0x）+ `lib/src/assets/feature_xxx_assets.dart` 注册常量；公共切图放 `packages/assets_common/`；**严禁擅自使用系统 Icons 代替切图** | 见 [assets-guide.md](assets-guide.md)、`feature_pet_assets.dart` |
-| 全局单例 manager（登录态等） | `shared_business/lib/manager/`（存量 `lib/common/manager/` 仍有 TQInfoManager 等，跟随现状） | `TQGlobalModel`、`TQInfoManager` |
-| 新原生能力 | 先查 `plugins/` 有没有 tq_* 插件；没有→新建插件或走 adapter 替代 | `tq_push_plugin` |
-| 三方库 ohos 版替换 | `packages/adapter/` + `apps/ohos/pubspec.yaml` dependency_overrides | `share_plus_ohos` |
-| 多语言文案 | `apps/tuqiang_app/assets/i18n/*.json`（9 个语言文件 + manifest） | 见 i18n.md |
-
-## 3. feature 包的标准内部结构（照此组织）
+项目总体方向为：
 
 ```text
-packages/feature/feature_xxx/
-├── lib/
-│   ├── feature_xxx.dart            # 对外出口：所有需要暴露的类逐个 export
-│   └── src/
-│       ├── api/                    # XxxApiEndpoints：接口地址
-│       ├── assets/                 # 资源路径注册
-│       ├── callbacks/              # 反向回调导航（宿主注入跳转）
-│       ├── config/                 # 依赖注入（XxxDependencies.setup 模式）
-│       ├── controller/             # XxxController extends StateNotifier<XxxState>
-│       ├── model/                  # 数据模型（fromJson/toJson + TCheck 安全取值）
-│       ├── pages/                  # 页面 Widget
-│       ├── repository/             # 接口请求封装（可选，接口多时拆出）
-│       ├── route_effects/          # 路由副作用监听（可选）
-│       ├── router/                 # XxxRouter：路由名常量 + routeNames + nativeRouters
-│       ├── session/                # 登录态重置 participants
-│       ├── state/                  # Provider 定义
-│       └── widgets/                # 本模块私有组件
-├── pubspec.yaml                    # 只依赖 core_* 与 shared_business，禁止依赖其他 feature
-└── test/                           # 有逻辑的 model/controller 尽量配测试
+apps/standard, apps/ohos
+          ↓
+apps/tuqiang_app
+          ↓
+feature → shared_business / core / plugins / adapter
 ```
 
-硬性要求：
+实际依赖以各 package 的 `pubspec.yaml` 为准。feature 可以依赖满足业务所需的稳定插件或 core 能力，但不能依赖 app，也不能为了复用页面反向依赖其他 feature。
 
-- **对外只经 `feature_xxx.dart` export**。别的包不许 `import 'package:feature_xxx/src/...'` 深路径。
-- feature 包之间**禁止互相 import**；确需联动时通过 shared_business 或 callbacks/config 注入解耦（参考 `AuthDependencies`、`SharedWebviewBridge`）。
-- 文件命名：类名 `TQ` 前缀（存量惯例），文件名小写下划线。
+| 位置 | 主要职责 | 新代码边界 |
+|---|---|---|
+| `apps/standard` | Android/iOS 配置、渠道、签名 | 不放共享业务 |
+| `apps/ohos` | HarmonyOS 配置、override、DevEco 工程 | 不把 OHOS 专属类型扩散到公共 Dart |
+| `apps/tuqiang_app/lib/app` | 启动、路由聚合、session、平台注入、App 壳 | 新业务页面优先下沉 feature；历史代码按迁移计划处理 |
+| `packages/feature/feature_xxx` | 某一业务域的页面、状态、模型、路由、资源和回调 | 不 import `package:tuqiang/`，不消费别的 feature 私有 `src` |
+| `packages/shared/shared_business` | 两个及以上模块稳定共享的业务模型、Provider、manager | 不放单一 feature 页面和私有状态 |
+| `packages/core/core_*` | 网络、i18n、UI、尺寸、权限等基础能力 | 不放具体业务 |
+| `packages/plugins/tq_*` / `packages/adapter` | 原生插件和平台适配 | 先复用现有能力，再评估新增通道 |
+| `packages/assets_common` | 多模块或 App 壳共享资源 | 单 feature 资源不要继续堆这里 |
 
-## 4. pubspec 注意事项
+## 2. 找 owner 的顺序
 
-- 各 package 的 pubspec 用 path 依赖仓库内包；版本号只对 pub.dev 三方库声明。
-- `apps/standard/pubspec.yaml` 有 `fluwx:` 配置段（微信 app_id/universal_link），别误删。
-- `apps/ohos/pubspec.yaml` 靠大段 `dependency_overrides` 把三方库换成 ohos 版；改标准端依赖后必须检查鸿蒙端是否也要同步 override。
-- 提交不得包含 `pubspec.lock` 的意外变更；CI 会校验 lock 未被改写。
+1. 找页面当前唯一 builder、route、callback、asset 和 Provider 使用者；
+2. 判断能力是单 feature、跨 feature 还是基础设施；
+3. 查看目标包最近的同类目录和 barrel export；
+4. 检查包外引用、pubspec、测试、Android/iOS/OHOS 资源；
+5. 只迁移能证明 owner 已完整转移的内容，避免留下两套事实来源。
 
-## 5. 文件编码与环境安全规范
+feature 内部目录可能是 `pages`、`page`、`controller`、`state`、`router`、`route_effects`、`callbacks` 等不同组合。目录规范是方向，不是要求把所有模块强行重排成同一脚手架。
 
-- **【所有文件强制使用 UTF-8（无 BOM）】**：
-  在 Windows 和各平台工具脚本中，所有新增、修改或自动生成的文件（特别是 JSON/Dart/YAML/Shell 脚本）必须显式强制 UTF-8 编码，禁止保存为 GBK/ANSI 或带 BOM 格式：
-  - Dart: `await file.readAsString(encoding: utf8);` / `await file.writeAsString(content, encoding: utf8);`
-  - Python: `open(path, 'r', encoding='utf-8')`
-  - Node.js: `fs.readFileSync(path, 'utf8')`
-- **【敏感信息零泄露防线】**：
-  - 严禁在代码、日志、回复中明文记录或硬编码生产 Token、密钥、密码、Cookie 或私有证书；
-  - 遇到含敏感信息的配置，必须通过脱敏或本地环境变量处理，严禁上传至外部未经授权的服务。
+## 3. 迁移边界
 
-## 6. 验证方式
+涉及业务下沉时保持：
 
-```powershell
-dart run tool/project.dart analyze standard
-dart run tool/project.dart analyze ohos
-.\tool\check_migration_boundaries.ps1
-```
+- route 字符串、arguments 类型、返回值和栈行为；
+- H5/scheme/push/native 入口和 route effect；
+- feature-owned 资源的完整倍率/帧/JSON 家族；
+- feature → app 的 callback/config/bridge 方向；
+- `shared_business` 不反向依赖 feature；
+- 新依赖进入实际 owner 的 pubspec，必要时同步受影响 lockfile。
 
-三者全绿 = 结构合规。新增 export 后若他包编译报「找不到类」，优先怀疑忘了在 `feature_xxx.dart` 里 export。
+迁移中的目标 feature 和检查范围以 `tool/check_migration_boundaries.ps1` 及
+`docs/feature_business_package_split_plan.md` 为准，不要凭本文件的概括扩大检查范围。
+
+## 4. 快速决策
+
+| 想新增的内容 | 优先位置 |
+|---|---|
+| 只服务宠物页面的 API/Model/Provider/图片 | `feature_pet` |
+| GPS、Camera、Pet 等 feature 间的跳转 | feature 提供 callback/config，app 负责组装 |
+| 多 feature 都需要的稳定用户/设备模型 | `shared_business`，先确认没有更合适的 core |
+| 请求封装、翻译、通用 Toast/AppBar | 对应 `packages/core/core_*` |
+| 蓝牙、地图、文件、推送等原生能力 | 现有 `packages/plugins/tq_*` 或 `packages/adapter` |
+| 设计图中的业务图片 | 真实消费者所属 feature；共享资源才进 `assets_common` |

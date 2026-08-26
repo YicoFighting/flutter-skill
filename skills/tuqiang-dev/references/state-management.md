@@ -1,214 +1,96 @@
-# 状态管理规范（Riverpod 2.x）
+# 状态管理规范（Riverpod 2.6.1）
 
-项目状态管理统一用 **flutter_riverpod 2.6.1**（`StateNotifier` 风格，不是 hooks、不是新 API）。Vue3 类比：Provider ≈ Pinia store；`ref.watch` ≈ computed 响应式绑定。
+途强使用 `flutter_riverpod` / `riverpod` 2.6.1。存量业务以 `StateNotifierProvider` 为主，但已有 `NotifierProvider`、`FutureProvider` 等实现。新增或修改代码先沿用所在模块的模式，不为追求统一而做无关迁移。
 
-## 1. 三板斧模板（State + Controller + Provider）
+## 1. 选择 Provider 类型
 
-### 第一步：不可变 State
+- 页面级、需要显式 Controller 的存量功能：沿用 `StateNotifierProvider`；
+- 新增简单的读写状态：可评估 Riverpod 2 `NotifierProvider`；
+- 只读同步依赖或配置：`Provider`；
+- 单一异步查询且不需要复杂命令：`FutureProvider`；
+- 持续数据流：`StreamProvider`；
+- 页面离开即失效：通常使用 `autoDispose`；
+- 跨页面且属于用户会话的数据：由 session reset 机制清理。
+
+不要在同一功能内无理由混用两套状态模型，也不要因为类型名称像 Pinia store 就忽略 Provider 的作用域和销毁时机。
+
+## 2. StateNotifier 存量模式
 
 ```dart
-// controller/beacon/tq_my_beacon_controller.dart
-import 'package:flutter/material.dart';
-
 @immutable
-class MyBeaconState {
-  MyBeaconState({
-    this.bluetoothUpperLimit = 0,
-    List<TqBeaconItemModel> beacons = const <TqBeaconItemModel>[],
-  }) : beacons = List<TqBeaconItemModel>.unmodifiable(
-         beacons.map((item) => TqBeaconItemModel.fromJson(item.toJson())),
-       );
+class BeaconState {
+  const BeaconState({
+    this.loading = false,
+    this.items = const <TqBeaconItemModel>[],
+  });
 
-  final int bluetoothUpperLimit;
-  final List<TqBeaconItemModel> beacons;
+  final bool loading;
+  final List<TqBeaconItemModel> items;
 }
-```
 
-规则：
+class BeaconController extends StateNotifier<BeaconState> {
+  BeaconController(this.repository) : super(const BeaconState());
 
-- 字段全 `final`，类加 `@immutable`；
-- 列表字段必须 `List.unmodifiable(...)` 包一层，防止外部改内部数据；
-- 需要「部分更新」时在 State 上加 `copyWith`（存量部分页面靠重建对象，跟随所在模块现状即可）。
+  final BeaconRepository repository;
 
-### 第二步：Controller
-
-```dart
-class TQMyBeaconController extends StateNotifier<MyBeaconState> {
-  TQMyBeaconController() : super(MyBeaconState());
-
-  /// 请求信标列表数据，并刷新UI
-  Future<void> requestBeaconList({bool showLoading = false}) async {
-    final generation = ++_beaconListGeneration;      // 竞态保护
-    var result = await TQHttp.postWithConfig(
-      TQAddress.getMyBeacons, params: {...},
-      showLoading: showLoading, showErrorToast: true,
-    );
-    if (!mounted || generation != _beaconListGeneration) return;  // 销毁或过期直接丢弃
-    if (result.success) {
-      final list = TCheck<List>(result.data) ?? [];
-      _beaconList = list.map((e) => TqBeaconItemModel.fromJson(e)).toList();
-      _publish();                                    // 组装新 State 并 update
-    }
-  }
-
-  void _publish() {
-    state = MyBeaconState(
-      bluetoothUpperLimit: _bluetoothUpperLimit,
-      beacons: _beaconList,
-    );
+  Future<void> load() async {
+    state = BeaconState(loading: true, items: state.items);
+    final result = await repository.fetch();
+    if (!mounted) return;
+    state = BeaconState(loading: false, items: result);
   }
 }
 ```
 
-规则：
+State 应保持不可变、字段通常为 `final`，集合对外暴露不可修改视图；是否需要 `copyWith`、深拷贝或 freezed 由模块现有风格决定。不要为了“不可变”反复 `toJson/fromJson` 深拷贝可变模型，这可能丢失字段、类型或对象身份。
 
-- 改状态的唯一方式是给 `state` 赋一个**新的** State 对象；
-- 异步回调里第一件事检查 `if (!mounted) return;`；
-- 连续触发同一请求的场景用 generation 计数防旧响应覆盖新响应；
-- UI 事件方法可以带 `BuildContext`（如弹窗跳转），但网络逻辑不要依赖 context。
-
-### 第三步：Provider 注册
+异步请求可能并发时，用 generation、请求 id 或取消机制防止旧响应覆盖新响应：
 
 ```dart
-// state/beacon/my_beacon_provider.dart
-import 'package:riverpod/riverpod.dart';
-import '../../controller/beacon/tq_my_beacon_controller.dart';
-
-final myBeaconProvider =
-    StateNotifierProvider.autoDispose<TQMyBeaconController, MyBeaconState>(
-      (ref) => TQMyBeaconController(),
-    );
+final generation = ++_generation;
+final result = await repository.fetch();
+if (!mounted || generation != _generation) return;
+state = state.copyWith(data: result);
 ```
 
-- 页面级状态：`autoDispose`（离开页面自动释放）。
-- 全局/跨页共享状态（如设备目录 `deviceCatalogProvider`）：不加 autoDispose，由 session 重置统一清理。
-- 文件放 feature 包 `src/state/` 下，一个 provider 一个文件或按域合并均可，跟随模块现状。
-
-## 2. 页面接线模式【标准写法】
-
-外层薄壳 ConsumerWidget + 内层纯展示 View（范例 `tq_my_beacon.dart`）：
+## 3. Widget 接线
 
 ```dart
-class TQMyBeacon extends ConsumerWidget {
-  const TQMyBeacon({super.key});
+class BeaconPage extends ConsumerWidget {
+  const BeaconPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return _TQMyBeaconView(
-      state: ref.watch(myBeaconProvider),                    // 订阅 → 自动刷新
-      controller: ref.read(myBeaconProvider.notifier),       // 取实例调方法
-    );
-  }
-}
-
-class _TQMyBeaconView extends StatelessWidget {
-  const _TQMyBeaconView({required this.state, required this.controller});
-
-  final MyBeaconState state;
-  final TQMyBeaconController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: TQAppBar(title: '我的信标'.tr),
-      body: ListView.builder(
-        itemCount: state.beacons.length,
-        itemBuilder: (_, i) => TQBeaconItemWidget(
-          item: state.beacons[i],
-          onTap: () => controller.onBeaconTap(context, state.beacons[i]),
-        ),
-      ),
-    );
+    final state = ref.watch(beaconProvider);
+    final controller = ref.read(beaconProvider.notifier);
+    return BeaconView(state: state, onReload: controller.load);
   }
 }
 ```
 
-要点：
+- `watch` 用于需要响应变化的 UI；
+- `read` 用于事件回调、读取 controller 或一次性依赖；在 build 中 read controller 本身是合理的，不能把它误说成“build 禁止 read”；
+- `select` 用于只订阅 State 的一个字段；
+- `listen` 用于 toast、跳转等副作用，不代替 UI 渲染。
 
-- **watch 只出现在最外层壳**，内层 View 是普通 StatelessWidget，便于复用和测试；
-- **局部精细监听（Riverpod 性能优化）**：若页面或子组件只关心 State 中的某一个字段，使用 `select` 避免无关字段变化触发整页重绘：
-  ```dart
-  // 只有 upperLimit 改变时才触发此组件 build
-  final limit = ref.watch(myBeaconProvider.select((s) => s.bluetoothUpperLimit));
-  ```
-- 需要局部监听副作用（toast/跳转）时用 `ref.listen(provider, (prev, next) {...})`；
-- **资源成对释放规范（防内存泄露）**：
-  若页面使用 `ConsumerStatefulWidget`，所有在 `initState` 或属性中创建的资源必须在 `dispose` 中显式释放：
-  ```dart
-  @override
-  void dispose() {
-    _textController.dispose();
-    _focusNode.dispose();
-    _tabController.dispose();
-    _streamSubscription?.cancel();
-    super.dispose();
-  }
-  ```
-- **生命周期防修改红线（极其重要，违者必崩）**：
-  - **严禁在 `initState` 或 `build` 阶段直接同步触发修改 Provider 状态的方法**（例如在 `initState` 里直接调 `controller.fetchData()`，且方法第一句同步执行了 `state = state.copyWith(...)`），否则会触发 Flutter 运行时严重崩溃：`Tried to modify a provider while the widget tree was building.`！
-  - **唯一正确写法**：必须包裹在 `WidgetsBinding.instance.addPostFrameCallback` 中，将修改推迟至首帧渲染挂载完成之后：
-  ```dart
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      ref.read(myBeaconProvider.notifier).requestBeaconList();
-    });
-  }
-  ```
-- 读一次不订阅用 `ref.read`；禁止在 build 里用 read 订阅数据。
+## 4. 生命周期
 
-## 3. 状态分发与穷尽匹配（Pattern Matching）
+- Widget 跨 `await` 更新 UI 或使用 context 前检查 Widget 自身的 `mounted`；
+- StateNotifier/Notifier 回调检查的是 provider 实例自身的生命周期；
+- 不在 `build` 中同步修改 Provider；
+- `initState` 是否需要 post-frame 取决于初始化动作。若会同步修改当前 build 中正在监听的 Provider，使用 post-frame、provider 初始化或 `ref.listen`，并避免重复请求；不是所有初始化都必须机械包一层 `addPostFrameCallback`；
+- Controller、TextEditingController、FocusNode、TabController、StreamSubscription 等由 Widget 创建的资源在 `dispose` 释放。
 
-处理复杂请求状态（加载中/成功/失败/空数据）或业务状态分支时，推荐用 Dart 3 Switch 表达式保证**穷尽匹配**，杜绝漏写状态导致界面卡死。空态用现成的 `TQNoDataWidget`（注意 `tipStr` 是必填参数）：
+## 5. 登录态重置
 
-```dart
-Widget _buildBody(BuildContext context) {
-  return switch (status) {
-    PageStatus.loading => const EightRectLoading(),          // core_ui 加载动画
-    PageStatus.empty   => const TQNoDataWidget(tipStr: ''),  // core_ui 空态
-    PageStatus.error   => TQNoDataWidget(tipStr: '加载失败，请重试'.tr),
-    PageStatus.success => _buildContent(context),
-  };
-}
-```
+新增非 `autoDispose`、包含用户数据或会话缓存的 Provider 时，检查
+`apps/tuqiang_app/lib/app/session/session_reset_registry.dart`。feature 可提供自己的 participants，由 app 聚合；不要把 feature 直接反向依赖 app。
 
-## 4. 登录态重置【容易漏，必做】
+退出登录后的验证至少覆盖：用户 A 产生数据 → 退出 → 用户 B 登录 → 不应看到 A 的缓存。全局单例与 Riverpod 并存时，先确认已有 coordinator 的清理路径，避免重复实现。
 
-换账号/退出登录时所有全局缓存必须清空。机制：`apps/tuqiang_app/lib/app/session/session_reset_registry.dart` 汇总各 feature 的 participants。
+## 6. 测试与验证
 
-feature 包内提供：
-
-```dart
-// src/session/feature_xxx_session_resetters.dart
-class FeatureXxxSessionResetters {
-  static final participants = <SessionResetParticipant>[
-    SessionResetParticipant(
-      name: 'xxx',
-      actions: [
-        (container) => container.invalidate(myXxxGlobalProvider),
-      ],
-    ),
-  ];
-}
-```
-
-然后在 app 的 `defaultSessionResetParticipants` 里追加 `...FeatureXxxSessionResetters.participants`。
-**新增任何非 autoDispose 的全局 provider 都必须注册**，否则会出现 A 用户数据泄露给 B 用户的事故。
-
-## 5. 全局单例并存说明
-
-项目仍有少量静态单例（`TQGlobalModel.shared`、`TQI18nManager` 等）与新 Riverpod 并存。规则：
-
-- 新代码一律走 Riverpod；
-- 不要在 Provider 外部随手读全局单例再缓存到变量；
-- 语言切换等会引发大面积缓存的动作已有 `LanguageChangeCoordinator.clearCache` 统一处理，别自己另写一套。
-
-## 6. 验证方式
-
-```powershell
-dart run tool/project.dart analyze standard
-```
-
-涉及全局 provider 的改动，额外自测：登录 → 操作 → 退出 → 换账号登录，确认无残留数据。
+- StateNotifier/Notifier：成功、失败、空数据、并发、销毁后回调；
+- Provider：作用域、autoDispose、override 和 session reset；
+- Widget：用户可观察的 loading/empty/error/content、按钮和导航；
+- 公共状态或 session 变化：standard/OHOS analyze，并按 [testing.md](testing.md) 选择 migration/contract test。

@@ -90,7 +90,7 @@ class SharedWebviewBridge {
 ## 3. 三方库与插件选型顺序
 
 1. **纯 Dart 库**（无平台通道）：两端通用，正常引入；
-2. 有官方/社区 ohos 适配版的库：标准端引原版，`apps/ohos/pubspec.yaml` 用 `dependency_overrides` 覆盖为 ohos 版（git 源如 `openharmony-tpc/flutter_packages.git` 或 `packages/adapter/` 内封装）；
+2. 有官方/社区 ohos 适配版的库：标准端引原版，`apps/ohos/pubspec.yaml` 用 `dependency_overrides` 覆盖为 ohos 版（git 源如 `openharmony-tpc/flutter_packages.git` 或 `packages/adapter/`、`packages/core/*_ohos/` 内封装）；
 3. 项目自研 tq_* 插件：优先用（tq_push/tq_map/tq_log/tq_filemanage/core_blue…），它们内部已含多端原生实现；
 4. 都没有：需求方评估 → 新建 plugin 并按现有 tq_* 插件结构补 android/ios/(ohos) 三份原生代码。
 
@@ -111,7 +111,7 @@ class SharedWebviewBridge {
 - ❌ 在公共包写 `Platform.isOhos` → CI 边界挂；
 - ❌ 只跑 standard analyze 就提交 → ohos 端编译红；
 - ❌ 加依赖忘了鸿蒙 override → ohos pub get 失败或运行时 MissingPluginException；
-- ❌ MethodChannel 新通道只在 Android/iOS 实现 → 鸿蒙调用无响应（新通道需在 apps/ohos 对应插件里补实现）；
+- ❌ 公共代码新增需要三端的 MethodChannel，却只实现 Android/iOS → 鸿蒙调用无响应；如果能力明确是 standard-only，则应在 owner、pubspec 和调用路径中明确隔离，而不是默认声称三端可用；
 - ❌ 以为「包在 override 里 = 该能力三端已验证」→ override 只保证能编译注册，**具体 scheme/行为仍需真机验证**。例：`url_launcher` 鸿蒙版（`url_launcher_ohos.har`）对 `tel:` 拨号、`mailto:` 的支持与 Android/iOS 不保证一致，仓库内此前无 `tel:` 先例，首次使用必须鸿蒙真机实测；
 - ✅ 不确定时先看同类功能怎么做的（搜仓库里 `AppTargetConfig.isOhos` 的现有用法），再动手。
 

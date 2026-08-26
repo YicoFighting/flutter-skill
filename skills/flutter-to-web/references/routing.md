@@ -1,7 +1,7 @@
 # 路由导航 · 前端深度对照表
 
 > 主文档见 [../SKILL.md](../SKILL.md)。本文件展开 §1 的「路由导航」部分。
-> Flutter 世界里 `go_router` 就是 Vue Router / React Router 的亲兄弟，配置思路一模一样。
+> 先看代码实际使用哪套路由。途强项目当前主要是 `MaterialApp.routes` + `onGenerateRoute` + `Navigator.pushNamed`；只有代码确实出现 `go_router` 时，才按 Vue Router / React Router 对照。
 
 ## 1. 概念对照表
 
@@ -42,14 +42,16 @@ final router = GoRouter(
 大白话总结：**「这就是一份带登录守卫的路由表：`/` 到首页，`/pet/:id` 到详情页并把 URL 上的
 id 传给组件。跟你在 Vue Router 写 `routes + beforeEach` 没有任何本质区别。」**
 
-## 3. 命名路由（老项目常见）
+## 3. 途强项目的命名路由
 
 ```dart
 Navigator.pushNamed(context, '/detail', arguments: pet.id);   // ≈ router.push，参数塞 arguments 里
 ```
 
-老项目大量用字符串命名路由：先在 `MaterialApp.routes` / `onGenerateRoute` 注册名字，
-再按名字跳转——相当于「先在路由表登记 path，才能 `push`」。新项目官方推荐 go_router。
+途强在 `apps/tuqiang_app` 中大量使用字符串命名路由：先在
+`MaterialApp.routes` / `onGenerateRoute` 注册名字，再按名字跳转。当前 app 由
+`AppRouters` 聚合各 feature router，新增页面应先确认 owner，不能因为通用教程推荐
+`go_router` 就改变现有路由体系。
 
 ## 4. 深链与 Web URL
 
@@ -63,3 +65,12 @@ go_router 天然支持浏览器地址栏和 App 冷启动直达某页（deep lin
 | pop 之后页面数据没刷新 | 上个页面没重新 watch；回来自动刷新要用 `await context.push()` 后手动 invalidate |
 | 弹窗里的 context 跳转失败 | Dialog 是另一棵子树，拿不到路由上下文；用全局 navigatorKey（= router 实例提到模块顶层） |
 | Web 地址栏出现 `#/` | 默认 hash 路由策略，≈ Vue Router 的 `createWebHashHistory` |
+
+## 6. 途强命名路由解释检查
+
+解释途强命名路由时还要说明：
+
+- 路由字符串是兼容契约，历史拼写、参数类型、返回值和栈行为不能无意修改；
+- 需要检查 feature router、app alias、`nativeRouters`、route effect、定位刷新和防截屏集合；
+- 路由 owner 应唯一，避免 feature 和 app 同时保留两个 builder；
+- 复杂迁移要补 route contract test，而不是只确认 analyzer 通过。

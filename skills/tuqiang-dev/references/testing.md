@@ -1,130 +1,42 @@
-# 测试规范与提测交付标准（testing）
+# 测试与验证规范
 
-在 AI 辅助编码的大规模应用背景下，为了防止 AI 产生逻辑幻觉、保证交付质量，并为测试团队提供可追溯的验收依据，本规范定义了 **代码级测试伴生** 与 **提测交付单** 标准。
+测试围绕行为和风险编写，不按“每改一个文件就配一个测试文件”机械生成，也不把未询问用户当成禁止测试的理由。
 
----
+## 1. 选择测试层级
 
-## 1. 核心铁律：测试文件按需触发原则
+| 变更 | 默认验证 |
+|---|---|
+| Model、JSON、参数解析 | Model 单测，覆盖缺字段、类型异常和 null 语义 |
+| Controller、Notifier、Repository | 单测，覆盖成功、失败、空数据、重复请求和销毁后的回调 |
+| 路由、参数、返回值、route effect | route contract test，检查字符串、owner、builder 和关键副作用 |
+| 关键页面、表单、加载/空态/错误态 | Widget test；只测用户可观察行为 |
+| 权限、MethodChannel、OHOS override、系统能力 | 静态边界检查 + 受影响端行为验证，必要时真机测试 |
+| 文档、注释、纯格式或无行为重命名 | 不强制新增测试，执行 diff 和编码检查即可 |
 
-> ⚠️ **【强制红线】**：
-> 1. **事前必问**：在需求调研与方案对齐阶段（阶段一/阶段二），AI **必须主动向用户提问是否需要生成测试文件/用例**；
-> 2. **未明确同意严禁生成**：若用户明确表示“不需要”，或者未明确回答需要测试内容，AI **严禁擅自生成任何测试文件**，避免增加项目体积和无谓的维护成本；
-> 3. **一旦确认全程伴生**：若用户**主动提及**需要测试文件，或在询问中明确回复“需要”，则在后续**每一次代码新增或修改后，AI 必须强制同步生成/修改对应的测试文件（`test/`）**，并在交付时出具《提测交付单》。
+测试应放在实际 package 的 `test/` 下，并通过公开 barrel/API 访问被测包；包外不要 import 另一个 feature 的私有 `src/**`。测试 fixture 和 fake 应保持与真实接口结构一致，不要把假 URL 或延时假数据放进生产 Repository。
 
----
+## 2. 途强项目的测试入口
 
-## 2. 自动化测试分层与命名规范
+`dart run tool/project.dart test <standard|ohos>` 只是对对应 app 目录调用 Flutter test。它不等于完整迁移测试。
 
-在 `packages/feature/feature_xxx/` 或对应 package 下，测试文件必须镜像对应 `lib/src/` 的目录结构：
+完整迁移测试由 `tool/run_migration_tests.ps1` 遍历 app、core、feature 和 shared package，并按 tracked lockfile 决定是否使用 `--enforce-lockfile`：
 
-```text
-packages/feature/feature_auth/
-├── lib/
-│   └── src/
-│       ├── model/login_param.dart
-│       ├── notifier/contact_us_notifier.dart
-│       └── page/contact_us_page.dart
-└── test/
-    ├── model/login_param_test.dart             # Model 序列化与边界测试
-    ├── notifier/contact_us_notifier_test.dart   # 业务逻辑与状态流转单测
-    └── page/contact_us_page_test.dart          # 关键 Widget 渲染与事件测试
+```powershell
+pwsh .\tool\run_migration_tests.ps1 -FlutterExecutable <对应端 Flutter 可执行文件>
 ```
 
-### 分层测试编写标准
+如果只改一个 package，可以先在该 package 运行针对性测试；如果改了公共包、路由、资源、i18n manifest 或迁移边界，再运行：
 
-| 测试类型 | 适用对象 | 关注重点 |
-|---|---|---|
-| **单元测试 (Unit Test)** | Notifier、Controller、Service、Utils | 正常业务流、错误分支、空数据/异常边界、状态切换 |
-| **模型测试 (Model Test)** | Data Model、Request/Response Param | `fromJson`/`toJson` 解析、空字段容错、默认值 |
-| **组件测试 (Widget Test)** | 关键页面、核心表单、复合组件 | 关键文案展示、按钮点击响应、加载中状态、禁用状态 |
-
----
-
-## 3. 标准测试代码模板
-
-### ① 业务逻辑层测试（Notifier / Riverpod）
-```dart
-import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:feature_auth/src/notifier/contact_us_notifier.dart';
-
-void main() {
-  group('ContactUsNotifier 业务逻辑测试', () {
-    late ContactUsNotifier notifier;
-
-    setUp(() {
-      notifier = ContactUsNotifier();
-    });
-
-    test('【正常流】初始化时状态应包含默认联系方式', () {
-      expect(notifier.state.phoneNumber, isNotEmpty);
-      expect(notifier.state.isLoading, isFalse);
-    });
-
-    test('【异常/边界值】当号码为空时调用拨打应返回 false 并提示错误', () async {
-      final result = await notifier.makePhoneCall('');
-      expect(result, isFalse);
-    });
-  });
-}
+```powershell
+pwsh .\tool\check_migration_boundaries.ps1
 ```
 
-### ② 数据模型解析测试（Model）
-```dart
-import 'package:flutter_test/flutter_test.dart';
-import 'package:feature_auth/src/model/contact_info_model.dart';
+Standard/OHOS 的完整测试和构建由 CI 负责时，本地可以只跑项目规定的静态检查，但交付说明必须写清楚哪些测试、构建或真机验证未执行。
 
-void main() {
-  group('ContactInfoModel 序列化测试', () {
-    test('【正常流】正确解析合法 Json 数据', () {
-      final json = {'phone': '400-123-4567', 'service_time': '9:00-18:00'};
-      final model = ContactInfoModel.fromJson(json);
-      expect(model.phone, '400-123-4567');
-    });
+## 3. 测试内容要求
 
-    test('【边界容错】缺少字段时应安全降级，不抛出异常', () {
-      final json = <String, dynamic>{};
-      final model = ContactInfoModel.fromJson(json);
-      expect(model.phone, isEmpty);
-    });
-  });
-}
-```
-
----
-
-## 4. 《需求提测交付单》标准模板
-
-当开启测试交付约束后，AI 在交付阶段必须生成 Markdown 格式的提测单，供测试人员快速验收：
-
-```markdown
-# 【提测交付单】[需求/Bug 简要名称]
-
-- **关联需求/任务**：[例如：企业登录支持联系我们]
-- **开发分支**：feature/xxx
-- **交付时间**：YYYY-MM-DD
-- **变更文件清单**：
-  - `packages/feature/feature_xxx/lib/src/page/xxx_page.dart` (新增/修改)
-  - `packages/feature/feature_xxx/lib/src/notifier/xxx_notifier.dart` (新增/修改)
-
----
-
-## 1. 自动化测试执行结果
-- [x] **测试文件**：`packages/feature/feature_xxx/test/...`
-- [x] **本地验证命令**：`dart run tool/project.dart test standard` (全量 PASS)
-
----
-
-## 2. 核心功能与测试用例清单（供测试验收）
-
-| 序号 | 测试场景 / 功能点 | 前置条件 / 输入 | 预期结果 | 自测状态 | 边界/异常说明 |
-| :--- | :--- | :--- | :--- | :---: | :--- |
-| 1 | [正向主流程] | [如：进入页面点击拨打] | [如：正常调起系统拨号盘] | ✅ PASS | Android / iOS / 鸿蒙三端验证 |
-| 2 | [异常/边界值] | [如：网络断开/号码为空] | [如：友好 Toast 提示，不崩溃] | ✅ PASS | 防 Crash 保护 |
-| 3 | [多语言/适配] | [如：切换英文/大字体] | [如：文案完整无溢出] | ✅ PASS | 检查 9 语言与小屏机型 |
-
----
-
-## 3. 关联影响与回归建议
-- **潜在风险点**：[例如：调整了登录页底部弹性布局，建议在小屏幕手机上回归键盘弹起遮挡问题]
-```
+- 不只测 happy path：至少考虑空响应、类型异常、网络失败、重复操作、页面离开和语言切换；
+- 测试异步逻辑时等待明确状态或 future，不使用无意义的固定 sleep；
+- Provider 测试使用项目实际 Provider 类型和 `ProviderContainer`/override，不能把 StateNotifier 模板套到 Notifier；
+- Widget 测试优先验证文案、可见状态、按钮行为和导航结果，不测试 Flutter 内部实现细节；
+- 只有当用户或仓库流程要求提测单时才生成提测单，并据实记录执行结果，不能预填 PASS。

@@ -1,139 +1,54 @@
-# 异步、网络与序列化 · 前端深度对照表
+# 异步与网络 · Web 深度对照
 
-> 主文档见 [../SKILL.md](../SKILL.md)。本文件展开 §1 的「异步与网络」部分。
+## 1. 先识别项目封装
 
-## 1. 异步模型对照表
+在 D:/Code/tuqiang 中，业务请求优先看 `core_http` 的 `TQHttp`、`ResultModel`、
+`TCheck<T>`、`TQAddress` 和 feature 内的 endpoint/repository。只有源码真的直接调用
+`dio`、`http` 或其他 client 时，才按裸 client 解释。
 
-| JS / TS | Dart | 大白话 |
+| Dart/Flutter | Web 近似 | 解释重点 |
 |---|---|---|
-| `Promise<T>` | `Future<T>` | 一个"未来才有结果"的盒子 |
-| `async / await` | `async / await` | 写法几乎逐字符相同 |
-| `Promise.all([...])` | `Future.wait([...])` | 并发跑多个，全好了再继续 |
-| `.catch(e => ...)` | `try { } on Exception catch (e) { }` | Dart 用 try/on/catch，不用 .then 链 |
-| 微任务队列 | 事件循环（单线程 isolate） | 同样是单线程 + 消息队列，没有多线程心智负担 |
-| Web Worker | `Isolate` | 真·多线程，但一般业务碰不到 |
+| `Future<T>` | `Promise<T>` | 最终完成一次，不是响应式状态本身 |
+| `async/await` | `async/await` | 语法相近，但仍要处理 Dart 类型和异常 |
+| `Stream<T>` | RxJS Observable | 可以持续推送多个值，需要订阅和释放 |
+| `TQHttp` | 项目统一 axios/fetch 封装 | 除请求外还承接 token、loading、错误和日志 |
+| `ResultModel` | 统一响应对象 | 先判断 `success`，再读取 `desc/data` |
+| `TCheck<T>` | 运行时 schema 收窄 | 把动态响应安全转换成业务类型 |
 
-结论：**「你会 JS 的 async/await 就会 Dart 的，连关键字都懒得换。」**
+## 2. 请求到页面的链路
 
-## 2. 网络请求对照表
-
-| JS | Dart | 说明 |
-|---|---|---|
-| `axios` | `dio` | 拦截器、超时、取消 token 全都有，企业项目标配 |
-| `fetch` | `http` 包 | 官方轻量版，够用但裸 |
-| `axios.create({ baseURL, timeout })` | `Dio(BaseOptions(baseUrl:, connectTimeout:))` | |
-| 拦截器 `interceptors.request` | `dio.interceptors.add(InterceptorsWrapper(...))` | 塞 token、统一报错都在这 |
-| 取消请求 AbortController | `CancelToken` | |
-
-```dart
-final dio = Dio(BaseOptions(baseUrl: 'https://api.example.com', connectTimeout: 10.s));
-dio.interceptors.add(InterceptorsWrapper(
-  onRequest: (opt, handler) {
-    opt.headers['token'] = getToken();     // ≈ axios 拦截器塞 token
-    handler.next(opt);
-  },
-));
-final res = await dio.get('/users');        // res.data 直接就是解析好的 JSON
+```text
+Widget 触发事件
+  → Controller/Notifier
+  → Repository 或 TQHttp
+  → ResultModel
+  → TCheck<T> / fromJson
+  → State 更新
+  → ref.watch 的 Widget 重建
 ```
 
-## 3. JSON 序列化：最大的心智差异
+解释时不要把“请求完成”直接等同于“页面更新”：中间还可能有 Provider 缓存、并发丢弃、
+错误状态和 Widget/Notifier 已销毁等情况。
 
-JS 对象天生就是字典，Dart 类型严格，所以**必须手写（或生成）转换函数**：
+## 3. 序列化
+
+`fromJson` 类似把后端 JSON 映射成有类型的 TypeScript 对象，但 Dart 通常需要手写工厂：
 
 ```dart
-class User {
-  final String name;
-  const User({required this.name});
-
-  factory User.fromJson(Map<String, dynamic> j) => User(name: j['name']);  // ≈ JSON.parse 后的整形
-  Map<String, dynamic> toJson() => {'name': name};                          // ≈ JSON.stringify 前的定制
+factory User.fromJson(Map<String, dynamic> json) {
+  return User(name: TCheck<String>(json['name']));
 }
 ```
 
-大白话：**「fromJson/toJson 就是手动版 `JSON.parse/stringify`。嫌手写烦就上
-`json_serializable` 自动生成，≈ 写个 TS interface 让工具帮你造转换函数。」**
+`toJson` 是反方向映射。是否过滤 null 取决于接口契约；不要解释成所有请求都必须
+“删掉 null”。
 
-安全取值习惯：后端可能给 null 时用 `j['name'] as String?` 接住，
-等价于 TS 可选链的心智——「别信接口，先判空」。
+## 4. 生命周期和错误
 
-## 4. Dart 请求参数组装语法糖（前端大白话）
+- `await` 前后可能页面已经离开，Widget 判断自己的 `mounted`，Notifier 判断自己的生命周期；
+- 多次请求可能乱序，项目常用 generation/request id 丢弃旧结果；
+- `catch` 不能静默吞错；页面通常需要回到可观察的 error/empty 状态；
+- `Future.delayed` 只表示人为延时，不等于真实网络请求。若代码出现它，先判断是测试/预览 fake 还是生产逻辑。
 
-在组装发给后端的请求体（`toJson`）或按渠道构建入参时，Dart 有两个非常常用的语法糖：
-
-### ① 集合内部 if（Collection If）
-在 Map 对象字面量内直接写 `if (xxx != null)`，只有条件满足时该属性才会被塞进对象：
-
-```dart
-Map<String, dynamic> toJson() {
-  return {
-    if (phone != null) 'phone': phone,
-    if (email != null) 'email': email,
-    if (serviceTime != null) 'serviceTime': serviceTime,
-  };
-}
-```
-
-> **前端等价写法**：相当于 JS 里的**对象展开运算符 + 三元表达式**：
-> ```javascript
-> const toJson = () => ({
->   ...(phone ? { phone } : {}),
->   ...(email ? { email } : {}),
->   ...(serviceTime ? { serviceTime } : {}),
-> });
-> ```
-
-### ② Switch 表达式（Dart 3 模式匹配）
-按渠道或类型直接作为对象表达式返回，无需写一堆 `case` 和 `break`：
-
-```dart
-Map<String, dynamic> toLoginParamsJson() {
-  return switch (type) {
-    OAuthType.wechat => {
-      if (wxOpenid?.isNotEmpty == true) 'wxOpenid': wxOpenid,
-    },
-    OAuthType.apple => {
-      if (appleId?.isNotEmpty == true) 'appleId': appleId,
-    },
-  };
-}
-```
-
-> **前端等价写法**：
-> ```javascript
-> function toLoginParamsJson() {
->   switch (this.type) {
->     case 'wechat': return { ...(this.wxOpenid ? { wxOpenid: this.wxOpenid } : {}) };
->     case 'apple':  return { ...(this.appleId ? { appleId: this.appleId } : {}) };
->   }
-> }
-> ```
-
-## 5. Stream：会持续推送的 Promise
-
-| 场景 | Future | Stream |
-|---|---|---|
-| 心智模型 | `Promise`（一次性） | RxJS `Observable`（多次推送） |
-| 典型用途 | 一次 HTTP 请求 | WebSocket、倒计时、定位轨迹、下载进度 |
-
-```dart
-Stream<int> countdown() async* {          // async* ≈ 生成器函数 function*
-  for (var i = 3; i > 0; i--) {
-    yield i;                               // 推一个值 ≈ observer.next(i)
-    await Future.delayed(const Duration(seconds: 1));
-  }
-}
-```
-
-消费端三选一：
-- `await for (final v in stream)` ≈ for-await-of；
-- `.listen((v) {...})` ≈ subscribe；
-- UI 里直接 `StreamBuilder` ≈ 订阅 + 模板渲染二合一。
-
-## 6. 常见坑速查
-
-| 现象 | 大白话解释 |
-|---|---|
-| `type 'Null' is not a subtype...` | 接口字段是 null 但你按非空接了；用可空类型 + 默认值兜底 |
-| `setState after dispose` | 组件已销毁还敢刷 UI；异步回来先判 `mounted`（≈ 清理过的 effect 别再 setState） |
-| await 卡死不返回 | 忘了 await 或者请求没走拦截器的 mock 分支，看 Network/日志确认 |
-
+一句话总结：这条链路就是“事件触发请求，把不可信 JSON 收窄成类型化数据，再写进
+Riverpod 状态让页面响应式更新”。

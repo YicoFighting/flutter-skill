@@ -5,6 +5,28 @@
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-08-26
+
+### Added
+- `flutter-to-web` 增加 D:/Code/tuqiang 项目事实层：以实际的 Riverpod 2.6.1、命名路由、TQHttp、core_i18n、.sc 和 core_ui 为解释上下文。
+- 两个 skill 增加事实来源优先级和协同边界：`tuqiang-dev` 负责项目技术决策，`flutter-to-web` 负责 Vue/React 视角的概念解释。
+
+### Changed
+- `skills/tuqiang-dev/SKILL.md`：将固定审批式流程改为按风险执行，补充当前/迁移目标区分、实际命令入口、lockfile 处理和验证矩阵。
+- `skills/tuqiang-dev/references/assets-guide.md`：修正 `TQAppBar`、package asset 路径写法、资源 owner 和 3.0x 现状，取消无依据的 2.0x 强制要求。
+- `skills/tuqiang-dev/references/testing.md`：改为按行为选择测试，补充 `run_migration_tests.ps1` 与 boundary runner 的真实职责。
+- `skills/tuqiang-dev/references/networking.md`：区分请求/响应 Model 的 null 语义，禁止生产假数据，改为 fake 注入和 TQHttp 边界说明。
+- `skills/tuqiang-dev/references/state-management.md`：反映 StateNotifier、NotifierProvider、FutureProvider 共存现状，细化 mounted、初始化和 session reset 规则。
+- `skills/tuqiang-dev/references/project-structure.md`、`routing.md`、`i18n.md`、`sizing-ui.md`、`compatibility.md`：按当前 feature owner、命名路由、9 语言、尺寸和三端边界校准。
+- `skills/tuqiang-dev/references/code-review-checklist.md`：删除低价值的导入/换行伪红线，保留异常、异步、类型、平台、资源和路由等高风险检查。
+- `skills/tuqiang-dev/references/new-feature-walkthrough.md`：改为最小实施清单，修正 i18n key 示例、测试入口和接口未就绪处理。
+- `skills/flutter-to-web/references/async-networking.md`、`state-and-riverpod.md`、`routing.md`、`layout-ui.md`：将通用类比改为兼容途强项目实际依赖和命名路由的解释。
+- 同步更新根 README、两个 skill README 和 package 元数据版本。
+
+### Fixed
+- 修正原先把 `dart run tool/project.dart test standard` 描述为完整迁移测试的问题。
+- 修正 `CommonAppBar`、英文 i18n key、生产 `Future.delayed` Mock、Riverpod “只允许 StateNotifier”以及 go_router 与途强命名路由的误导。
+
 ## [1.8.0] - 2026-08-25
 
 ### Added

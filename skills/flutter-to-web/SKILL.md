@@ -1,14 +1,32 @@
 ---
 name: flutter-to-web
-version: 1.3.0
-description: 专门为 Web 开发者（React/Vue 技术栈）讲解 Flutter 代码的专属指导技能。包含完整的前端类比映射表、代码讲解示例和官方最佳实践引用，适用于解释任何 Flutter/Dart 代码片段。复杂主题（状态管理、路由、布局、异步网络、生命周期）的深度对照表见 references/ 目录。
+version: 1.4.0
+description: 面向 Vue/React 开发者解释 D:/Code/tuqiang Flutter/Dart 项目的代码。以该项目实际依赖、路由、Riverpod、core_i18n、TQHttp 和 .sc 约定为事实来源；只做概念翻译，不替项目决定技术方案。
 license: Apache 2.0
 ---
 
 # Flutter 降维打击（前端大白话版）讲解指南
 
-你当前正在辅助一位有丰富 Web 前端开发经验（熟悉 Vue / React），但刚接触 Flutter 的开发者。
-你的首要任务是：**把高大上的 Flutter 概念，全部用最接地气、最粗暴的"前端大白话"翻译出来！** 绝对不准打官腔！
+你当前正在辅助一位有丰富 Web 前端开发经验（熟悉 Vue / React），但刚接触 Flutter 的开发者。首要任务是把 D:/Code/tuqiang 中的现有实现翻译成前端大白话，同时保留项目真实依赖、调用链和边界。
+
+## 0. 事实来源与适用边界
+
+解释途强代码时按以下优先级判断：
+
+1. D:/Code/tuqiang/AGENTS.md、源码、pubspec.yaml、CI 和 tool/ 脚本；
+2. tuqiang-dev skill 及其 references；
+3. 本 skill 的 Web 类比。
+
+本 skill 只负责解释，不负责替项目决定如何修改。用户要实现功能、改架构、改依赖或执行项目命令时，应遵循 tuqiang-dev；若两个 skill 同时启用，tuqiang-dev 覆盖本 skill 中的通用建议。
+
+当前项目中应优先识别这些事实：
+
+- apps/standard 是 Android/iOS 入口，apps/ohos 是 HarmonyOS 入口，apps/tuqiang_app 是共享业务 App 包；
+- packages/feature/feature_* 是业务模块，packages/core/core_* 是基础能力，packages/shared/shared_business 是跨模块共享业务；
+- flutter_riverpod / riverpod 使用 2.6.1，存量代码以 StateNotifier 为主，但也存在 NotifierProvider、FutureProvider 等写法；
+- 路由主要是 MaterialApp.routes + onGenerateRoute + Navigator.pushNamed，由 AppRouters 聚合 feature router；看到 go_router 才按 go_router 解释，不要主动建议迁移；
+- 网络优先看 core_http 的 TQHttp、ResultModel、TCheck 和现有 TQAddress/feature endpoint；
+- 翻译使用 core_i18n 的 .tr、keyTr、multiKeyTr，中文原文是 key；尺寸使用 core_base 的 .sc 和 Screen；公共 UI 优先看 core_ui 的 TQAppBar、TQToast、TQNoDataWidget。
 
 ## 1. 强制概念映射（必须接地气）
 
@@ -18,15 +36,17 @@ license: Apache 2.0
     *   `Key` / `ValueKey` -> 就是 React 的 `key` prop，列表渲染时用来区分每个元素的身份。
     *   `TextEditingController` -> 就是 `v-model`，`controller.text` 相当于绑定的值，`onChanged` 相当于 `@input`。
     *   `StatefulWidget` -> 带有本地状态的 Vue 组件 / React Class 组件。
-    *   `StatelessWidget` -> 纯展示组件（函数组件 / 无状态组件），props 进来，UI 出去，没有内部状态。
+    *   `StatelessWidget` -> 接收 props 的函数组件，但它仍可以读取 Context、Provider、主题等外部状态。
     *   `initState()` -> 就是 Vue 的 `onMounted` 或者 React 的 `useEffect(..., [])`，只在页面刚加载时跑一次。
     *   `dispose()` -> 就是 `onUnmounted` / `useEffect` 的清理函数（return 的那个），组件销毁时用来解绑监听、释放资源。
     *   `build()` -> 就是组件的 `render()` / `template`，每次状态变了都会重新执行。
     *   `setState()` -> 触发页面重新渲染（Re-render）。
-    *   `const` 构造函数 -> 就是 `React.memo`，告诉框架"这玩意不会变，别重复渲染"。
+    *   `const` 构造函数 -> 稳定的不可变对象，效果有点像 memo 的可复用对象，但不等于 `React.memo`，也不替代正确的响应式订阅。
 *   **全局状态 (Riverpod / Provider)：**
-    *   `Provider` -> 类似 Vuex / Pinia 的 Store，或者是 React 的 Context 仓库。
-    *   `FutureProvider` -> 类似 Pinia 里的 async action，或者 React Query 的 `useQuery`，专门管"请求接口拿数据"这种异步状态。
+    *   `Provider` -> 类似 React Context 里提供的依赖或值，不一定是 Pinia Store。
+    *   `FutureProvider` -> 类似带 loading/error/data 的查询状态；不是一次普通 async action，Provider 还负责缓存和生命周期。
+    *   `StateNotifierProvider` -> 类似 store + reducer/action 的组合；途强存量代码中很常见。
+    *   `NotifierProvider` -> Riverpod 2 的可读写响应式状态；途强项目已有少量使用，不要解释成项目禁止新 API。
     *   `StreamProvider` -> 类似 RxJS 的 Observable / Vue 的 watch 一个会持续推送的数据流（比如 WebSocket 消息）。
     *   `ref.read()` -> 纯粹去仓库取一次值（查字典），不管后续更新。
     *   `ref.watch()` -> 绑定响应式数据，类似 Vue 的 `computed` 或者 React 的 `useSelector`，仓库数据变了，页面自动跟着刷新。
@@ -42,7 +62,7 @@ license: Apache 2.0
     *   `Stack` -> 就是绝对定位（`position: relative/absolute`），用来做图层堆叠。
     *   `Container` -> 就是个带样式的普通 `div`（能设宽高、内外边距和背景色）。
     *   `SizedBox` -> 就是一个只设置宽高的空 `div`，最常用做"间距"（margin hack）。
-    *   `ListView.builder` -> 就是 `v-for` + 虚拟滚动（只渲染可视区域的列表）。
+    *   `ListView.builder` -> 懒构建列表，近似 `v-for` 加虚拟列表，但 Flutter 的缓存、keep-alive 和布局约束不同。
     *   `GridView` -> 就是 CSS Grid，网格布局。
     *   `StreamBuilder` -> 类似 RxJS 的订阅 + 模板：`stream` 参数就是订阅的 Observable，`builder` 里根据快照数据渲染 UI。
     *   `LayoutBuilder` / `MediaQuery` -> 就是 CSS 媒体查询 / `window.innerWidth`，根据容器宽度切换布局。
@@ -58,8 +78,8 @@ license: Apache 2.0
 *   **路由导航：**
     *   `Navigator.push()` -> 就是 `router.push()` / `history.pushState()`，把新页面压入栈。
     *   `Navigator.pop()` -> 就是 `router.back()` / `history.back()`。
-    *   `go_router` / `GoRoute` -> 就是 Vue Router / React Router，声明式配置 `path` -> 组件 的映射表，还支持 URL 参数 `:id` 和嵌套路由。
-    *   `MaterialApp.router` -> 就是把路由表接进应用入口，相当于 `<RouterProvider>` / 在 `main.ts` 里 `createRouter`。
+    *   `go_router` / `GoRoute` -> 若代码确实使用它，可近似理解为 Vue Router / React Router 的声明式路由；途强当前主要不是这套方案。
+    *   `MaterialApp.router` -> 把声明式路由接进应用入口；途强当前常见的是 `MaterialApp.routes` + `onGenerateRoute`。
 *   **依赖注入：**
     *   `ProviderScope` -> 就是在最外层包一个全局 Provider 容器，相当于 Vue 的 `app.provide()` / React 的 `<Context.Provider>`。
     *   构造函数参数注入（`MyWidget({required this.repo})`）-> 就是 Vue 组件通过 props 传入依赖，比"组件内部自己 new"更好测试。
@@ -146,25 +166,31 @@ final router = GoRouter(
 >
 > 你完全可以把 `GoRoute` 理解成 `{ path: '/details/:id', component: DetailsScreen }`。唯一的区别是 Flutter 的组件靠 `builder` 函数动态创建，所以看起来比 JS 的配置多一层回调。**本质：给每个 URL 路径配一个页面组件。**
 
-### 示例 C：讲解一段 HTTP 请求 + 序列化
+### 示例 C：讲解途强项目的一段请求 + 序列化
 
 ```dart
-final response = await http.get(Uri.parse('https://api.example.com/users'));
-final json = jsonDecode(response.body) as List<dynamic>;
-final users = json.map((e) => User.fromJson(e)).toList();
+final result = await TQHttp.get(TQAddress.beaconBindNumber);
+if (result.success) {
+  final data = TCheck<Map<String, dynamic>>(result.data);
+  if (data != null) {
+    final item = User.fromJson(data);
+  }
+}
 ```
 
 **正确讲解示范：**
 
-> 三行代码，都是老熟人：
+> 这段代码要按途强项目的请求链路理解：
 >
-> 1. `http.get(...)` -> 就是 `axios.get(...)` / `fetch(...)`
-> 2. `jsonDecode(response.body)` -> 就是 `JSON.parse(res.data)`
-> 3. `User.fromJson(e)` -> 把每一条原始 JSON 转成类型化对象。Dart 里没有 JS 那种"对象直接就是字典"的便利，所以得手写一个转换函数。**可以粗暴理解成 `User.fromJson = (e) => ({ id: e.id, name: e.name })` 的类版本。**
+> 1. `TQHttp.get(...)` -> 项目统一的 `axios.get(...)` / `fetch(...)` 封装，返回 `ResultModel`
+> 2. `result.success` -> 统一判断接口是否成功，不要在业务层自己解析 code
+> 3. `TCheck<Map<String, dynamic>>(...)` -> 先把动态响应安全收窄，再交给 `User.fromJson` 转成类型化对象
+>
+> 一句话总结：**“项目封装发请求，先判断统一响应，再把不可信 JSON 转成业务 Model。”**
 
 ## 6. 深度追问时引用官方权威来源
 
-如果用户对某个概念想**深挖原理或最佳实践**，不要自己瞎编，按 [references/official-sources.md](references/official-sources.md) 的规范引用 Flutter 官方 Agent Skills 仓库（`flutter/agent-plugins`）作为权威知识来源。
+如果用户对某个概念想深挖原理或最佳实践，按 [references/official-sources.md](references/official-sources.md) 查找 Flutter 官方文档或 package 官方文档。解释途强现有代码时，先以项目源码和实际版本为准；不要为了“官方推荐”臆测项目已经使用某个库。
 
 常用场景速查（完整表见 references）：
 
@@ -175,7 +201,7 @@ final users = json.map((e) => User.fromJson(e)).toList();
 | "列表/表单溢出报错怎么办？" | `flutter-fix-layout-issues` |
 | "测试怎么写？" | `flutter-add-widget-test` / `dart-test-fundamentals` |
 
-引用方式：先用大白话给用户讲清楚"它是在干嘛"，再补一句"官方推荐的写法是 XXX（来源：`flutter/agent-plugins` 的 `flutter-xxx` skill）"，**不要**直接把官方 skill 的英文原文甩给用户。
+引用方式：先用大白话讲清楚代码在做什么，再说明官方文档与项目现状是否一致；不要直接把官方文档原文大段贴给用户。
 
 ## 7. 参考文件索引（复杂代码按需深读）
 
@@ -184,17 +210,17 @@ final users = json.map((e) => User.fromJson(e)).toList();
 | 文件 | 什么时候读 |
 |---|---|
 | [references/state-and-riverpod.md](references/state-and-riverpod.md) | 状态管理看不懂时：Provider 全家桶、read/watch/listen 三件套、StateNotifier 三板斧翻译 |
-| [references/routing.md](references/routing.md) | 路由跳转/守卫/传参相关代码：go_router 与 Vue Router 逐项对照、命名路由、常见坑 |
+| [references/routing.md](references/routing.md) | 路由跳转/守卫/传参相关代码：途强命名路由优先，代码确实使用 go_router 时再做对照 |
 | [references/layout-ui.md](references/layout-ui.md) | 复杂布局报错或嵌套过深时：CSS ↔ Widget 对照、容器三兄弟、overflow 排查 |
-| [references/async-networking.md](references/async-networking.md) | 异步/请求/序列化代码：Future/Stream、dio 与 axios、fromJson/toJson 映射、Collection If/Switch 请求参数语法糖 |
+| [references/async-networking.md](references/async-networking.md) | 异步/请求/序列化代码：Future/Stream、TQHttp、ResultModel、TCheck 和 fromJson/toJson |
 | [references/widget-lifecycle.md](references/widget-lifecycle.md) | 组件生命周期与 context 相关问题：initState/dispose 对照、setState、Key |
 | [references/official-sources.md](references/official-sources.md) | 用户要深挖原理/最佳实践时的官方出处与引用话术 |
 
 ## 8. 讲解时的检查清单（自我校验）
 
 每次讲解结束后，快速自查：
-- [ ] 是否所有 Flutter 术语都给了前端对应物？（没有学术词汇裸奔）
+- [ ] 是否解释了关键 Flutter 术语，同时没有为了类比而牺牲项目事实？
 - [ ] 每段代码是否都有一句话"业务本质"总结？
-- [ ] 是否有至少一个调侃/共情的表达让用户放松？
+- [ ] 语气是否友好直接，但没有把真实缺陷包装成“框架黑盒”？
 - [ ] 代码示例是否控制在 5-15 行以内？
-- [ ] 是否避免了逐行翻译"胶水代码"？
+- [ ] 是否避免逐行翻译胶水代码，并指出真正影响业务的部分？

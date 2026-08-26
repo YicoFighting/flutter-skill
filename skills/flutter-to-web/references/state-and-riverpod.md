@@ -5,9 +5,13 @@
 
 ## 1. Provider 全家桶对照表
 
+途强项目使用 Riverpod 2.6.1。解释具体代码时先看实际 Provider 类型：
+存量业务大量使用 `StateNotifierProvider`，但不能把它说成项目唯一允许的 API；
+项目中也存在 `NotifierProvider`、`FutureProvider` 等写法。
+
 | Riverpod | Vue3 世界 | React 世界 | 一句话本质 |
 |---|---|---|---|
-| `Provider<T>` | 注入一个同步计算值 / 工具实例 | Context 里放个单例 | 「往仓库放一个现成的东西」（如 dio 实例） |
+| `Provider<T>` | 注入一个同步计算值 / 工具实例 | Context 里提供一个依赖 | 不一定是 Pinia store，例如 HTTP client 或配置 |
 | `FutureProvider<T>` | Pinia 的 async action | React Query 的 `useQuery` | 「声明一次接口调用，loading/error/data 全帮你管好」 |
 | `StreamProvider<T>` | `watch` 一个持续推送的数据流 | RxJS 订阅 + `useSyncExternalStore` | WebSocket、倒计时、定位轨迹这类"源源不断"的数据 |
 | `StateProvider<T>` | 一个 `ref()` 裸响应式变量 | `useState` | 最简单的可写状态（开关、选中 tab） |
@@ -82,4 +86,4 @@ class LoginPage extends ConsumerWidget {
 | `autoDispose` 是干嘛的 | 页面没人看了就自动销毁状态，≈ 组件卸载时清空对应 store 分片 |
 | `family` 是干嘛的 | 同一个 provider 按参数缓存多份，≈ `useQuery(['user', id], ...)` 按 key 缓存 |
 | 状态类为什么要 `copyWith` | Dart 没有 spread 更新对象的习惯用法，`copyWith(loading: false)` ≈ `{...state, loading:false}` |
-| 为什么在 `initState` 里调请求会报 `Tried to modify a provider...` 崩溃？ | **生命周期死锁**：组件正在首帧挂载计算 DOM 时，不能同步修改全局 Store。解决办法：用 `WidgetsBinding.instance.addPostFrameCallback((_) { ... })` 包一层（≈ `nextTick`），等首帧渲染完成后再触发。 |
+| 为什么在 `initState` 里调请求会报 `Tried to modify a provider...` 崩溃？ | 如果初始化同步修改了当前 build 正在监听的 Provider，Flutter 会阻止这种时机。可用 provider 自身初始化、`ref.listen` 或 `addPostFrameCallback` 推迟副作用；不是所有请求都必须机械包 post-frame。 |
