@@ -5,7 +5,8 @@
 ## 1. 先确认 owner 和现状
 
 - 找到所属 feature；新业务域才考虑新包；
-- 搜索相邻页面、route、Provider、asset、Repository、测试和 app 注入；
+- 先找公开 barrel/API 和已有复用入口，再搜索相邻页面、route、Provider、asset、Repository、测试和 app 注入；
+- 在目标 package 内选 2–4 个成熟同类实现；命名、目录、Provider、Model、Repository、Widget 分别按 [local-style-and-reuse.md](local-style-and-reuse.md) 记录依据；
 - 确认是新增、修复还是迁移，区分当前实现和迁移目标；
 - 涉及路由时记录旧字符串、arguments、返回值、栈行为和 native/route effect；
 - 涉及三端时记录 standard/OHOS 的依赖、override、原生能力和验证端。

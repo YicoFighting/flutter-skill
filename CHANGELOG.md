@@ -5,6 +5,46 @@
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-08-30
+
+### Added
+- `tuqiang-project-map` 新增 `references/project-root-discovery.md`：按用户路径、选中文件仓库和当前 workspace 解析 `<TUQIANG_ROOT>`，再用三端宿主、共享业务包、项目工具及四个 pubspec package identity 校验仓库；失败或多候选时请求确认，不扫描磁盘。
+- `flutter-to-web` 新增 `references/project-root-resolution.md`：优先复用项目地图的根目录结果，并保留兄弟 Skill 不可用时的独立源码定位能力；所有最终路径和行号均来自当前 checkout。
+- `tuqiang-dev` 新增 `references/local-style-and-reuse.md`：建立目标 package 的 2–4 个成熟同类样本、局部风格证据优先级、复用决策阶梯、反过度抽象规则及可执行 diff/重复入口检查。
+
+### Changed
+- `tuqiang-project-map` 升级至 1.1.0，明确定位为供教学与开发 Skill 使用的“项目事实与架构索引层”，输出分层、owner、状态/数据拓扑、公共封装、复用候选、同层样本与业务链证据；设备/定位仅作为按需读取的代表性链路。
+- `flutter-to-web` 升级至 1.6.0，默认从用户操作或页面入口开始，分别恢复事件/同步调用、异步数据、状态依赖/UI 重建三条链；每个关键状态必须说明定义、route/family/action 参数、key 身份、依赖、全部写入、读取消费与生命周期，并提供逐跳 Dart 证据及 Vue3/React 端到端代码。
+- `tuqiang-dev` 升级至 1.11.0，将“项目主流风格”收敛为同一子域/目标 package 的局部证据：优先真实调用方、测试和公开 API，不借需求统一 `TQ`/`Tq`/无前缀、状态架构或历史目录；实现遵循正确 owner、复用优先但不强行抽象、高内聚低耦合和最小影响面。
+- 根包升级至 1.11.0，并同步三个 Skill README、根 README、目录索引、职责图和 package 元数据。
+
+### Fixed
+- 移除三个 Skill、README、命令和输出示例中的机器绝对路径依赖，并统一独立降级时的候选优先级、五个结构标志、四个 package identity 与歧义停止条件，修复公司与家庭 checkout 不同或兄弟 Skill 缺失时的误检索风险。
+- 修复项目地图容易被误解为设备/GPS 专用 Skill 的职责偏差，明确它服务整个 monorepo 的架构分层、代码归属、通用能力、状态拓扑和业务索引。
+- 修复完整需求讲解仍可能围绕选中代码局部展开的问题，强制追到真实操作入口、数据边界、状态写入、响应式消费者和最终 Widget，并区分同步栈、异步流与重建链。
+- 修复“全仓统一代码风格”会带来的无关重构与协作噪音，改为按 owner 局部采样并拒绝纯转发 wrapper、模式开关胶水和无真实消费者的投机性公共抽象。
+- 修复国际化清理 owner 的歧义：`core_i18n` 只承载语言基础设施，Feature/shared owner 暴露自身缓存清理 primitive，App `LanguageChangeCoordinator` 负责跨 Feature 聚合与执行顺序。
+
+## [1.10.0] - 2026-08-30
+
+### Added
+- 新增 `tuqiang-project-map` 1.0.0 项目事实 Skill，按渐进披露拆分架构与依赖、模块职责、启动与路由、Riverpod 拓扑、设备/定位完整链路、基础设施与横切能力、需求追踪剧本。
+- `flutter-to-web` 新增 `references/full-flow-tracing.md`，建立“用户操作 → 调用链 → 数据源 → 状态写入 → 消费端 → 最终 UI”的金字塔输出契约，并强制给出实时绝对路径、行号、Dart 源码及 Vue3/React 端到端对照。
+- 两个原有 Skill 增加 `tuqiang-project-map` 的按需引用与源码直查降级能力，形成“项目事实层 → 教学解释层 / 开发执行层”的单向协同。
+
+### Changed
+- `flutter-to-web` 升级至 1.5.0：完整需求默认把选中代码当作检索锚点，分别追踪同步/异步调用链与状态重建链，展开 ProviderScope override、family key、全部写入源、全部消费者、生命周期和非 Riverpod 旁路。
+- `tuqiang-dev` 升级至 1.10.0：修改 Riverpod、路由、设备或异步逻辑前必须建立跨文件影响图，检查 family 相等性、根 Host 保活、并发保护、切设备、切语言与 session reset。
+- 依据 `D:/Code/Flutter` 当前源码重新整理三端壳、App composition root、Feature/Shared/Core/Plugin owner、命名路由、设备目录与定位状态、TQHttp、持久化、国际化和 `.sc` 缩放事实。
+- 三个 Skill 的 frontmatter 版本统一迁移到标准兼容的 `metadata.version`，同步更新根包至 1.10.0、三个 README、AGENTS 维护说明与 package 元数据。
+
+### Fixed
+- 修复所有生效文档仍指向不存在的旧项目路径 `D:/Code/tuqiang`，改为先解析并验证当前 monorepo，默认候选为 `D:/Code/Flutter`。
+- 修复全局同步规则硬编码不存在且无权限的 `C:/Users/admin`，改为当前操作系统用户的 `%USERPROFILE%/.gemini/config/skills`。
+- 移除“ProviderScope/main/路由等胶水直接跳过”“整份解释限制 5–15 行”和强制吐槽等会截断真实业务链的规则。
+- 修复 Riverpod “build 里只准 watch”绝对口诀，补全 family 参数作为实例缓存键、对象相等性、多写入源、autoDispose/keepAlive/invalidate 与实际根订阅语义；明确切设备时显式清理的是旧设备 core family 与目标设备残留 location context。
+- 修复 `keyTr` 示例错误：该 API 只替换 `{key}`，自定义命名占位符应使用 `multiKeyTr`；拆分资源字典 key、Flutter Locale 与后端 languageCode 三套语言标识；同时清理历史 CHANGELOG 中的异常控制字符。
+
 ## [1.9.0] - 2026-08-26
 
 ### Added
@@ -76,7 +116,7 @@
 - skills/tuqiang-dev/SKILL.md：
   - 在【阶段一：需求调研与反向拉扯】中新增「UI 设计源决策与蓝湖 MCP 接入【强制卡点】」；
   - 在【阶段五：交付与审查】Checklist 中增加 UI 设计源与切图自检卡点；
-  - 在【参考文件索引】中更新 ssets-guide.md 说明。
+  - 在【参考文件索引】中更新 assets-guide.md 说明。
 
 ### Changed
 - skills/tuqiang-dev 版本升至 1.6.0；

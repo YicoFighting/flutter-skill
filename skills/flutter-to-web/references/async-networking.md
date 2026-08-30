@@ -2,7 +2,7 @@
 
 ## 1. 先识别项目封装
 
-在 D:/Code/tuqiang 中，业务请求优先看 `core_http` 的 `TQHttp`、`ResultModel`、
+在按 [动态项目根目录协议](project-root-resolution.md) 验证的 `<TUQIANG_ROOT>` 中，业务请求优先看当前源码实际采用的 `core_http`、`TQHttp`、`ResultModel`、
 `TCheck<T>`、`TQAddress` 和 feature 内的 endpoint/repository。只有源码真的直接调用
 `dio`、`http` 或其他 client 时，才按裸 client 解释。
 
@@ -18,7 +18,7 @@
 ## 2. 请求到页面的链路
 
 ```text
-Widget 触发事件
+Widget / RouteObserver / 根 Host 触发
   → Controller/Notifier
   → Repository 或 TQHttp
   → ResultModel
@@ -28,7 +28,8 @@ Widget 触发事件
 ```
 
 解释时不要把“请求完成”直接等同于“页面更新”：中间还可能有 Provider 缓存、并发丢弃、
-错误状态和 Widget/Notifier 已销毁等情况。
+错误状态和 Widget/Notifier 已销毁等情况。项目也存在 Manager/缓存单例、Notifier 公开可变字段、
+`setState` 和直接 `TQHttp` 等旁路；应追到真正的数据载体，不能强行画成纯 Repository + Riverpod。
 
 ## 3. 序列化
 
@@ -47,8 +48,11 @@ factory User.fromJson(Map<String, dynamic> json) {
 
 - `await` 前后可能页面已经离开，Widget 判断自己的 `mounted`，Notifier 判断自己的生命周期；
 - 多次请求可能乱序，项目常用 generation/request id 丢弃旧结果；
+- 相同 in-flight 请求可能被合并，远程指令也可能通过 Timer 轮询后再回填同一 State；
 - `catch` 不能静默吞错；页面通常需要回到可观察的 error/empty 状态；
 - `Future.delayed` 只表示人为延时，不等于真实网络请求。若代码出现它，先判断是测试/预览 fake 还是生产逻辑。
+
+引用源码时可以展示 endpoint 常量名与请求职责，但不得复制 endpoint、Token、密钥、证书、签名或生产配置的具体值。
 
 一句话总结：这条链路就是“事件触发请求，把不可信 JSON 收窄成类型化数据，再写进
 Riverpod 状态让页面响应式更新”。

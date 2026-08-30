@@ -1,6 +1,6 @@
 # flutter-skills 仓库维护规范（AGENTS.md）
 
-你正在维护 `flutter-skills` 技能库仓库（收录 `flutter-to-web` 与 `tuqiang-dev` 两个专属 Agent Skill）。
+你正在维护 `flutter-skills` 技能库仓库（收录 `tuqiang-project-map`、`flutter-to-web` 与 `tuqiang-dev` 三个专属 Agent Skill）。
 
 ---
 
@@ -9,7 +9,7 @@
 凡涉及修改 `skills/` 下的任何技能内容、补充规范、新增参考文件或修复 Bug，**必须在同一次交付中联动完成以下 4 项工作**：
 
 1. **版本号递增（SemVer）**：
-   - 更新对应 `skills/<skill-name>/SKILL.md` frontmatter 中的 `version`（小改动升 patch，新功能/规范增补升 minor）。
+   - 更新对应 `skills/<skill-name>/SKILL.md` frontmatter 中的 `metadata.version`（小改动升 patch，新功能/规范增补升 minor）。
    - 同步更新根目录 `package.json` 的顶层 `version` 以及 `skills` 列表中对应项的 `version`。
 2. **详细更新 CHANGELOG.md（严禁覆盖历史版本标题）**：
    - 严格遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 格式。
@@ -19,7 +19,7 @@
 3. **同步更新 README.md**：
    - 若涉及版本号、目录结构、特性概览或新增 reference 文件索引，必须同步更新根目录 `README.md` 以及对应 skill 的 `README.md`。
 4. **全局自动同步（Sync to Global）**：
-   - 每次在工作区内完成 skill 修改后，必须自动将变更递归同步复制到系统全局配置目录 `C:\Users\admin\.gemini\config\skills\<skill-name>\`，确保全局生效。
+   - 每次在工作区内完成 skill 修改后，必须自动将变更递归同步复制到**当前操作系统用户**的 Gemini 全局配置目录 `%USERPROFILE%\.gemini\config\skills\<skill-name>\`（本机当前为 `C:\Users\yico\.gemini\config\skills\<skill-name>\`），确保全局生效；严禁硬编码另一个不存在或无权限的用户目录。
 
 ---
 

@@ -29,11 +29,12 @@ feature → shared_business / core / plugins / adapter
 
 1. 找页面当前唯一 builder、route、callback、asset 和 Provider 使用者；
 2. 判断能力是单 feature、跨 feature 还是基础设施；
-3. 查看目标包最近的同类目录和 barrel export；
-4. 检查包外引用、pubspec、测试、Android/iOS/OHOS 资源；
-5. 只迁移能证明 owner 已完整转移的内容，避免留下两套事实来源。
+3. 找目标 package 的公开 barrel/API 和已经存在的复用入口；
+4. 在同一子域与目标 package 抽样 2–4 个成熟同类实现，再看同层 sibling feature；
+5. 检查包外调用方、pubspec、测试、Android/iOS/OHOS 资源；样本冲突时优先当前 owner 中较新且有调用方或测试的模式；
+6. 只迁移能证明 owner 已完整转移的内容，避免留下两套事实来源。
 
-feature 内部目录可能是 `pages`、`page`、`controller`、`state`、`router`、`route_effects`、`callbacks` 等不同组合。目录规范是方向，不是要求把所有模块强行重排成同一脚手架。
+feature 内部目录可能是 `pages`、`page`、`controller`、`state`、`router`、`route_effects`、`callbacks` 等不同组合。同一业务域也可能同时存在 `TQ`、`Tq`、无前缀，或 `StateNotifier`、`ChangeNotifier` 等历史模式。目录与命名规范是局部证据，不是要求把所有模块强行重排成同一脚手架；具体采样和复用决策见 [local-style-and-reuse.md](local-style-and-reuse.md)。
 
 ## 3. 迁移边界
 
