@@ -1,6 +1,6 @@
 # flutter-to-web
 
-当前版本：1.6.0
+当前版本：1.6.1
 
 面向 Vue3 / React 开发者解释途强 Flutter 项目的教学 Skill。它会动态识别并验证当前 `<TUQIANG_ROOT>`，从用户操作或页面入口向下追到数据源和状态写入，再沿响应式依赖回到最终 UI；不依赖某台电脑的固定盘符或目录。
 
@@ -42,17 +42,18 @@
 - [Widget 生命周期](references/widget-lifecycle.md)
 - [官方来源](references/official-sources.md)
 
-## 与另外两个 Skill 的分工
+## 与另外三个 Skill 的分工
 
 - `tuqiang-project-map`：提供架构分层、模块 owner、公共能力、状态拓扑和业务链路索引，帮助模型快速组织源码上下文；
 - `flutter-to-web`：重新核验实时源码，用 Vue3/React 心智讲清事件、数据、状态与 UI 闭环；
 - `tuqiang-dev`：根据项目主流风格实施修改、复用现有抽象并完成验证。
+- `tuqiang-change-retrospective`：在变更完成后复用本 Skill 的对照讲解，结合 Git 因果生成学习复盘 Markdown。
 
 `tuqiang-project-map` 不可用时，本 Skill 会按动态根目录协议直接检索源码继续工作。设备选择、定位/GPS 只是地图中的一个领域案例，不是本 Skill 的固定职责。
 
 ## 安装
 
-推荐安装整个仓库，使三个 Skill 可以协同：
+推荐安装整个仓库，使四个 Skill 可以协同：
 
 ```bash
 /plugin marketplace add tuqiang/flutter-skill

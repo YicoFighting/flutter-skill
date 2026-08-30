@@ -1,6 +1,6 @@
 # flutter-skills 仓库维护规范（AGENTS.md）
 
-你正在维护 `flutter-skills` 技能库仓库（收录 `tuqiang-project-map`、`flutter-to-web` 与 `tuqiang-dev` 三个专属 Agent Skill）。
+你正在维护 `flutter-skills` 技能库仓库（收录 `tuqiang-project-map`、`flutter-to-web`、`tuqiang-dev` 与 `tuqiang-change-retrospective` 四个专属 Agent Skill）。
 
 ---
 

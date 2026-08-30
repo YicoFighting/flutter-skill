@@ -3,7 +3,7 @@ name: flutter-to-web
 description: 面向 Vue3/React 前端开发者解释途强 Flutter monorepo 的真实业务链路；当问题涉及页面入口、交互事件、异步请求、Riverpod family/状态、跨模块依赖或 UI 展示时，从当前仓库动态定位源码，输出可核验的端到端事件流、数据流、路径行号、最小 Dart 证据以及 Vue3 与 React 等价实现。只负责理解与讲解，不代替开发 Skill 修改代码。
 license: Apache 2.0
 metadata:
-  version: "1.6.0"
+  version: "1.6.1"
 ---
 
 # Flutter 业务链路讲解（Vue3 / React 视角）
@@ -23,7 +23,7 @@ metadata:
 
 `tuqiang-project-map` 是帮助理解源码的项目事实层，不是当前答案的替代品。它不可用、内容过期或链接不可读时，按根目录协议直接检索真实源码继续完成讲解。静态地图只用于缩小范围；文件、符号、依赖版本和行号必须在本次回答前重新核验。
 
-本 Skill 只负责理解与讲解。用户要求修改、测试、构建或评审代码时，讲解规则仍可使用，但开发决策、代码风格与验证交给 `tuqiang-dev`。
+本 Skill 只负责理解与讲解。用户要求修改、测试、构建或评审代码时，讲解规则仍可使用，但开发决策、代码风格与验证交给 `tuqiang-dev`。Bug 或需求完成后的 Git 因果、学习编排与 Markdown 落盘由 `tuqiang-change-retrospective` 负责，本 Skill 只向它提供 Flutter、Vue3、React 的链路解释能力。
 
 ## 2. 讲解模式
 

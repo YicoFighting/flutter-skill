@@ -5,6 +5,26 @@
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-08-30
+
+### Added
+- 新增 `tuqiang-change-retrospective` 1.0.0 变更复盘 Skill，支持 Bug、需求与混合三种完成后复盘模式；只在用户显式调用时运行，只创建学习 Markdown，不修改业务源码或 Git 历史。
+- 新增 `references/git-causality.md`：以修复前错误版本为调查基线，使用 status/diff/log `-S/-G`/blame/show 等只读证据，区分缺陷引入、问题暴露、修复改动与防线缺失，并按“已确认/高度可能/候选/无法确定”标注置信度。
+- 新增 `references/bug-retrospective.md` 与 `references/feature-retrospective.md`：分别提供 Bug 因果栈、排查/解决/预防剧本，以及需求价值金字塔、owner/取舍、输入输出血缘和事件/异步/状态/UI 三泳道复盘；混合模式可在一份需求文档中嵌入 Bug 卡。
+- 新增 `references/report-contract.md`：约束完整 Markdown 的模式化结构、默认 `docs/learning/` 路径、无覆盖命名、仓库相对源码证据、UTF-8 无 BOM、验证状态和初学者复习问题。
+- 新增 `agents/openai.yaml`，设置 `allow_implicit_invocation: false`，确保普通开发、解释或评审不会自动写入复盘文件。
+
+### Changed
+- 根包升级至 1.12.0，增加第 4 个 Skill 的 package 元数据、检索关键词、四 Skill 协作图、安装说明、显式调用模板、复盘验收清单与 FAQ。
+- `tuqiang-project-map` 升级至 1.1.1，明确向变更复盘提供当前 owner、调用链和状态拓扑事实；`flutter-to-web` 升级至 1.6.1，明确向复盘提供 Dart/Vue3/React 对照而不负责 Git 归因；`tuqiang-dev` 升级至 1.11.1，明确普通开发不自动生成复盘。
+- 新 Skill 默认把文章组织为“结论/价值 → 行为与规则 → 模块、状态与数据 → 源码、提交、测试证据”的金字塔；同步函数使用调用栈，异步请求与响应式 UI 更新改用独立时间泳道。
+- 根据 Bug 与需求双场景前向测试收敛输出契约：完整性以证据链闭环为准，同一事实和源码只展开一次，其他章节通过步骤号或小节引用，避免初学者复盘因模板重复而失控增长。
+
+### Fixed
+- 防止把 `git blame`、最近提交、作者、首次报错时间或“当前已经修好”直接写成历史 Bug 根因；引入/暴露/修复分别标注置信度，未提交改动明确记录为“当前工作区改动，尚无对应提交”，历史不足时保留未知边界。
+- 防止把 `await` 返回、Provider 通知和 Widget 重建错误描述为一条连续同步调用栈，并要求 Dart、Vue3、React 对照使用同一业务字段和步骤。
+- 防止复盘覆盖已有学习文档、写入机器专属绝对路径、复制整文件源码或泄露 endpoint、Token、证书与生产配置。
+
 ## [1.11.0] - 2026-08-30
 
 ### Added

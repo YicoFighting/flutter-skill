@@ -1,6 +1,6 @@
 # tuqiang-dev
 
-当前版本：1.11.0
+当前版本：1.11.1
 
 途强三端 Flutter monorepo 的专属开发、修复、测试与评审 Skill。它通过 `tuqiang-project-map` 的动态 `<TUQIANG_ROOT>` 协议核验当前 checkout，再按当前源码、目标 package 的局部风格、边界测试、统一工具和 CI 做最小可验证修改。
 
@@ -22,11 +22,12 @@
 - 国际化基础能力留在 `core_i18n`，各 Feature/shared owner 暴露自身缓存清理入口，App 的 `LanguageChangeCoordinator` 只做跨 Feature 聚合与顺序编排；
 - 项目架构、模块和真实业务流从 [`tuqiang-project-map`](../tuqiang-project-map/) 按需读取，避免在开发规范里重复一整套静态事实。
 
-## 三个 skill 的分工
+## 四个 skill 的分工
 
 - `tuqiang-project-map`：提供动态根目录解析、架构、模块职责、源码索引和端到端业务事实；
 - `flutter-to-web`：用金字塔结构、实时源码和 Vue3/React 代码解释业务链；
 - `tuqiang-dev`：决定改哪里、怎么改、三端风险和如何验证。
+- `tuqiang-change-retrospective`：在修复或需求完成后追溯 Git 因果，并生成可长期学习的复盘 Markdown。
 
 兄弟项目地图未安装时，本 skill 仍按同一协议从用户路径、选中/目标文件或当前 workspace 的 Git 根目录解析并校验 `<TUQIANG_ROOT>`；无法唯一确认时先请求确认，不扫描磁盘或猜测 checkout。
 

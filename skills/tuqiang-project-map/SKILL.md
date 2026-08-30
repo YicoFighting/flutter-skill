@@ -1,9 +1,9 @@
 ---
 name: tuqiang-project-map
-description: 为途强三端 Flutter monorepo 提供可核验的项目事实与源码索引；当用户询问仓库架构、模块 owner、状态/数据拓扑、通用封装或业务链路，或 flutter-to-web、tuqiang-dev 需要这些项目上下文时使用。负责提供证据与归属依据，不承担 Vue3/React 教学、实现方案决策或代码修改。
+description: 为途强三端 Flutter monorepo 提供可核验的项目事实与源码索引；当用户询问仓库架构、模块 owner、状态/数据拓扑、通用封装或业务链路，或 flutter-to-web、tuqiang-dev、tuqiang-change-retrospective 需要这些项目上下文时使用。负责提供证据与归属依据，不承担 Vue3/React 教学、实现方案决策或代码修改。
 license: Apache-2.0
 metadata:
-  version: "1.1.0"
+  version: "1.1.1"
 ---
 
 # 途强 Flutter 项目地图
@@ -14,6 +14,7 @@ metadata:
 
 - `flutter-to-web` 消费本 skill 提供的调用链、状态拓扑、源码证据和生命周期事实，再负责用 Vue3/React 口吻与代码类比讲解。
 - `tuqiang-dev` 消费本 skill 提供的 owner、依赖方向、现有抽象、同层风格样本和影响面事实，再负责做实现取舍、修改与验证。
+- `tuqiang-change-retrospective` 在变更完成后消费本 skill 的事实证据，再结合 Git 历史生成 Bug/需求学习复盘 Markdown。
 - 本 skill 不输出 Vue3/React 教学，不自行决定 API 形状或修改代码，不提供提交流程。
 
 ## 1. 先识别仓库，再核验事实

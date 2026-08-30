@@ -1,0 +1,7 @@
+interface:
+  display_name: "途强变更复盘"
+  short_description: "把已完成的 Bug 修复或需求实现整理成可追溯的学习 Markdown"
+  default_prompt: "使用 $tuqiang-change-retrospective 复盘刚完成的 Bug 修复或需求实现，并生成一份完整的学习 Markdown。"
+
+policy:
+  allow_implicit_invocation: false

@@ -2,12 +2,12 @@
 name: tuqiang-dev
 description: 为途强三端 Flutter monorepo 提供开发、修复、测试与代码评审规范；适用于确定 feature/shared/core owner，按目标 package 的局部主流风格修改 Riverpod、Model、Repository、Widget、路由、网络、i18n、尺寸或平台能力，并按 Android、iOS、HarmonyOS 风险验证。架构事实从 tuqiang-project-map 与当前源码核验，本 skill 负责实现与复用决策。
 metadata:
-  version: "1.11.0"
+  version: "1.11.1"
 ---
 
 # 途强 Flutter 项目开发规范
 
-本 skill 只服务当前途强 Flutter monorepo。目标是让修改落在正确 owner，沿用目标 package 的真实写法，保持三端边界，并完成最小、可验证的实现。`tuqiang-project-map` 负责“项目现在是什么、入口在哪里”的事实与架构上下文；本 skill 负责“应该改哪里、复用什么、怎样实现和验证”的开发决策。
+本 skill 只服务当前途强 Flutter monorepo。目标是让修改落在正确 owner，沿用目标 package 的真实写法，保持三端边界，并完成最小、可验证的实现。`tuqiang-project-map` 负责“项目现在是什么、入口在哪里”的事实与架构上下文；本 skill 负责“应该改哪里、复用什么、怎样实现和验证”的开发决策。用户在完成后显式要求学习复盘时，由 `tuqiang-change-retrospective` 调查 Git 因果并生成 Markdown，本 skill 不在普通开发中自动产出复盘。
 
 ## 1. 解析仓库与事实优先级
 

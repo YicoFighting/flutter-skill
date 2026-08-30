@@ -1,14 +1,15 @@
 # flutter-skills
 
-服务途强三端 Flutter monorepo 的三个 Agent Skill。它们按仓库结构动态识别当前 checkout，不绑定公司电脑、家庭电脑、盘符或用户目录。
+服务途强三端 Flutter monorepo 的四个 Agent Skill。它们按仓库结构动态识别当前 checkout，不绑定公司电脑、家庭电脑、盘符或用户目录。
 
 | Skill | 版本 | 职责 | 典型场景 |
 |---|---:|---|---|
-| [`tuqiang-project-map`](skills/tuqiang-project-map/) | 1.1.0 | 提供架构分层、模块 owner、状态/数据拓扑、公共封装、复用入口与业务链的可核验事实索引 | “这个逻辑属于哪层”“状态实际经过哪些文件” |
-| [`flutter-to-web`](skills/flutter-to-web/) | 1.6.0 | 从用户操作追踪事件、异步数据、Riverpod 状态与 UI 重建，并用 Vue3/React 口吻和代码讲解 | “从进入页面/点击开始讲到接口、状态和 UI” |
-| [`tuqiang-dev`](skills/tuqiang-dev/) | 1.11.0 | 依据项目分层、现有复用入口和目标 package 的局部主流风格完成修改与风险验证 | “按同事现有写法修复这个 Bug” |
+| [`tuqiang-project-map`](skills/tuqiang-project-map/) | 1.1.1 | 提供架构分层、模块 owner、状态/数据拓扑、公共封装、复用入口与业务链的可核验事实索引 | “这个逻辑属于哪层”“状态实际经过哪些文件” |
+| [`flutter-to-web`](skills/flutter-to-web/) | 1.6.1 | 从用户操作追踪事件、异步数据、Riverpod 状态与 UI 重建，并用 Vue3/React 口吻和代码讲解 | “从进入页面/点击开始讲到接口、状态和 UI” |
+| [`tuqiang-dev`](skills/tuqiang-dev/) | 1.11.1 | 依据项目分层、现有复用入口和目标 package 的局部主流风格完成修改与风险验证 | “按同事现有写法修复这个 Bug” |
+| [`tuqiang-change-retrospective`](skills/tuqiang-change-retrospective/) | 1.0.0 | 在变更完成后追溯 Git 因果、拆解输入输出与事件流，并生成学习复盘 Markdown | “把刚修好的 Bug 或刚完成的需求整理成学习文档” |
 
-## 三个 Skill 如何协作
+## 四个 Skill 如何协作
 
 ```text
 当前 checkout 的源码、pubspec、测试与门禁
@@ -20,17 +21,22 @@
              ▼             ▼
       flutter-to-web    tuqiang-dev
       理解与教学        实现与验证
+             └──────┬──────┘
+                    ▼
+     tuqiang-change-retrospective
+       Git 因果、学习复盘与 MD
 ```
 
 - `tuqiang-project-map` 是底层项目上下文。它帮助模型确定代码放在哪层、现有能力在哪里、调用链和状态拓扑怎样连接，但不代替上层 Skill 输出教学代码或决定实现方案。
 - `flutter-to-web` 重新核验当前源码，以用户操作为顶点，分别展开事件/同步调用、异步数据、状态依赖/UI 重建，并给出路径、实时行号、最小 Dart 原文及 Vue3/React 端到端代码。
 - `tuqiang-dev` 使用地图提供的 owner 和复用候选，再在目标子域/package 抽样 2–4 个成熟同类实现，做局部风格、复用、内聚/解耦和验证决策。
+- `tuqiang-change-retrospective` 只在用户手动调用时工作；它结合当前源码、diff、Git 历史和验证证据，把已完成变更整理为 Bug、需求或混合复盘，不修改业务代码。
 
 设备目录 → 选择设备 → 定位状态 → GPS UI 只是地图中已整理的一条代表性业务链。项目地图的主职责是整个项目的事实、分层与索引，不是只讲设备或定位。
 
 ## 路径无关的仓库识别
 
-三个 Skill 都把 `<TUQIANG_ROOT>` 当作“本次任务已核验的途强仓库根目录”，不会把占位符或历史绝对路径直接传给 shell。
+四个 Skill 都把 `<TUQIANG_ROOT>` 当作“本次任务已核验的途强仓库根目录”，不会把占位符或历史绝对路径直接传给 shell。
 
 解析顺序：
 
@@ -41,25 +47,26 @@
 
 候选根目录还要通过三端宿主、共享业务包、项目工具及 `pubspec.yaml` package identity 校验。最终回答中的文件路径和行号均从当前 checkout 实时生成，因此公司与家庭目录不同不会影响使用。
 
-## 为什么拆成三个
+## 为什么拆成四个
 
 - 项目事实集中维护，避免教学和开发 Skill 各保存一份静态架构并逐渐冲突；
 - 教学可以详细，但不会把解释模板混入实际代码决策；
 - 开发可以保持最小改动、局部团队风格和三端验证，不会被通用教程带偏；
+- 复盘独立处理 Git 历史、证据置信度和 Markdown 写入，不会在普通开发时自动创建学习文件；
 - references 按问题渐进加载，完整业务链、Riverpod、网络或风格规则只在相关任务中读取。
 
-兄弟 Skill 不可用时，`flutter-to-web` 和 `tuqiang-dev` 都保留按同一仓库身份协议直接检索当前源码的降级能力。
+兄弟 Skill 不可用时，`flutter-to-web`、`tuqiang-dev` 和 `tuqiang-change-retrospective` 都保留按同一仓库身份协议直接检索当前源码的降级能力。
 
 ## 仓库结构
 
 ```text
 flutter-skills/
-├── package.json                         # 仓库版本 v1.11.0 与三个 Skill 元数据
+├── package.json                         # 仓库版本 v1.12.0 与四个 Skill 元数据
 ├── AGENTS.md                            # 四联动维护、同步和提交规范
 ├── CHANGELOG.md                         # Keep a Changelog 增量记录
 ├── README.md
 └── skills/
-    ├── tuqiang-project-map/             # 项目事实与架构索引 v1.1.0
+    ├── tuqiang-project-map/             # 项目事实与架构索引 v1.1.1
     │   ├── SKILL.md
     │   ├── references/
     │   │   ├── project-root-discovery.md
@@ -72,14 +79,20 @@ flutter-skills/
     │   │   └── requirement-trace-playbook.md
     │   ├── README.md
     │   └── LICENSE.txt
-    ├── flutter-to-web/                  # Vue3/React 完整链路教学 v1.6.0
+    ├── flutter-to-web/                  # Vue3/React 完整链路教学 v1.6.1
     │   ├── SKILL.md
     │   ├── references/                  # 动态根目录、完整追踪、Riverpod 与前端对照
     │   ├── README.md
     │   └── LICENSE.txt
-    └── tuqiang-dev/                     # 项目开发规范 v1.11.0
+    ├── tuqiang-dev/                     # 项目开发规范 v1.11.1
+    │   ├── SKILL.md
+    │   ├── references/                  # owner、局部风格、复用、状态、网络、三端和测试
+    │   ├── README.md
+    │   └── LICENSE.txt
+    └── tuqiang-change-retrospective/    # 变更学习复盘 v1.0.0
         ├── SKILL.md
-        ├── references/                  # owner、局部风格、复用、状态、网络、三端和测试
+        ├── agents/openai.yaml           # 仅允许显式调用
+        ├── references/                  # Git 因果、Bug/需求剧本与 Markdown 契约
         ├── README.md
         └── LICENSE.txt
 ```
@@ -88,15 +101,16 @@ flutter-skills/
 
 ## 安装与启用
 
-### 推荐：三个 Skill 一起安装
+### 推荐：四个 Skill 一起安装
 
-推荐把三个完整目录并排安装，确保 `SKILL.md`、`references/` 和兄弟 Skill 引用都可用：
+推荐把四个完整目录并排安装，确保 `SKILL.md`、`references/` 和兄弟 Skill 引用都可用：
 
 ```text
 <SKILLS_HOME>/
 ├── tuqiang-project-map/
 ├── flutter-to-web/
-└── tuqiang-dev/
+├── tuqiang-dev/
+└── tuqiang-change-retrospective/
 ```
 
 当前仓库是 Skill 源码包，尚未包含可验证的 marketplace/plugin manifest，因此安装时直接复制完整目录。支持 `.agents/skills` 的项目级目录与 Codex 全局目录示例：
@@ -119,7 +133,7 @@ New-Item -ItemType Directory -Force -Path $codexSkillsDir | Out-Null
 Copy-Item -Recurse -Force -Path '.\skills\*' -Destination $codexSkillsDir
 ```
 
-只安装 `flutter-to-web` 或 `tuqiang-dev` 也能工作：它们会自行解析项目根目录并检索实时源码，只是缺少 `tuqiang-project-map` 提供的渐进式项目索引，跨 package 定位通常会更慢。
+单独安装任务 Skill 也能降级工作：它们会自行解析项目根目录并检索实时源码；但复盘 Skill 缺少 `flutter-to-web` 时，Dart/Vue3/React 对照通常不如四个 Skill 并装完整。
 
 ### 必须安装完整目录
 
@@ -145,26 +159,28 @@ OpenAI 官方约定中，ChatGPT 使用 `@skill-name`，Codex 使用 `$skill-nam
 
 ### 安装后检查
 
-至少确认下面三个入口和各自的 `references/` 都存在：
+至少确认下面四个入口和各自的 `references/` 都存在：
 
 ```text
 <SKILLS_HOME>/tuqiang-project-map/SKILL.md
 <SKILLS_HOME>/flutter-to-web/SKILL.md
 <SKILLS_HOME>/tuqiang-dev/SKILL.md
+<SKILLS_HOME>/tuqiang-change-retrospective/SKILL.md
 ```
 
 如果安装后没有立即出现在 Skill 列表中，重新打开客户端或新建会话，再通过客户端的 Skill 列表确认，不要用文件附件代替安装验证。
 
 ## 使用原则
 
-### 三个都安装，按任务显式调用
+### 四个都安装，按任务显式调用
 
-日常不需要每次把三个 Skill 全部写上。`tuqiang-project-map` 是底层项目上下文，`flutter-to-web` 和 `tuqiang-dev` 会在需要时读取它。
+日常不需要每次把四个 Skill 全部写上。`tuqiang-project-map` 是底层项目上下文；复盘 Skill 只在变更完成并由用户显式调用时运行。
 
 | 当前目标 | 默认显式调用 | 是否需要同时写 `tuqiang-project-map` |
 |---|---|---|
 | 理解页面、需求、Riverpod、事件流和数据流 | `$flutter-to-web` | 通常不需要 |
 | 实现需求、修复 Bug、重构或评审 | `$tuqiang-dev` | 通常不需要 |
+| Bug/需求完成后生成学习复盘 Markdown | `$tuqiang-change-retrospective` | 通常不需要 |
 | 专门梳理架构、模块 owner、Provider 拓扑或复用入口 | `$tuqiang-project-map` | 它就是主 Skill |
 | 先理解现状，再直接实现 | `$flutter-to-web $tuqiang-dev` | 通常不需要 |
 
@@ -188,6 +204,8 @@ OpenAI 官方约定中，ChatGPT 使用 `@skill-name`，Codex 使用 `$skill-nam
 | 重点疑问 | 决定需要展开的机制 | family 参数、缓存、竞态、生命周期 |
 | 任务边界 | 控制是否允许修改 | `先解释，不修改代码` |
 | 验收结果 | 让开发结果可验证 | 切换设备不串状态，三端行为不回退 |
+| 复盘范围 | 防止混入无关提交或工作区改动 | `当前 diff`、`abc123^..def456` |
+| 输出位置 | 指定学习文档目录 | `输出到 docs/learning` |
 
 不需要把这些信息机械地全部填写。能从当前 workspace、选中文件和需求中确定的内容，应由 Skill 自己检索和核验。
 
@@ -318,6 +336,32 @@ $tuqiang-dev
 
 这样能明确区分“建立心智模型”和“授权修改代码”，尤其适合第一次接触的复杂模块。
 
+### 8. 变更完成后生成学习复盘
+
+Bug 已修复时：
+
+```text
+$tuqiang-change-retrospective
+
+复盘刚刚修复的“切换设备后短暂展示旧状态”问题。
+范围：当前工作区。
+请说明根因、缺陷引入/问题暴露/修复改动、实际排查过程、下次排查路径和预防方式；
+用修复前后 Dart 源码以及 Vue3、React 对照逐层解释，并生成完整学习 Markdown。
+```
+
+需求已完成时：
+
+```text
+$tuqiang-change-retrospective
+
+复盘刚完成的“轨迹设置恢复默认值”需求。
+请按“用户价值 → 可验收行为 → 状态与数据 → 源码证据”的金字塔拆解，
+说明输入从哪里来、怎样转换和保存、输出被谁消费，以及同步事件、异步数据、
+状态通知和 UI 重建怎样流转。生成完整学习 Markdown。
+```
+
+该 Skill 还支持“混合模式”：需求开发中引入、暴露或顺带修复的 Bug 会作为 Bug 卡嵌入同一份需求复盘。它默认输出到目标项目的 `docs/learning/`，不覆盖已有文件。
+
 ## 项目路径与多 checkout
 
 Skill 不固定使用 `D:\Code\Flutter`。公司电脑、家庭电脑、Codex worktree 或其他 checkout 都可以使用同一套 Skill。
@@ -352,15 +396,28 @@ Skill 不固定使用 `D:\Code\Flutter`。公司电脑、家庭电脑、Codex wo
 - 是否覆盖受影响调用方、标准版/OHOS/其他端边界、i18n、资源和缩放；
 - 是否报告真实修改文件、测试命令、验证结果和未执行项。
 
+### 复盘类结果
+
+- 是否区分缺陷引入、问题暴露、修复改动与防线缺失，而不是把 `git blame` 当根因；
+- 是否用纯文本金字塔或因果栈逐层解释，并把同步、异步、响应式更新分开；
+- 是否说明输入来源、转换、状态写入、输出和最终消费者；
+- 是否提供修复前后或需求关键 Dart 源码，以及同一业务链的 Vue3/React 对照；
+- 是否把已证实事实、高可信推断、未知边界和实际验证状态分开；
+- 是否生成 UTF-8 无 BOM 的完整 Markdown，使用仓库相对路径且不覆盖旧文档。
+
 ## 常见问题
 
 ### 每次都要显式调用 `tuqiang-project-map` 吗？
 
-不用。它默认作为底层事实索引供另外两个 Skill 按需读取。只有要单独产出架构地图，或当前客户端不能读取兄弟 Skill 时，才需要额外显式调用。
+不用。它默认作为底层事实索引供另外三个任务 Skill 按需读取。只有要单独产出架构地图，或当前客户端不能读取兄弟 Skill 时，才需要额外显式调用。
 
-### 同时启用三个 Skill 会不会效果更好？
+### 同时启用四个 Skill 会不会效果更好？
 
-不一定。与当前目标无关的 Skill 会增加上下文和职责冲突。默认只启用一个任务 Skill；既要教学又要实现时启用 `flutter-to-web` 与 `tuqiang-dev` 即可。
+不一定。与当前目标无关的 Skill 会增加上下文和职责冲突。开发时调用 `tuqiang-dev`，理解时调用 `flutter-to-web`；只有变更已经完成且要落学习文档时，才调用 `tuqiang-change-retrospective`。
+
+### 复盘 Skill 会自动创建 Markdown 吗？
+
+不会。`tuqiang-change-retrospective` 配置为仅显式调用；只有使用 `$tuqiang-change-retrospective`（ChatGPT 中为 `@tuqiang-change-retrospective`）时才生成文档。它只写复盘文件，不修改业务源码或 Git 历史。
 
 ### 只把 `SKILL.md` 拖进对话可以吗？
 
@@ -376,7 +433,7 @@ Skill 不固定使用 `D:\Code\Flutter`。公司电脑、家庭电脑、Codex wo
 
 ### 换成其他 Flutter 项目能直接用吗？
 
-`flutter-to-web` 的部分教学思路可以参考，但三个 Skill 中的 package、路由、统一命令和平台约定是为途强 monorepo 维护的。`tuqiang-project-map` 与 `tuqiang-dev` 不应直接套用于无关项目。
+`flutter-to-web` 的部分教学思路可以参考，但四个 Skill 中的 package、路由、统一命令和平台约定是为途强 monorepo 维护的。`tuqiang-project-map`、`tuqiang-dev` 与 `tuqiang-change-retrospective` 不应直接套用于无关项目。
 
 ### `tuqiang-dev` 会自动提交或推送代码吗？
 
@@ -395,4 +452,4 @@ Skill 不固定使用 `D:\Code\Flutter`。公司电脑、家庭电脑、Codex wo
 
 ## 许可证
 
-三个 Skill 均以 Apache 2.0 发布（见各自目录的 `LICENSE.txt`）。© tuqiang
+四个 Skill 均以 Apache 2.0 发布（见各自目录的 `LICENSE.txt`）。© tuqiang
