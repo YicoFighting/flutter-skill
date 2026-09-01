@@ -1,6 +1,6 @@
 # 代码审查高风险清单
 
-只检查会影响正确性、安全性、可维护性或三端行为的事项，不把个人格式偏好伪装成项目红线。
+只检查会影响正确性、安全性、可维护性、产品边界或三端行为的事项，不把个人格式偏好伪装成项目红线。
 
 ## 1. 异常和异步
 
@@ -18,16 +18,18 @@
 
 ## 3. 路由、平台和资源
 
-- 路由字符串、参数、返回值和栈行为没有无意变化；feature/app 不重复提供 builder；
+- 已确认目标产品、Product Scope 和唯一 owner；老鹰业务没有依赖途强 Feature、资源或运行时配置；
+- 路由字符串、参数、返回值和栈行为没有无意变化；途强 feature/app 或老鹰 LY registry 不重复提供 builder；
 - `url_launcher` 类调用应处理 `launchUrl` 的返回值和异常；不要把 `canLaunchUrl` 当成绝对能力证明，也不要无理由做双重检查；
 - 公共 Dart 不出现 OHOS 专属类型或包名；standard-only 能力必须明确隔离；
 - asset 路径、大小写、pubspec、owner 常量和 package 参数使用同一种合法写法；
-- 设计切图存在时不要用系统图标替代；没有对应切图的标准语义控件才考虑 `Icons.*`。
+- 设计切图存在时不要用系统图标替代；缺少目标业务图片时先索要，未经授权不使用 Canvas/CustomPainter/TextPainter、文字叠加、系统图标、AI 或程序生成替代；
+- 没有对应切图且确属标准语义控件时，才考虑 `Icons.*`。
 
 ## 4. 状态和 UI
 
 - Widget 的布尔开关与回调不应形成“可见但不可用”的组合；如果功能是否显示完全由 callback 决定，可直接以 null 判断；
-- build 只读取和订阅状态，不同步修改 Provider；副作用使用事件、初始化阶段或 `ref.listen`；
+- build 只读取和订阅状态，不同步修改 Provider/Controller；副作用沿目标产品现有事件、初始化或 listener 模式；
 - 多语言文本不要在 Widget/State 成员中缓存 `.tr` 结果；
 - `.sc` 只用于设计尺寸；系统尺寸、边框、时长和算法参数不要机械转换；
 - loading、空态、Toast、AppBar 优先复用实际存在的 `core_ui` 组件，不为单个页面重复造全局组件。
@@ -35,7 +37,7 @@
 ## 5. 最终核对
 
 - [ ] 改动范围没有无关重构、依赖升级或格式化噪音；
-- [ ] 相关 package、standard/OHOS、boundary、测试和真机验证按影响范围执行；
+- [ ] 相关 package、实际受影响 target、ProductScope、聚焦 architecture/contract tests 和真机验证按范围执行；app boundary 已知基线未误归因；
 - [ ] 未执行的验证已在交付说明中列出；
 - [ ] 没有敏感信息、生产假 URL 或生产假数据进入代码；
 - [ ] 使用 `git diff --check` 检查空白和补丁质量。

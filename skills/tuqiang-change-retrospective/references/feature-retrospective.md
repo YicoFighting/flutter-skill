@@ -24,6 +24,7 @@
 
 记录：
 
+- 产品线与实际 target：Tuqiang `standard/ohos`、Laoying `laoying_standard/laoying_ohos`，或共享/双产品；
 - 原始需求或当前对话中可证实的目标；
 - 用户入口、主流程和完成结果；
 - 正常、loading、empty、error、权限和取消分支；
@@ -40,9 +41,9 @@
 |---|---|
 | 功能 owner/package | 路由、barrel、调用方、测试、pubspec 依赖 |
 | 复用入口 | 已有 Provider/Repository/组件/工具及真实调用 |
-| 状态载体 | 为什么是局部状态、family、共享 Provider、Manager 或缓存 |
-| 数据边界 | Repository、HTTP、插件、本地存储或外部回调 |
-| 平台边界 | Standard、iOS、OHOS、adapter/override |
+| 状态载体 | Tuqiang 的局部状态/family/Provider/Manager/cache，或 Laoying 的 LYAppProvider/ChangeNotifier Controller |
+| 数据边界 | Tuqiang TQHttp/shared-feature Repository，或 Laoying LYBackendHttpClient/owner Repository，以及插件、本地存储或外部回调 |
+| 平台边界 | `standard` / `ohos` / `laoying_standard` / `laoying_ohos`、adapter/override/构造注入 |
 
 “为了可维护性”过于空泛。应写成可核验的局部理由，例如“复用已有保存方法，保持提交语义和所有调用方一致”。
 
@@ -57,9 +58,9 @@
 
 - 用户点击、文本输入、选项与页面局部状态；
 - route arguments、deep link、push 或 native callback；
-- Provider family key、上游选择状态或 session；
+- Provider family key、Laoying Controller 构造参数、上游选择状态或 session；
 - Repository/API、缓存、数据库或插件；
-- 配置、平台注入和 ProviderScope override。
+- 配置、平台注入、ProviderScope override、`*Runtime.configure` 或 bootstrap 构造注入。
 
 输出不只指返回值，还包括 State、缓存、导航结果、toast/dialog、Widget 字段和外部副作用。
 
@@ -82,24 +83,28 @@
 5. 哪些消费者会重建或产生副作用；
 6. 离开页面、切 key、重复点击或旧响应返回时怎样处理。
 
-## 6. 关键源码与前端对照
+## 6. 关键源码、资源与按需前端对照
 
-Dart 证据至少覆盖：
+真实项目证据至少覆盖适用项：
 
 - 页面/路由入口；
 - 操作回调；
-- Controller/Notifier/Provider；
+- Controller/Notifier/Provider/ChangeNotifier；
 - Repository/数据边界；
 - 状态写入；
 - 最终 Widget/副作用；
 - 与验收直接相关的测试或验证入口。
 
-Vue3 与 React 对照复用 `flutter-to-web` 的讲解契约：
+Flutter 状态/业务链适合前端迁移学习或用户明确要求时，Vue3 与 React 对照复用 `flutter-to-web` 的讲解契约：
 
 - 三套代码保持同一业务步骤编号、字段和分支；
 - 从入口写到输出，不只做语法替换；
 - Dart 是真实项目证据，Web 是教学实现；
 - 明确 Riverpod family、ProviderScope、`watch/listen`、autoDispose 与 Pinia/React Query/Zustand/Context 的差异。
+
+若需求核心是图片/字体、i18n manifest、原生插件或构建配置，改为展示真实资源注册、Dart 调用、Java/Swift/ETS 加载和 target 测试；不要为了凑三套代码省略平台证据，也不要从二进制资源本身推断需求意图。
+
+Laoying 资源与验证还要检查 `apps/laoying_app/lib/app/assets/ly_app_assets.dart`、`apps/laoying_app/pubspec.yaml`、`assets/i18n/manifest.json` 及相关 architecture/i18n/asset independence 测试。shell 的 `tool/project.dart test <target>` 不自动证明 `apps/laoying_app/test` 全部通过，必须记录实际命令和工作目录。
 
 ## 7. 实现过程
 
@@ -130,7 +135,7 @@ Bug 复杂到需要完整 Git 因果、排查和预防时，读取 Bug 复盘剧
 - [ ] owner、复用、状态与平台取舍都有局部证据；
 - [ ] 每个关键输入说明来源、转换、状态写入、输出和消费者；
 - [ ] 同步事件、异步数据、状态/UI 更新已分开；
-- [ ] Dart、Vue3、React 对照覆盖同一条完整链路；
+- [ ] 需要前端对照时 Dart、Vue3、React 覆盖同一条完整链路；不适用时真实平台/资源证据已闭环；
 - [ ] 实际开发时间线与教学重组已区分；
 - [ ] 混合模式没有把“暴露旧 Bug”误写成“需求引入 Bug”；
 - [ ] 验证结果与未验证项表述准确。

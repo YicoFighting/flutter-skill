@@ -1,145 +1,59 @@
-# 三端兼容规范（Android / iOS / HarmonyOS）
+# 双产品三端兼容规范
 
-本仓库最大的坑就在这一章。目标：**同一套 Dart 业务代码，三端编译运行**。
+仓库有两个产品、三个平台、四个宿主 target：
 
-## 1. 平台判断【红线】
-
-| 场景 | 允许 | 禁止 |
+| 产品 | Android/iOS | HarmonyOS |
 |---|---|---|
-| 判断 Android/iOS | `Platform.isAndroid` / `Platform.isIOS`（`dart:io`） | — |
-| 判断鸿蒙 | `AppTargetConfig.isOhos`（`core_base/app_target.dart`） | `Platform.isOhos` ❌（官方 SDK 无此符号，边界检查直接挂 CI） |
-| 鸿蒙专属 Widget/包（OhosView、xxx_ohos 包） | 只能出现在 app 启动注入层或 ohos 专属工程/插件内 | 出现在 `packages/**/lib`、`apps/tuqiang_app/lib` 任何公共文件 ❌ |
+| 途强智能 | `standard` → `apps/standard` | `ohos` → `apps/ohos` |
+| 老鹰在线 | `laoying_standard` → `apps/laoying_standard` | `laoying_ohos` → `apps/laoying_ohos` |
 
-```dart
-import 'package:core_base/app_target.dart';
+## 1. 公共代码边界
 
-if (AppTargetConfig.isOhos) {
-  // 鸿蒙差异行为（这个开关本身是安全的，可以进公共代码）
-}
-```
+- Android/iOS 判断可沿当前 owner 使用 `Platform.isAndroid/isIOS`；
+- Tuqiang app/feature 路径可沿用 bootstrap 已配置的 `AppTargetConfig.isOhos`；不存在 `Platform.isOhos`；
+- Laoying 不读取 Tuqiang 的 `AppTargetConfig`，由 `laoying_standard` / `laoying_ohos` 壳把地图、扫码等平台 adapter 注入 `laoying_app`；
+- OHOS-only 类型、View、package 或定制 SDK 类型只能在宿主、专属插件/adapter 或注入实现内；
+- 公共 Dart 依赖抽象，端实现由对应产品宿主注入，不把任一产品的 target flag 下沉成公共判断；
+- standard-only 能力要在 owner、pubspec 和调用路径明确隔离，不能默认声称三端支持。
 
-CI 的架构红线由 `tool/check_migration_boundaries.ps1`（在 CI 的 pwsh 环境执行）把守；本地 Windows PowerShell 5.1 直接运行可能因无 BOM UTF-8 解析报错，以 CI 为准。
+途强沿用 Feature callback/config、Provider override 和 bridge 注册。老鹰沿用 `LY` app-local contracts、Router/Coordinator 和 infrastructure adapter；不能把途强 app composition 或品牌配置复制过去。
 
-## 2. 平台差异的三种正解（全部来自仓库真实代码）
+## 2. 依赖与产品隔离
 
-原则：**公共代码只依赖抽象，端实现由 app 层启动时注入。**
+依赖选择顺序：现有公共 core/plugin/adapter → 已验证的纯 Dart 库 → 对应 OHOS override → 新 plugin/通道。新增依赖前确认能力是否属于 Product Scope、是否进入公共路径、两个产品是否都需要，以及四个 target 的 pubspec/lockfile/原生实现影响。
 
-### 模式 A：视图构建器注入（鸿蒙专属 UI）
+两个产品的 application id、签名/凭据、URL scheme、channel/authority、后端运行时配置、品牌文案和资源必须独立。老鹰的当前范围还需以 `docs/laoying/product_scope_matrix.md`、`native_capability_matrix.md` 和 dependency allowlist 为准：地图供应商固定项、延期项和永久排除项不能因途强已有实现而越过。
 
-公共包定义抽象 + 注册点；ohos 入口工程在 main 里注册真实实现：
+## 3. 原生目录
 
-```dart
-// feature_auth/src/platform/harmony_auth_platform.dart （公共包内，安全）
-typedef HarmonyAuthViewBuilder = Widget Function({required ValueChanged<String> onAuthCode});
-
-class HarmonyAuthPlatform {
-  static HarmonyAuthViewBuilder? _viewBuilder;
-  static bool get isAvailable => _viewBuilder != null;
-  static void configureViewBuilder(HarmonyAuthViewBuilder builder) => _viewBuilder = builder;
-
-  static Widget buildView({required ValueChanged<String> onAuthCode}) {
-    final builder = _viewBuilder;
-    if (builder == null) return const SizedBox.shrink();  // 未注册=该端不支持
-    return builder(onAuthCode: onAuthCode);
-  }
-}
-
-// 页面里直接用，无需关心平台：
-HarmonyAuthPlatform.buildView(onAuthCode: (code) => ...);
-```
-
-### 模式 B：依赖注入回调（行为差异）
-
-```dart
-// feature_auth/src/config/auth_dependencies.dart
-class AuthDependencies {
-  final AuthUserAction onLoginSuccess;   // 登录成功后干什么
-  final AuthContextAction jumpToHome;    // 跳主页怎么跳
-  // ...
-  static void setup(AuthDependencies d) => _current = d;
-}
-
-// apps/tuqiang_app/lib/app.dart 启动时装配：
-void setupAuthDependencies() {
-  AuthDependencies.setup(AuthDependencies(
-    onLoginSuccess: (context, user) => LoginUtils.onLoginSuccess(user),
-    jumpToHome: (context) =>
-        Navigator.of(context).pushNamedAndRemoveUntil(AppRouters.home, (_) => false),
-    ...
-  ));
-}
-```
-
-feature 包不 import app 层、不 import 其他 feature，全部通过这类 config/callback 解耦。新 feature 需要「宿主能力」时照抄此模式。
-
-### 模式 C：桥接注册（服务能力）
-
-```dart
-// core_webview/webview/bridge/webview_bridge.dart
-abstract class WebviewBridge { String? getToken(); Future<bool> saveImageToGallery(String url); ... }
-
-class SharedWebviewBridge {
-  static WebviewBridge? _bridge;
-  static void register(WebviewBridge bridge) => _bridge = bridge;
-  static WebviewBridge get shared => _bridge ?? const _EmptyWebviewBridge(); // 空实现兜底
-}
-
-// apps/tuqiang_app/lib/app/webview/app_webview_bridge.dart 提供真实现并注册。
-```
-
-## 3. 三方库与插件选型顺序
-
-1. **纯 Dart 库**（无平台通道）：两端通用，正常引入；
-2. 有官方/社区 ohos 适配版的库：标准端引原版，`apps/ohos/pubspec.yaml` 用 `dependency_overrides` 覆盖为 ohos 版（git 源如 `openharmony-tpc/flutter_packages.git` 或 `packages/adapter/`、`packages/core/*_ohos/` 内封装）；
-3. 项目自研 tq_* 插件：优先用（tq_push/tq_map/tq_log/tq_filemanage/core_blue…），它们内部已含多端原生实现；
-4. 都没有：需求方评估 → 新建 plugin 并按现有 tq_* 插件结构补 android/ios/(ohos) 三份原生代码。
-
-**改依赖后必做**：standard 与 ohos 两端分别 `pub-get --enforce-lockfile` + analyze + 跑边界检查脚本。
-
-## 4. 原生目录速查
-
-| 端 | 工程位置 |
+| target | 原生工程 |
 |---|---|
-| Android | `apps/standard/android/` |
-| iOS | `apps/standard/ios/` |
-| 鸿蒙 | `apps/ohos/ohos/`（DevEco 工程，签名读被忽略的 `build-profile.local.json5` 或 OHOS_* 环境变量） |
+| `standard` | `apps/standard/android`、`apps/standard/ios` |
+| `ohos` | `apps/ohos/ohos` |
+| `laoying_standard` | `apps/laoying_standard/android`、`apps/laoying_standard/ios` |
+| `laoying_ohos` | `apps/laoying_ohos/ohos` |
 
-权限清单三端同步规则见 [permissions.md](permissions.md) §4。
+只更新需求明确影响的产品与平台；涉及公共能力时再扩到四 target。签名和本机配置文件只核对职责，不读取或复制敏感值。
 
-## 5. 常见翻车清单
+## 4. 平台能力决策门
 
-- ❌ 在公共包写 `Platform.isOhos` → CI 边界挂；
-- ❌ 只跑 standard analyze 就提交 → ohos 端编译红；
-- ❌ 加依赖忘了鸿蒙 override → ohos pub get 失败或运行时 MissingPluginException；
-- ❌ 公共代码新增需要三端的 MethodChannel，却只实现 Android/iOS → 鸿蒙调用无响应；如果能力明确是 standard-only，则应在 owner、pubspec 和调用路径中明确隔离，而不是默认声称三端可用；
-- ❌ 以为「包在 override 里 = 该能力三端已验证」→ override 只保证能编译注册，**具体 scheme/行为仍需真机验证**。例：`url_launcher` 鸿蒙版（`url_launcher_ohos.har`）对 `tel:` 拨号、`mailto:` 的支持与 Android/iOS 不保证一致，仓库内此前无 `tel:` 先例，首次使用必须鸿蒙真机实测；
-- ✅ 不确定时先看同类功能怎么做的（搜仓库里 `AppTargetConfig.isOhos` 的现有用法），再动手。
+拨号、邮件、短信、商店、蓝牙面板、地图、推送、相机和后台定位等能力必须逐端确认：
 
-## 6. 平台 API 能力验证清单【新交互形态必做】
+- 需求是否要求 Android/iOS/HarmonyOS 同行为；
+- 现有 plugin/override 是仅可编译，还是已有真机行为证据；
+- 不支持时是隐藏、禁用、提示还是替代流程；
+- 老鹰 Product Scope 是否批准，供应商/凭据是否就绪。
 
-凡是「拉起系统能力」的调用（拨号 tel: / 发邮件 mailto: / 短信 sms: / 应用商店 / 蓝牙配对系统面板等），按端逐一确认：
+存在多种用户可见降级方式时立即询问。`canLaunchUrl` 或 package override 不能当作真机支持证明。
 
-| 能力 | Android | iOS | 鸿蒙 |
-|---|---|---|---|
-| `tel:` 拨号 | ✅ 直接可用 | ✅ 可用（可在 Info.plist 加 LSApplicationQueriesSchemes 处理 canLaunch） | ⚠️ 依赖 url_launcher_ohos 实现，**真机实测** |
-| 外部浏览器 http(s) | ✅ | ✅ | ✅ 仓库已有先例（tq_page_utils） |
-| 剪贴板 Clipboard.setData | ✅ | ✅ | ✅ 引擎层实现 |
-
-规则：表中「⚠️」的能力，编码完成只是第一步，必须列入真机自检；`canLaunchUrl` 在鸿蒙端的返回值也不可与标准端划等号，兜底逻辑（如复制号码）要保留但不能当作「鸿蒙不支持」的结论依据。
-
-## 7. 验证方式
+## 5. 验证
 
 ```powershell
 dart run tool/project.dart analyze standard
 dart run tool/project.dart analyze ohos
-.\tool\check_migration_boundaries.ps1   # 架构红线，CI 必跑；本地需 pwsh 7
+dart run tool/project.dart analyze laoying_standard
+dart run tool/project.dart analyze laoying_ohos
+pwsh .\tool\check_migration_boundaries.ps1 -ProductScope all
 ```
 
-三条全绿才允许提交涉及平台差异的改动（本地脚本跑不动时以双端 analyze 全绿为底线，红线检查交给 CI）。
-
-## 8. 验证方式（能力类改动附加）
-
-涉及 §6 表格中「⚠️」能力的改动，除上述三条命令外，还需：
-
-- 鸿蒙真机实测该交互（模拟器无法验证拨号盘/邮件客户端拉起）；
-- 在 PR 描述里注明「已实测端」与「待验证端」。
+按影响缩小范围：途强用两个途强 target 与 `tuqiang` scope；老鹰用两个老鹰 target、聚焦 architecture/contract tests 与 `laoying` scope，app boundary 检查器按 [testing.md](testing.md) 排除已知基线；公共能力才跑四 target/`all`。系统交互、签名、推送、地图和 MethodChannel 还需受影响端真机或 CI，未执行项如实记录。

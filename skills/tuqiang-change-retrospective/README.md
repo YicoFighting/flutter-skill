@@ -1,8 +1,10 @@
 # tuqiang-change-retrospective
 
-当前版本：1.0.0
+当前版本：1.1.0
 
-途强三端 Flutter monorepo 的开发后复盘 Skill。它只在手动调用时工作：读取当前源码、Git diff/history、测试与已有任务上下文，把已修复 Bug、已完成需求或混合改动整理成一份可长期学习的 Markdown。
+当前 Flutter monorepo 的开发后复盘 Skill，覆盖 Tuqiang 与 Laoying 两条产品线及公共层。它只在手动调用时工作：读取当前源码、Git diff/history、测试与已有任务上下文，把已修复 Bug、已完成需求或混合改动整理成一份可长期学习的 Markdown。
+
+项目路径优先采用用户当前请求中的显式路径；未指定时以当前对话绑定的项目/workspace 为首选，不依赖固定盘符或已经拆分的 `shared_business`。每份复盘先记录产品线与 `standard`、`ohos`、`laoying_standard`、`laoying_ohos` 中实际受影响的 target。
 
 ## 为什么单独做成第 4 个 Skill
 
@@ -31,7 +33,9 @@
 
 文件名按 `YYYY-MM-DD-bug-<slug>.md`、`YYYY-MM-DD-feature-<slug>.md` 或 `YYYY-MM-DD-hybrid-<slug>.md` 生成。同名文件不会被覆盖。
 
-每份文档包含可核验的仓库相对路径、行号、commit/diff 证据、最小 Dart 源码、Vue3/React 对照、纯文本金字塔或因果栈，以及已验证/未验证边界。
+每份文档包含可核验的仓库相对路径、行号、commit/diff 证据、最小真实源码/资源证据、纯文本金字塔或因果栈，以及已验证/未验证边界。Flutter 状态链适合前端迁移学习或用户明确要求时再加入 Vue3/React；原生、资源、i18n 或构建改动优先保留真实平台证据。
+
+若产品线、target、复盘范围或产品意图有多种合理解释，且会改变归因或主结论，Skill 会先询问；不影响结论的不确定项会明确标为未知，不从源码或图片内容擅自推断。
 
 ## 使用示例
 

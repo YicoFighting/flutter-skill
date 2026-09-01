@@ -45,7 +45,7 @@ onUnmounted(dispose 释放) + render(build)。生命周期心智完全平移。�
 
 - `setState(() { count++ })` ≈ 触发 re-render。回调里只写"改数据"，别写耗时逻辑。
 - 忘了包 `setState` 直接改字段 → 数据改了但页面不刷，≈ 改了个非响应式变量。
-- 大项目不推荐到处 setState，交给 Riverpod（见 [state-and-riverpod.md](state-and-riverpod.md)）。
+- 跨页面或业务状态交给当前产品已采用的状态 owner：Tuqiang 常见 Riverpod，Laoying 常见 ChangeNotifier Controller（见 [state-and-riverpod.md](state-and-riverpod.md)）；不要仅为套教程引入另一套状态框架。
 
 ## 3. Key 是什么
 

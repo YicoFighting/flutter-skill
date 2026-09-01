@@ -1,105 +1,42 @@
-# 网络请求规范（dio / TQHttp）
+# 网络请求规范（双产品）
 
-业务代码优先使用 `core_http` 的 `TQHttp`，不要在 feature 内自行创建 Dio。先查看同类模块实际使用的 loading、错误提示和超时配置。
+先确认产品和真实 API 契约。不得把途强的 endpoint、token/header、运行时配置或错误语义直接复制到老鹰在线，也不得凭需求描述编造 URL、字段、成功响应或生产假数据。
 
-## 1. 方法选择
+## 1. 途强智能：`TQHttp` / `ResultModel`
 
-| 场景 | 常用方法 |
-|---|---|
-| 页面自行处理结果 | `get` / `post` / 对应 HTTP 动词 |
-| 自动 loading | `getWithLoading` / `postWithLoading` |
-| 自动错误提示 | `getWithErrTip` / `postWithErrTip` |
-| 两者都要 | `getWithLoadingAndErrTip` / `postWithLoadingAndErrTip` |
-| 需要精细配置 | `xxxWithConfig` |
-| 上传图片 | `uploadImage` |
+途强业务沿用 `core_http` 的 `TQHttp` 和同 owner 已有的 loading/错误/超时方法，不在 Feature 内自行创建 Dio。`ResultModel` 以 `result.success` 判断成功，错误文案按现有约定使用 `result.desc`；`result.data` 在 Repository/parser 边界用 `TCheck<T>` 或明确 parser 收窄。
 
-## 2. 响应边界
+Model 规则：
 
-`TQHttp` 返回 `ResultModel`。成功判断使用 `result.success`，不要在业务层重复解析 code；错误文案优先使用 `result.desc`。因为 `result.data` 是动态值，进入业务模型前使用 `TCheck<T>` 或明确 parser 收窄：
+- 请求 DTO 与响应 Model 分开；required、nullable、默认值来自接口契约；
+- `fromJson` 处理缺失、类型变化和兼容字段，不把 `List<dynamic>` 扩散到业务层；
+- `toJson` 是否过滤 null 取决于“省略”与“显式清空”的后端语义；
+- Model 不承载页面标题、按钮等 UI 文案；
+- endpoint、Model、Repository 留在真实 Feature 或职责匹配的拆分 `shared_*` owner。
 
-```dart
-final result = await TQHttp.get(TQAddress.beaconBindNumber);
-if (!mounted) return; // StateNotifier 的生命周期判断；Widget 要判断自己的 mounted
+是否额外建立 Repository 抽象取决于已有边界、注入和测试需求，不为单个简单调用堆空壳。
 
-if (result.success) {
-  final map = TCheck<Map<String, dynamic>>(result.data);
-  if (map != null) {
-    final item = TqBeaconUpperLimitNum.fromJson(map);
-    // 发布到新的 State
-  }
-} else {
-  TQToast.show(result.desc?.isNotEmpty == true
-      ? result.desc!
-      : '网络异常，请稍后重试'.tr);
-}
-```
+## 2. 老鹰在线：`LYBackendHttpClient`
 
-列表也要在边界处检查元素类型，再交给 `fromJson`；不要把不可信的 `List<dynamic>` 直接传入业务层。
+老鹰使用 app-local `LYBackendHttpClient`、`LYBackendConfig` 和各业务 `LY*Repository`/adapter。运行时 base URL、签名、凭据和产品 header 由老鹰宿主独立注入；不得复用途强 app 的运行时配置或业务 Repository。
 
-## 3. Model 规则
+- API 范围与字段先看 `docs/laoying/api_contract.md` 和当前 Product Scope；
+- 只有 contract 明确允许时，才从个人端现有实现提取准确接口契约；这不授权复制 Feature、配置、凭据或副作用；
+- API 未就绪时使用可注入 fake 或 unavailable/fail-closed 实现，不能默认“成功”或把 placeholder 带入生产；
+- 业务 Repository 留在 `apps/laoying_app/lib/app/<owner>/`，跨 owner 通过应用 contract/coordinator，不互相 import 私有实现；
+- 未配置或未批准的真实写操作必须失败可见，不能静默降级为成功。
 
-- Model 只表达接口业务数据，不放页面标题、按钮文案等 UI 内容；
-- 响应 Model 是否可空由接口契约决定，不能为了套模板把必填字段全部改成 nullable；请求 DTO 可以使用 required/default 表达调用方约束；
-- `fromJson` 负责处理缺失字段、类型转换和兼容字段，优先使用 `TCheck<T>`；
-- `toJson` 是否省略 null 由接口契约决定。部分更新接口需要省略 null，清空字段的接口可能需要显式发送 null，不能一刀切；
-- 集合和嵌套结构要保持明确类型，必要时提供独立 parser。
+## 3. 生命周期与安全
 
-```dart
-factory XxxResponse.fromJson(Map<String, dynamic> json) {
-  return XxxResponse(
-    id: TCheck<String>(json['id']),
-    count: TCheck<int>(json['count']),
-  );
-}
+- 连续请求用 generation/request id/取消机制防旧响应覆盖；
+- 页面/Controller 销毁后不发布状态；
+- 401、token、header、日志和重试沿目标产品现有 client；
+- 日志脱敏，不记录密码、Token、完整手机号、endpoint 密钥或生产配置；
+- 真实写操作、权限和平台差异不明确时进入 [requirement-clarification.md](requirement-clarification.md)。
 
-Map<String, dynamic> toJson() => {
-  if (id != null) 'id': id,
-  if (count != null) 'count': count,
-};
-```
+## 4. 验证
 
-上面的 null 过滤只是“接口允许省略时”的例子；新增接口前先确认后端的 null 语义。
-
-## 4. Endpoint 与 Repository
-
-新 feature 的 endpoint、Repository 和 Model 放在真实 owner 包内。接口地址来自需求、后端文档或现有 `TQAddress`，禁止凭空编造 URL 和字段。
-
-```dart
-class XxxRepository {
-  XxxRepository({XxxApiEndpoints? endpoints})
-      : endpoints = endpoints ?? const XxxApiEndpoints();
-
-  final XxxApiEndpoints endpoints;
-
-  Future<ResultModel> fetchItems(Map<String, dynamic> params) {
-    return TQHttp.postWithLoadingAndErrTip(
-      endpoints.items,
-      params: params,
-    );
-  }
-}
-```
-
-Repository 只有在存在明确的接口边界、注入需求或多个 API 时才需要额外抽象，不要为一个简单请求堆空壳层。
-
-## 5. 接口未就绪时
-
-- 不编造真实 URL、字段或“成功”响应；
-- 可以先完成 Model/Repository 接口和明确 TODO；
-- UI 预览或单测需要数据时，把 fake repository 通过构造函数或 Provider override 注入测试/预览环境；
-- 不把 `Future.delayed` 假数据作为默认生产实现；
-- 真实接口接入后仍需验证 loading、错误、重试、重复请求和页面销毁后的回调。
-
-## 6. 生命周期和安全
-
-- 跨 `await` 更新 Widget 前判断 Widget `mounted`；Notifier 使用自身的 `mounted`，不要混淆；
-- 高频请求用 generation、请求 id 或取消机制防止旧响应覆盖新状态；
-- 统一复用项目 token、header、401 和日志拦截器，不在业务代码手工塞 token；
-- 日志使用项目日志封装并脱敏，不记录密码、token、完整手机号或生产配置。
-
-## 7. 验证
-
-- 改 feature 网络代码：对应 package analyze + 聚焦测试；
-- 改 `core_http`、shared 或公共 Model：standard/OHOS analyze，并按影响运行 migration tests；
-- 新增接口参数或响应契约：补 Model/Repository 测试，必要时做真实端联调；
-- 命令和未执行项目按 [testing.md](testing.md) 的验证矩阵如实记录。
+- 途强 Feature/shared：Model/Repository 测试、受影响 package analyze、`-ProductScope tuqiang`；
+- 老鹰：业务 Repository/fake/failure 测试、`apps/laoying_app` analyze/test、聚焦 architecture tests、`-ProductScope laoying`；app boundary 已知基线按 [testing.md](testing.md) 处理；
+- 修改公共 HTTP/parser：四 target analyze、`-ProductScope all`，并运行受影响产品测试；
+- 联调未执行或环境未配置时明确记录，不能用 fake 测试声称真实接口通过。

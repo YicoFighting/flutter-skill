@@ -1,19 +1,21 @@
 # tuqiang-project-map
 
-`tuqiang-project-map` 是途强三端 Flutter monorepo 的项目事实、架构分层与跨文件索引 skill，版本 `1.1.1`。它按仓库身份动态发现 `<TUQIANG_ROOT>`，不绑定某台电脑的安装路径。
+`tuqiang-project-map` 是途强 Flutter monorepo 的项目事实、架构分层与跨文件索引 skill，版本 `1.2.0`。它按仓库身份动态发现 `<TUQIANG_ROOT>`，并先识别 Tuqiang/Laoying 产品线，再套用对应的状态、路由、owner 与资源边界。
 
 它解决四类问题：
 
-- 从三端入口、App composition root 和路由 registry 定位页面如何装配；
-- 从用户操作追到 Riverpod 状态、family key、Repository、网络/缓存、session reset 和 UI 消费；
-- 快速确认 feature、shared、core、plugin、adapter 与 app 壳的 owner、依赖方向和复用入口；
-- 为 `flutter-to-web` 提供教学事实，为 `tuqiang-dev` 提供代码归属与复用索引，为 `tuqiang-change-retrospective` 提供变更后复盘所需的当前链路证据。
+- 从六个宿主/共享 App 入口定位两条产品线的启动与页面装配；
+- 对 Tuqiang 追踪 Riverpod family、Repository、session reset 与 UI，对 Laoying 追踪 `LYAppProvider`、app-local controller/repository 与 LY 路由；
+- 确认 feature、8 个 `shared_*` 领域包、core、plugin、adapter 与 app-local 代码的当前 owner 和依赖方向；
+- 为 `flutter-to-web`、`tuqiang-dev`、`tuqiang-change-retrospective` 提供可实时核验的项目事实。
 
 ## 使用边界
 
-本 skill 不做 Vue3/React 教学，也不自行决定实现方案或修改代码。需要前端类比时由 `flutter-to-web` 消费本 skill 的证据，需要开发、修复和验证时由 `tuqiang-dev` 做最终取舍；变更完成后的 Git 因果与学习文档由 `tuqiang-change-retrospective` 负责。
+本 skill 不做 Vue3/React 教学，不自行决定实现方案或修改代码。产品线、owner、资源来源或验收语义存在会改变结论的歧义时，它只列已核验候选并询问用户，不用临时绘制、默认文案或自创 contract 填补决策。
 
-reference 不固定源码行号。使用时必须先校验 `<TUQIANG_ROOT>`，再通过 `rg -n` 重新确认 symbol 的当前行号，并以当前源码为准。设备/GPS 只是已收录的一条代表性业务链，不是该 skill 的主职责。
+reference 不固定源码行号。使用时先校验当前对话所附项目/工作区；用户明确路径时以用户路径为准。然后用 `rg -n` 重新确认 symbol 的当前行号，并以当前源码为准。物理存在但没有 tracked `pubspec.yaml` 的目录不能视为有效 package。
+
+设备/GPS 专题只覆盖 Tuqiang 的一条代表性业务链，不代表 Laoying 采用相同实现。
 
 ## 文件结构
 
@@ -35,8 +37,8 @@ tuqiang-project-map/
 
 ## 典型触发语句
 
-- “解释这个页面从进入到数据展示的完整链路。”
+- “这个文件属于 Tuqiang 还是 Laoying，启动后怎么进入该页面？”
 - “这个 Provider 为什么能传设备参数，状态到底存在哪里？”
-- “点击设备后如何选中、请求定位状态并更新 UI？”
-- “这个需求应该经过哪些 package、route 和 composition callback？”
-- “这段共享逻辑应该放在 feature、shared_business 还是 core，项目里有没有可复用入口？”
+- “Laoying 登录态由谁发布，LY 路由如何找到最终页面？”
+- “这个需求应该经过哪个 package、route 和 composition/runtime callback？”
+- “这段共享逻辑应放在 feature、某个 `shared_*`、core，还是产品 app-local 层？”

@@ -1,158 +1,158 @@
 # Riverpod 状态拓扑与 family 语义
 
-## 1. 版本与现实边界
+## 1. 产品边界与版本
 
-当前项目在 `apps/tuqiang_app/pubspec.yaml` 声明 Flutter Riverpod 约束，解析版本记录在对应 lockfile。回答具体 API 行为前先核对两处；本 reference 的扫描基线观察到 2.6.x，不把它当成永久版本。
+本页的 Riverpod 拓扑属于 Tuqiang。Laoying 根状态当前是 `LYAppProvider extends ChangeNotifier` 加 app-local controller/repository；除非目标 Laoying 文件确实导入并使用 Riverpod，不得套用本页。
 
-项目主要使用 `StateNotifierProvider`，同时存在普通 `Provider`、`FutureProvider.autoDispose.family` 和 Riverpod 2 的 `NotifierProvider.autoDispose.family`。没有搜到某种 Provider 不代表项目永远不用它，结论必须限定为“本次当前源码扫描”。
+Tuqiang 在 `apps/tuqiang_app/pubspec.yaml` 声明 `flutter_riverpod`/`riverpod`，实际版本以对应 lockfile 为准；最近核验为 2.6.1，但回答 API 行为前必须重新读取。项目同时使用 `StateNotifierProvider`、普通 `Provider`、`FutureProvider.autoDispose.family` 与 `NotifierProvider.autoDispose.family`。
 
 ## 2. Provider 不是一种状态
 
-| 形态 | 当前项目例子 | 状态在哪里 | 参数/依赖在哪里进入 |
-|---|---|---|---|
-| `Provider<T>` | `deviceCoreCommandsProvider`、`activeDeviceCorePresentationProvider` | 通常是无可变状态的服务或派生值，由 ProviderContainer 缓存 | builder 内通过 `ref` 读取/订阅依赖 |
-| `StateNotifierProvider<N,S>` | `deviceCatalogProvider`、`selectedDeviceProvider` | `StateNotifier.state`；实例归当前 ProviderContainer | Provider builder 构造 Notifier |
-| `StateNotifierProvider.autoDispose.family<N,S,K>` | `deviceIdentityProvider(deviceId)`、`deviceLocationSnapshotProvider(deviceRef)` | 每个 family key 对应一个独立 Notifier/state 实例 | family builder 的 `deviceId`/`deviceRef` 参数 |
-| `FutureProvider.autoDispose.family<S,K>` | `monitorDeviceInfoProvider(videoRef)` | 每个 key 对应独立 `AsyncValue<S>`/异步缓存 | async builder 的 `key` |
-| `NotifierProvider.autoDispose.family<N,S,K>` | `mediaDownloadQueueProvider(sessionKey)`、`cameraProvisioningFlowProvider(deviceId)` | Notifier 的 `state`，每个 key 一份 | `build(K arg)` 收到 key |
+| 形态 | 当前例子 | 状态与 key |
+|---|---|---|
+| `Provider<T>` | `deviceCoreCommandsProvider`、`activeDeviceCorePresentationProvider` | 服务或派生值，由当前 ProviderContainer 缓存 |
+| `StateNotifierProvider<N,S>` | `deviceCatalogProvider`、`selectedDeviceProvider` | Container 内一份 Notifier/state |
+| `StateNotifierProvider.autoDispose.family<N,S,K>` | `deviceIdentityProvider(deviceId)`、`deviceLocationSnapshotProvider(deviceRef)` | 每个相等 key 一份 Notifier/state |
+| `FutureProvider.autoDispose.family<S,K>` | `monitorDeviceInfoProvider(videoRef)` | 每个 key 一份 `AsyncValue`/异步缓存 |
+| `NotifierProvider.autoDispose.family<N,S,K>` | `mediaDownloadQueueProvider(sessionKey)`、`cameraProvisioningFlowProvider(deviceId)` | `build(K)` 收 key，每个 key 一份 state |
 
-不要只说“这个 Provider 存数据”。必须指出：Provider 声明、Notifier/State 类型、Container 作用域、family key、写方法、消费者与销毁/reset。
+必须指出声明、Notifier/State、Container 作用域、family key 来源、写入者、消费者和销毁/reset，不能只说“Provider 存数据”。
 
-## 3. family 参数为什么能传
+## 3. family key 与当前 owner
 
-以 `deviceLocationSnapshotProvider(deviceRef)` 为例：
+`provider(arg)` 根据参数选择/创建 keyed Provider 实例，不是把参数塞进一份全局状态。当前复合 key：
 
-```text
-deviceLocationSnapshotProvider                    family 定义
-  + LocationDeviceRef(deviceId, deviceType)       family key
-  = 一个具体 Provider 实例                       keyed instance
-  -> DeviceLocationSnapshotNotifier               该 key 的 Notifier
-  -> DeviceLocationSnapshotState                  该 key 的状态
-```
+- `packages/shared/shared_device/lib/src/domain/device_core_ref.dart::DeviceCoreRef`
+- `packages/shared/shared_location/lib/src/domain/device/location_device_ref.dart::LocationDeviceRef`
+- `packages/shared/shared_media/lib/src/domain/device/video_device_ref.dart::VideoDeviceRef`
 
-`provider(arg)` 不是把普通函数参数塞进“一份全局状态”。`.family` 根据参数选择或创建一个 keyed Provider 实例；在同一 ProviderContainer 内，相等 key 复用同一实例，不同 key 隔离状态。
+这些 value object 实现 `operator ==` 与 `hashCode`；解释 family 时展示决定身份的字段。String key 也要说明按字符串值隔离。
 
-项目里的复合 key：
-
-- `packages/shared/shared_business/lib/device/domain/device_core_ref.dart::DeviceCoreRef`
-- `packages/shared/shared_business/lib/location/domain/device/location_device_ref.dart::LocationDeviceRef`
-- `packages/shared/shared_business/lib/video/domain/device/video_device_ref.dart::VideoDeviceRef`
-
-这些不可变对象实现 `operator ==` 与 `hashCode`，因此“字段值相等的新对象”可以命中同一 family 实例。解释 family 时必须展示 key 类的相等性代码；若 key 是 `String deviceId`，也要说明它按字符串值区分实例。
-
-## 4. 参数从哪里来
-
-典型设备链：
+## 4. 当前设备到定位 key
 
 ```text
 TQDeviceInfoModel
   -> DeviceCoreCommands.setModelFromList
-  -> selectedDeviceProvider（当前选中设备）
-  -> selectedLocationDeviceProvider（派生并校验是否支持定位）
-  -> LocationDeviceRef(deviceId, deviceType)
+  -> deviceIdentityProvider(deviceId).seed
+  -> selectedDeviceProvider.select
+  -> selectedLocationDeviceProvider
+  -> LocationDeviceRef.tryFromDevice(device)
   -> deviceLocationSnapshotProvider(deviceRef)
 ```
 
-另一个典型链：
+`DeviceCoreCommands` 现在属于 `shared_device`。跨定位/消息上下文的失效和请求不由它直接 import 其他 shared 包，而是调用 `DeviceCoreRuntime.invalidateExternalContext/requestExternalContext`；app 在 `bootstrap.dart`/coordinator 中注入实现。追参数来源时必须继续经过这层 runtime callback。
 
-```text
-selectedDeviceProvider.deviceId + deviceType
-  -> DeviceCoreRef
-  -> deviceModuleProvider(deviceRef)
-```
+## 5. read/watch/listen/select
 
-不能从某个消费端的 `provider(key)` 就断言 key 来源。继续向上查局部变量、Widget 参数、route arguments、选中 Provider 或 composition callback，直到找到用户动作或生命周期入口。
-
-## 5. read / watch / listen / select 的实际语义
-
-| API | 当前链路中应检查什么 |
+| API | 要核验的实际语义 |
 |---|---|
-| `ref.watch(provider)` | 建立响应式依赖；Widget 可能重建，Provider builder 可能重新计算。查被 watch 的具体实例，family key 不能省略。 |
-| `ref.read(provider)` | 读取当下值或获取命令对象/Notifier，不建立持续订阅。它可出现在 build 中，但后续变化不会因这次 read 自动触发重建。 |
-| `ref.listen(provider, callback)` | 状态变化时执行副作用/桥接；查 previous/next 条件、首轮是否触发、回调是否异步调度。 |
-| `.select((state) => field)` | 只订阅选中的派生字段；说明哪个字段变化会触发消费者。 |
-| `ProviderScope.containerOf(context, listen: ...)` | 在非 Consumer API、路由 builder 或 callback 中访问同一个根 Container；查 `listen` 参数和作用域。 |
-| `ref.invalidate(provider)` | 丢弃指定实例；family 可失效一个 key，也可失效整个 family。查重新被读/看后如何重建。 |
+| `ref.watch(provider)` | 订阅哪个具体实例；变化会让 Widget 重建或 Provider 重算 |
+| `ref.read(provider)` | 一次性读取值或命令/Notifier，不建立持续订阅 |
+| `ref.listen(provider, callback)` | 状态变化触发副作用/桥接；查 previous/next、首轮和异步调度 |
+| `.select((state) => field)` | 只订阅哪个字段，何种变化触发消费者 |
+| `ProviderScope.containerOf(context, listen: ...)` | 非 Consumer 或路由/composition 如何访问同一根 Container |
+| `ref.invalidate(provider)` | 丢弃某个 family key 还是整个 family，何时重新构建 |
 
-不要使用“build 只能 watch”“按钮只能 read”这类绝对规则。判断依据是调用点需要响应式订阅、一次性读取还是副作用监听。
+不要使用“build 只能 watch”“按钮只能 read”之类绝对规则。
 
-## 6. autoDispose、keepAlive 与清理
+## 6. autoDispose、keepAlive 与并发
 
-- `autoDispose`：当某个 keyed 实例没有监听者并满足 Riverpod 生命周期条件时，可被释放；再次读取/监听会创建新实例。
-- `ref.onDispose`：项目用它取消 Timer、Controller、网络/下载资源或持久化尾部状态。
-- `ref.keepAlive()`：可以延长 autoDispose 实例寿命。`mediaDownloadQueueProvider(sessionKey)` 明确持有 KeepAliveLink，因此不能只看到 `autoDispose` 就说页面退出后立即清空。
-- Notifier 内还常用 generation/requestVersion/mounted 防止旧异步结果覆盖新状态；这是业务并发控制，不等同于 Riverpod 自动取消网络请求。
-- session reset 通过 `ProviderContainer.invalidate` 主动清除跨账号状态，和 autoDispose 是两套机制。
+- `autoDispose` 实例失去监听且满足生命周期条件后可释放；根 Host 或其他页面的 watch 会延长寿命。
+- `ref.onDispose` 用于 Timer、Controller、网络/下载或持久化尾部清理。
+- `mediaDownloadQueueProvider(sessionKey)` 虽为 autoDispose，但显式持有 `KeepAliveLink`，页面退出不等于立即清空。
+- generation/requestVersion/mounted/pending future 是业务并发控制，不等于 Riverpod 自动取消请求。
+- session reset 的主动 `ProviderContainer.invalidate` 与 autoDispose 是两套机制。
 
-## 7. 项目代表拓扑
+## 7. 当前代表拓扑
 
-### 设备目录（单实例）
+### 设备目录
 
-文件：`packages/shared/shared_business/lib/device/application/providers/device_catalog_provider.dart`
+文件：`packages/shared/shared_device/lib/src/application/providers/device_catalog_provider.dart`
 
 ```text
 deviceCatalogFilterProvider ─┐
-selectedDepartmentProvider ──┼─ ref.listen -> DeviceCatalogNotifier._emit/刷新视图
+selectedDepartmentProvider ──┼─ ref.listen -> DeviceCatalogNotifier
 viewPreferenceProvider ──────┘
-deviceCatalogRepositoryProvider -> DeviceCatalogNotifier -> DeviceCatalogState
-                                                     ├> devicesById
-                                                     └> statusesById
+deviceCatalogRepositoryProvider -> DeviceCatalogState
+                                   ├─ devices/index/page
+                                   └─ statusesById
 ```
+
+`_requestDevicePage` 使用 requestVersion/mounted 防旧请求覆盖。首次第一页还有 T20 尽力唤醒的异步分支；它与列表结果和批量状态刷新不是一条同步返回。
 
 ### 当前设备与按设备状态
 
-文件：`packages/shared/shared_business/lib/device/application/providers/device_core_providers.dart`
+定义文件：
+
+- `packages/shared/shared_device/lib/src/application/device_selection_providers.dart`：`selectedDeviceProvider`、`deviceIdentityProvider`；
+- `packages/shared/shared_device/lib/src/application/providers/device_core_providers.dart`：module、Wi-Fi、SIM 等按设备状态。
 
 ```text
-selectedDeviceProvider                         一份当前选中状态
-deviceIdentityProvider(deviceId)               每个 deviceId 一份
-deviceModuleProvider(DeviceCoreRef)            每个 deviceId + deviceType 一份
-deviceWifiDetailProvider(deviceId)             每个 deviceId 一份
-deviceSimAuthProvider(deviceId)                每个 deviceId 一份
+selectedDeviceProvider                      当前选择一份
+deviceIdentityProvider(deviceId)            每个 deviceId
+deviceModuleProvider(DeviceCoreRef)         每个 deviceId + deviceType
+deviceWifiDetailProvider(deviceId)          每个 deviceId
+deviceSimAuthProvider(deviceId)             每个 deviceId
 ```
 
-`packages/shared/shared_business/lib/device/presentation/device_core_presentation.dart::activeDeviceCorePresentationProvider` watch 上述状态并合成 UI 友好的只读数据。
+展示聚合见 `packages/shared/shared_device/lib/src/presentation/device_core_presentation.dart::activeDeviceCorePresentationProvider`。
 
-### 定位状态
+### 定位
 
-文件：`packages/shared/shared_business/lib/location/application/providers/location_providers.dart`
+文件：`packages/shared/shared_location/lib/src/application/location_providers.dart`
 
 ```text
 selectedDeviceProvider + deviceIdentityProvider
   -> selectedLocationDeviceProvider
   -> LocationDeviceRef?
-       ├> deviceLocationSnapshotProvider(ref)
-       ├> locationDeviceProfileProvider(deviceId)
-       ├> locationCapabilitiesProvider(deviceId)
-       ├> locationPresentationProvider(ref)
-       ├> locationCommandProvider(ref)
-       └> locationPromptProvider(ref)
+       ├─ deviceLocationSnapshotProvider(ref)
+       ├─ locationDeviceProfileProvider(deviceId)
+       ├─ locationCapabilitiesProvider(deviceId)
+       ├─ locationPresentationProvider(ref)
+       ├─ locationCommandProvider(ref)
+       └─ locationPromptProvider(ref)
 ```
 
-展示聚合见 `packages/shared/shared_business/lib/location/presentation/location_presentation_provider.dart::activeLocationPresentationDataProvider`。
+展示聚合见 `packages/shared/shared_location/lib/src/presentation/location_presentation_provider.dart`。snapshot 的坐标同步通过注入的 location runtime callback 进入 app 旧 Manager，不应描述为 shared_location 直接拥有该 Manager。
 
-## 8. 混合状态不得遗漏
+### 媒体与 Camera
 
-完整追踪还要搜索：
+- `packages/shared/shared_media/lib/src/application/media_download_queue_provider.dart::mediaDownloadQueueProvider`
+- `packages/feature/feature_camera/lib/src/video/providers/video_read_providers.dart::monitorDeviceInfoProvider`
+- `packages/feature/feature_camera/lib/src/pages/set_net/application/camera_provisioning_notifier.dart::cameraProvisioningFlowProvider`
 
-- Widget `setState`：分页 loading、tab、输入、动画等页面局部状态；
-- `TQGlobalModel`、`TQInfoManager`、`MapSourceManager`、`TQScreenSecureManager` 等 Manager/单例；
-- Controller、Timer、StreamSubscription 和插件 callback；
-- Repository 之外的直接 `TQHttp.*`；
-- SharedPreferences、文件缓存或数据库。
+不要因视频 key 在 shared_media 就把 Camera 私有流程归给 shared。
 
-如果一条链同时写 Riverpod 和 Manager，要分别列出写入原因及消费者，不要声称 Manager 数据“也自动在 Provider 中”。
+## 8. Laoying 状态边界
 
-## 9. 实时拓扑扫描
+Laoying 先追：
+
+```text
+LYAppProvider(ChangeNotifier)
+  -> session/user/reset coordinator/refresh bus
+  -> notifyListeners
+  -> LYAppScope 消费者
+
+app-local page
+  -> domain controller
+  -> domain repository/adapters
+  -> controller/Widget 发布与展示
+```
+
+关键入口为 `apps/laoying_app/lib/app/session/ly_app_provider.dart` 与各领域 `providers/*controller.dart`。必须按实际 controller 基类和监听方式说明；不能把 `notifyListeners` 改写成 `ref.watch`。
+
+## 9. 混合状态扫描
+
+完整链路还要搜索 Widget `setState`、Manager/单例、controller、Timer/Stream、插件 callback、直接 HTTP、SharedPreferences/文件/数据库。若同一链写 Riverpod 与 Manager，要分别列写入原因和消费者。
 
 ```powershell
 Set-Location -LiteralPath $tuqiangRoot
 rg -n "final <provider名>|class <Notifier名>|class <State名>" apps packages --glob '*.dart'
 rg -n "<provider名>\(|<provider名>\.notifier|invalidate\(<provider名>|refresh\(" apps packages --glob '*.dart'
-rg -n "ref\.(read|watch|listen)|\.select\(" <相关文件> --glob '*.dart'
+rg -n "ref\.(read|watch|listen)|\.select\(" <Tuqiang相关文件> --glob '*.dart'
 rg -n "operator ==|hashCode" <family-key文件>
-rg -n "autoDispose|keepAlive|onDispose|dispose\(|requestVersion|generation|mounted" <Provider及Notifier文件>
-rg -n "setState\(|Manager|Controller|TQHttp\." <同一需求目录> --glob '*.dart'
+rg -n "autoDispose|keepAlive|onDispose|requestVersion|generation|mounted" <Provider及Notifier文件>
+rg -n "class LYAppProvider|notifyListeners|resetSession|class .*Controller" apps/laoying_app/lib/app --glob '*.dart'
 ```
 
-最终答案应把命中结果整理成“定义 → 参数来源 → 写入 → 保存 → 订阅/读取 → UI → 清理”，而不是粘贴搜索列表。
+最终整理成“产品 → 定义 → 参数/实例来源 → 写入 → 保存 → 订阅/读取 → UI → 清理”，不要粘贴搜索列表。

@@ -1,7 +1,7 @@
 {
   "name": "flutter-skill",
-  "version": "1.12.0",
-  "description": "服务途强三端 Flutter monorepo 的四个 Agent Skills：项目事实地图、Vue3/React 全链路讲解、团队风格开发与变更学习复盘",
+  "version": "1.13.0",
+  "description": "服务途强与老鹰在线双产品 Flutter monorepo 的四个 Agent Skills：项目事实地图、Vue3/React 全链路讲解、团队风格开发与变更学习复盘",
   "keywords": [
     "antigravity",
     "claude-code",
@@ -17,6 +17,9 @@
     "tuqiang",
     "tuqiang-change-retrospective",
     "riverpod",
+    "change-notifier",
+    "laoying",
+    "multi-app",
     "tuqiang-project-map",
     "harmonyos"
   ],
@@ -31,26 +34,26 @@
     {
       "name": "flutter-to-web",
       "path": "skills/flutter-to-web",
-      "version": "1.6.1",
-      "description": "从用户操作跨文件追踪事件、Riverpod、数据源和 UI，并用 Vue3/React 口吻与端到端代码讲解"
+      "version": "1.7.0",
+      "description": "按产品线从用户操作跨文件追踪事件、真实状态体系、数据源和 UI，并用 Vue3/React 口吻与端到端代码讲解"
     },
     {
       "name": "tuqiang-dev",
       "path": "skills/tuqiang-dev",
-      "version": "1.11.1",
-      "description": "按途强项目真实分层、现有复用入口与局部主流风格执行开发、修复、验证和代码评审"
+      "version": "1.12.0",
+      "description": "按双产品真实分层、需求决策边界、现有复用入口与局部主流风格执行开发、修复、验证和代码评审"
     },
     {
       "name": "tuqiang-project-map",
       "path": "skills/tuqiang-project-map",
-      "version": "1.1.1",
-      "description": "动态识别途强仓库并提供架构分层、模块 owner、状态拓扑、复用入口与业务链事实索引"
+      "version": "1.2.0",
+      "description": "动态识别当前 checkout 与产品线，并提供架构分层、模块 owner、状态拓扑、复用入口与业务链事实索引"
     },
     {
       "name": "tuqiang-change-retrospective",
       "path": "skills/tuqiang-change-retrospective",
-      "version": "1.0.0",
-      "description": "在 Bug 修复或需求完成后追溯 Git 因果、拆解输入输出与事件流，并生成含 Dart、Vue3、React 对照的学习复盘 Markdown"
+      "version": "1.1.0",
+      "description": "在双产品 Bug 修复或需求完成后按产品范围追溯 Git 因果、拆解输入输出与事件流，并生成含 Dart、Vue3、React 对照的学习复盘 Markdown"
     }
   ]
 }

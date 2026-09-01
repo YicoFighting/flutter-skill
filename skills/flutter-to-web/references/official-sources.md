@@ -18,9 +18,9 @@
 | "路由和深链（deep link）怎么配？" | 先看途强 routing；只有代码使用 go_router 才查 go_router 文档 |
 | "列表/表单溢出报错怎么办？" | Flutter 官方 constraints 和 RenderFlex 文档 |
 | "JSON 序列化怎么写才对？" | Dart JSON 文档，再结合途强的 TCheck/Model 约定 |
-| "HTTP 请求用什么包？" | 先看途强 TQHttp 和 core_http，不要用通用 http 示例替换它 |
+| "HTTP 请求用什么包？" | 先判产品：Tuqiang 看 TQHttp/core_http，Laoying 看 LYBackendHttpClient；不要用通用 http 示例替换当前实现 |
 | "测试怎么写？" | 先看途强 testing.md，再查 Flutter/Dart 测试文档 |
-| "本地化/多语言怎么配？" | 先看途强 i18n.md；它不是 intl ARB 方案 |
+| "本地化/多语言怎么配？" | 先判产品并读当前 manifest/loader；Laoying 与 Tuqiang 拥有独立资源，不能互套 |
 
 ## 补充的官方一手资料
 

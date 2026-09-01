@@ -8,6 +8,7 @@
 
 | 项目 | 要回答什么 |
 |---|---|
+| 产品线/target | Tuqiang / Laoying / 共享，以及实际涉及的 shell/平台 |
 | 用户症状 | 用户实际看见或操作到什么 |
 | 触发条件 | 哪个入口、参数、时序、设备、生命周期或并发条件触发 |
 | 期望行为 | 正确业务规则是什么 |
@@ -69,18 +70,18 @@
 ### 状态依赖/UI 重建链
 
 ```text
-State/Manager/cache 改变
-→ Provider/selector/listener 收到变化
+State/Manager/cache/ChangeNotifier 字段改变
+→ Provider/selector/listener 或 ListenableBuilder 收到变化
 → 派生状态重算或副作用触发
 → Widget build
 → 最终字段展示
 ```
 
-分别说明 `read/watch/listen/select`、family key、override、`autoDispose/keepAlive` 和非 Riverpod 旁路实际承担什么。
+分别说明当前产品真实采用的 `read/watch/listen/select`、family key、override、`autoDispose/keepAlive`，或 `LYAppScope`、ChangeNotifier Controller、`notifyListeners`、listener/dispose，以及其他旁路实际承担什么。
 
-## 4. 修复前后源码
+## 4. 修复前后源码/资源
 
-至少选择能证明下面四件事的最小 Dart 片段：
+至少选择能证明下面四件事的最小真实源码或资源证据；Flutter 链路使用 Dart，原生插件可同时使用 Java/Swift/ETS，资源改动补注册、加载与必要文件证据：
 
 1. 真实触发入口；
 2. 错误条件或错误写入；
@@ -98,9 +99,9 @@ State/Manager/cache 改变
 
 历史代码标 `path@<sha>`，当前代码标 `path:line`。重构导致行号变化时，以 symbol 和 commit 为主。
 
-## 5. Vue3 / React 对照
+## 5. 按需 Vue3 / React 对照
 
-涉及 Flutter/Riverpod 链路时读取兄弟 `flutter-to-web` 的完整链路与相关 reference。三套代码必须：
+涉及适合前端迁移学习的 Flutter 状态链，或用户明确要求时，读取兄弟 `flutter-to-web` 的完整链路与相关 reference。三套代码必须：
 
 - 使用同一入口、参数、状态名、请求结果和 UI 字段；
 - 覆盖错误版本与修复约束，而不是只翻译一行语法；
@@ -108,7 +109,7 @@ State/Manager/cache 改变
 - React 可用 keyed store/query、selector/effect 与 cleanup/取消；
 - 明确 Riverpod family、ProviderScope、autoDispose 与 Web 方案的非等价处。
 
-如果 Bug 是 Flutter 独有生命周期或布局约束，Web 代码用于说明相近心智模型，并明确“不是一比一等价”。
+如果 Bug 是 Flutter 独有生命周期或布局约束，Web 代码仅在确有帮助时说明相近心智，并明确“不是一比一等价”。原生插件、资源、manifest 或构建问题优先展示 Dart/Java/Swift/ETS/资源与 target 测试，不强制生成 Web 代码。
 
 ## 6. 排查过程
 
@@ -145,6 +146,6 @@ State/Manager/cache 改变
 - [ ] 引入、暴露、修复、防线缺失已区分；
 - [ ] 因果栈能从根因走到症状，也能从修复走回正确 UI；
 - [ ] 三条流没有被混成伪同步调用栈；
-- [ ] 修复前后 Dart 证据与 Vue3/React 对照使用同一业务链；
+- [ ] 修复前后真实证据已闭环；需要前端对照时 Dart 与 Vue3/React 使用同一业务链；
 - [ ] 本次实际排查与下次建议没有混写；
 - [ ] 预防措施能对应本次根因并可验证。

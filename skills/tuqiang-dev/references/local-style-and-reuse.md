@@ -1,101 +1,93 @@
 # 本地风格采样与复用决策
 
-本文件用于回答“在这个 owner 里应该照谁写、复用什么、是否需要抽象”。项目地图只提供 owner 候选、架构边界和 symbol 索引；最终实现必须以当前 `<TUQIANG_ROOT>` 中目标 package 的局部证据为准。
+本文件回答“在这个产品和 owner 里应该照谁写、复用什么、是否需要抽象”。最终实现以当前仓库、当前 Product Scope 和目标 owner 的局部证据为准。
 
-## 1. 先定 owner，再采样
+## 1. 先定产品和 owner，再采样
 
-按以下顺序执行，不能先写代码再为已有方案找证据：
+1. 沿页面入口、route、Controller/Provider、Repository、asset 和测试确认产品与唯一 owner；
+2. 老鹰先核对 Product Scope、API/route/resource/native contract；途强核对 Feature/public barrel 与迁移边界；
+3. 查看目标 owner 的公开入口、真实调用方和复用点，禁止跨包 import 私有 `src/**`；
+4. 在同一产品、同一 owner 选 2–4 个成熟同类实现，优先同一操作、生命周期和平台边界；
+5. 同类不足时再看同产品相邻 owner，最后才参考允许复用的公共 core/shared/plugin；
+6. 核对测试、当前 export 和实际调用，不能只凭文件名、时间或代码看起来“更新”判断。
 
-1. 沿页面入口、route、Provider、Repository、asset 和测试确认唯一 owner 与所属层级；
-2. 查看目标 package 的公开 barrel/API、现有调用方和可复用入口，禁止跨包 import 私有 `src/**`；
-3. 在同一子域、目标 package 选 2–4 个成熟同类实现，优先同一用户操作、同一生命周期和同一平台边界；
-4. 同类不足时再看同层 sibling feature，最后才参考全局通用写法；
-5. 对每个候选核对真实调用方、测试、当前 public export 和最近仍在维护的 owner，不能只凭文件名、更新时间或代码更“新潮”判断。
-
-证据优先级固定为：
+证据优先级：
 
 ```text
-同一子域/目标 package 的成熟同类实现
-> 同层 sibling feature
-> 全局通用写法
+同产品同 owner 的成熟实现
+> 同产品相邻 owner
+> 当前 Product Scope 允许的公共 core/shared/plugin
+> 通用 Flutter 写法
 ```
 
-项目不是全局一致的：同一业务域可能同时存在 `TQ`、`Tq`、无前缀，`StateNotifier`、`ChangeNotifier`，以及旧/新目录。样本冲突时沿当前 owner 中较新且有真实调用方或测试的模式，并在实施说明中记录取舍；不得借当前需求顺手统一存量命名、目录或状态架构。
+老鹰不能把途强 Feature 页面当 sibling 模板。可以复用的是语义一致的公开底层能力，不是途强的业务 Router、Controller、资源或运行时配置。
 
 ## 2. 最小采样表
 
-动手前至少记录与本次修改有关的行；不相关维度不必凑数。
-
-| 维度 | 必查证据 | 需要确定的选择 |
+| 维度 | 必查证据 | 需要确定 |
 |---|---|---|
-| 命名与文件组织 | 同类 symbol、相邻文件、barrel export | 前缀、文件名、公开/私有边界、目录位置 |
-| Provider | 声明、family key、Notifier、消费者、dispose/reset | Provider 类型、State 形态、参数和生命周期 |
-| Model | 同接口响应、`fromJson/toJson`、`TCheck`、测试 | null 语义、不可变性、转换和 `copyWith` |
-| Repository | 同域 Repository、TQHttp 调用、错误分支、fake | 方法返回类型、异常/Result 边界、依赖注入 |
-| Widget | 同类页面/组件、core_ui、`.tr`、`.sc`、释放逻辑 | Widget 类型、拆分粒度、订阅和副作用位置 |
-| 测试 | 同类行为测试、fixture/fake、contract test | 最小可证伪场景与断言层级 |
+| 产品/范围 | target、Product Scope、需求验收 | 允许做什么、哪些平台、哪些阻塞项 |
+| 命名与文件组织 | 同 owner symbol、相邻文件、公开入口 | `TQ/Tq/LY` 前缀、目录和公开/私有边界 |
+| 状态 | 声明、身份 key、消费者、dispose/reset | 途强 Provider/Manager 或老鹰 LY Controller/Scope 的实际模式 |
+| Model | 同接口响应、parser、测试 | null、不可变性、转换与 copy |
+| Repository | 同域实现、HTTP client、错误分支、fake | 返回类型、failure 边界和注入 |
+| Widget | 同产品页面、core_ui、i18n、尺寸、释放逻辑 | 拆分、订阅、副作用和品牌覆盖 |
+| 路由/资源 | registry、contract、resolver、pubspec | 唯一 owner、参数/返回值、package asset |
+| 测试 | 同类行为、fixture/fake、contract test | 最小可证伪场景 |
 
-Provider、Model、Repository、Widget 可以分别沿用当前 owner 内不同的成熟模式；不要为了“一致”强迫它们复制同一个 sibling feature 的整套脚手架。
+这些维度可以分别沿用不同成熟样本，不为表面一致复制一整套脚手架。
 
 ## 3. 复用决策阶梯
 
-从上到下选择第一个满足语义和依赖方向的方案：
+1. **直接复用公开能力**：职责、产品范围、错误语义和生命周期一致；
+2. **小幅扩展 owner 内能力**：新增参数不会变成产品/mode 开关；
+3. **保留局部直接实现**：只有一个真实消费者，或少量重复更清楚；
+4. **新增共享抽象**：至少两个现存消费者、稳定共同语义、正确依赖方向和可验证 contract；
+5. **停止并重新选 owner**：只能靠跨产品业务 import、Feature 横向私有依赖、app 反向承载或 shared 依赖 Feature 才能复用。
 
-1. **直接复用公开能力**：现有 API、Provider、Repository、core_ui 或 adapter 的职责与生命周期完全一致；
-2. **小幅扩展 owner 内能力**：语义一致，新增参数不会把单一职责变成模式开关；
-3. **保留局部直接实现**：只有一个真实消费者，或少量重复比抽象更清楚；
-4. **新增共享抽象**：至少有两个已存在的真实消费者、稳定共同语义、正确依赖方向和可验证 contract；
-5. **停止并重新选 owner**：只能通过 feature 横向依赖、app 反向承载业务或 shared 依赖 feature 才能复用。
+以下通常不抽象：
 
-以下情况通常不要抽象：
-
-- wrapper 只转发参数或返回值，没有收敛平台、错误或生命周期差异；
-- 需要大量可空 callback、boolean/mode flag 才能服务不同业务；
-- 为尚未出现的消费者建立 base class、通用 service 或全局 util；
-- 共享后反而暴露业务 Model、路由或 Provider 私有细节；
-- 抽象会扩大 package、lockfile、平台实现或 session reset 的影响面。
-
-目标是高内聚、低耦合：业务规则、状态和数据访问留在真实 owner，跨 package 只暴露必要 contract。复用优先不等于抽象优先。
+- 只转发参数/返回值的 wrapper；
+- 依赖大量 nullable callback 或 boolean/mode flag；
+- 为未来假想消费者建立 base/service/global util；
+- 会暴露业务 Model、路由、Provider/Controller 私有细节；
+- 会扩大 package、lockfile、平台或 session reset 影响面；
+- 需要从冻结的 `shared_business` 恢复入口。
 
 ## 4. 实施前决策记录
 
-开始修改前，用短句写清：
-
 ```text
-Owner/层级：<package 与目录，为什么归它>
-现有复用入口：<symbol；复用、扩展或不复用及原因>
-局部样本：<2–4 个文件/symbol；各自证明什么>
-选择的写法：<Provider/Model/Repository/Widget 中与需求相关的约定>
-最小范围与验收：<要改的文件、不会改的边界、可证伪行为>
+产品/Product Scope：<tuqiang 或 laoying；允许范围与平台>
+Owner/层级：<package/目录；为什么归它>
+现有复用入口：<symbol；复用、扩展或不复用的原因>
+局部样本：<2–4 个同产品文件/symbol；各证明什么>
+选择的写法：<状态/Model/Repository/Widget/route/asset>
+最小范围与验收：<改什么、不改什么、可证伪行为>
+待用户决定：<没有则写无；有则停止相关实现>
 ```
 
-样本冲突时必须补一行“选择依据”，指向当前 owner 的调用方、测试或公开 export。实现中若发现 owner 或复用判断错误，先更新这份决策，再扩大修改范围。
+完成一次聚焦调查后仍有多解时，按 [requirement-clarification.md](requirement-clarification.md) 立即询问，不继续扩大搜索。实现中发现 owner 或复用判断错误，先更新决策，再考虑扩大范围。
 
 ## 5. 可验证检查
 
-先按项目地图协议得到 `$tuqiangRoot`，再把目标 package 的仓库相对路径和 symbol 占位符替换为真实值：
+先按公共协议得到 `$tuqiangRoot`，再替换真实相对路径和 symbol：
 
 ```powershell
-$targetPackageRelative = '<目标 package 相对路径>'
-$targetPackage = Join-Path $tuqiangRoot $targetPackageRelative
-$candidateSymbol = '<候选 symbol>'
-$newOrEquivalentSymbol = '<新增或已有同义 symbol 的 rg pattern>'
+$targetRelative = '<目标 owner 相对路径>'
+$targetPath = Join-Path $tuqiangRoot $targetRelative
+$candidate = '<候选 symbol>'
 
-# 公开入口、同类实现和调用方
-rg -n 'export |Provider|Repository|class ' (Join-Path $targetPackage 'lib') (Join-Path $targetPackage 'test')
-rg -n $candidateSymbol (Join-Path $tuqiangRoot 'apps') (Join-Path $tuqiangRoot 'packages')
-
-# 修改后检查影响面和是否产生重复入口
-git -C $tuqiangRoot diff -- $targetPackageRelative
-rg -n $newOrEquivalentSymbol (Join-Path $targetPackage 'lib') (Join-Path $targetPackage 'test')
+rg -n 'export |Provider|Repository|Controller|class ' (Join-Path $targetPath 'lib') (Join-Path $targetPath 'test')
+rg -n $candidate (Join-Path $tuqiangRoot 'apps') (Join-Path $tuqiangRoot 'packages')
+git -C $tuqiangRoot diff -- $targetRelative
 ```
 
-交付前逐项确认：
+交付前确认：
 
-- [ ] 2–4 个样本来自同一子域/目标 package；不足时已说明为何降级到 sibling/global；
-- [ ] 复用入口有当前 public export 和真实调用方证据，不依赖其他 package 的私有 `src/**`；
-- [ ] Provider、Model、Repository、Widget 只采纳与本次需求相关的局部约定；
-- [ ] 样本冲突的选择有测试、调用方或当前 owner 证据；
+- [ ] 样本来自同一产品、同一 owner；降级采样有理由；
+- [ ] 老鹰范围有 Product Scope/contract 证据，未把设计存在当授权；
+- [ ] 复用入口是当前公开 API，未依赖另一产品业务或私有 `src/**`；
 - [ ] 没有为统一存量而改名、搬目录、替换状态库或重排脚手架；
-- [ ] 没有纯转发 wrapper、模式开关胶水、投机性基类或无真实消费者的共享层；
-- [ ] `git diff` 只覆盖必要 owner，并已运行该范围对应的 analyze、测试与边界检查；未执行项如实记录。
+- [ ] 没有纯转发 wrapper、mode flag、投机基类或无消费者共享层；
+- [ ] 没有向冻结的 `shared_business` 写入或产生产品资源/配置泄漏；
+- [ ] diff 只覆盖必要 owner，验证与未执行项均已记录。

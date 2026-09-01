@@ -19,7 +19,7 @@
 3. **同步更新 README.md**：
    - 若涉及版本号、目录结构、特性概览或新增 reference 文件索引，必须同步更新根目录 `README.md` 以及对应 skill 的 `README.md`。
 4. **全局自动同步（Sync to Global）**：
-   - 每次在工作区内完成 skill 修改后，必须自动将变更递归同步复制到**当前操作系统用户**的 Gemini 全局配置目录 `%USERPROFILE%\.gemini\config\skills\<skill-name>\`（本机当前为 `C:\Users\yico\.gemini\config\skills\<skill-name>\`），确保全局生效；严禁硬编码另一个不存在或无权限的用户目录。
+   - 每次在工作区内完成 skill 修改后，必须自动将变更递归同步复制到**当前操作系统用户**的 Gemini 全局配置目录 `$env:USERPROFILE\.gemini\config\skills\<skill-name>\`，确保全局生效；严禁在规范、脚本或命令中硬编码任何用户名或用户目录。
 
 ---
 

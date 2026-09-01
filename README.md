@@ -1,13 +1,13 @@
 # flutter-skills
 
-服务途强三端 Flutter monorepo 的四个 Agent Skill。它们按仓库结构动态识别当前 checkout，不绑定公司电脑、家庭电脑、盘符或用户目录。
+服务途强与老鹰在线双产品 Flutter monorepo 的四个 Agent Skill。它们以当前对话绑定项目为默认 checkout，按实时仓库结构识别产品线、平台 target 和业务 owner，不绑定公司电脑、家庭电脑、盘符或用户目录。
 
 | Skill | 版本 | 职责 | 典型场景 |
 |---|---:|---|---|
-| [`tuqiang-project-map`](skills/tuqiang-project-map/) | 1.1.1 | 提供架构分层、模块 owner、状态/数据拓扑、公共封装、复用入口与业务链的可核验事实索引 | “这个逻辑属于哪层”“状态实际经过哪些文件” |
-| [`flutter-to-web`](skills/flutter-to-web/) | 1.6.1 | 从用户操作追踪事件、异步数据、Riverpod 状态与 UI 重建，并用 Vue3/React 口吻和代码讲解 | “从进入页面/点击开始讲到接口、状态和 UI” |
-| [`tuqiang-dev`](skills/tuqiang-dev/) | 1.11.1 | 依据项目分层、现有复用入口和目标 package 的局部主流风格完成修改与风险验证 | “按同事现有写法修复这个 Bug” |
-| [`tuqiang-change-retrospective`](skills/tuqiang-change-retrospective/) | 1.0.0 | 在变更完成后追溯 Git 因果、拆解输入输出与事件流，并生成学习复盘 Markdown | “把刚修好的 Bug 或刚完成的需求整理成学习文档” |
+| [`tuqiang-project-map`](skills/tuqiang-project-map/) | 1.2.0 | 识别当前产品线并提供架构分层、模块 owner、状态/数据拓扑、公共封装、复用入口与业务链事实 | “这个逻辑属于哪层”“状态实际经过哪些文件” |
+| [`flutter-to-web`](skills/flutter-to-web/) | 1.7.0 | 从用户操作追踪事件、异步数据、真实状态体系与 UI 更新，并用 Vue3/React 口吻和代码讲解 | “从进入页面/点击开始讲到接口、状态和 UI” |
+| [`tuqiang-dev`](skills/tuqiang-dev/) | 1.12.0 | 先处理需求决策点，再依据产品分层、现有复用入口和目标 owner 的局部主流风格完成修改与验证 | “按同事现有写法修复这个 Bug” |
+| [`tuqiang-change-retrospective`](skills/tuqiang-change-retrospective/) | 1.1.0 | 在变更完成后按产品范围追溯 Git 因果、拆解输入输出与事件流，并生成学习复盘 Markdown | “把刚修好的 Bug 或刚完成的需求整理成学习文档” |
 
 ## 四个 Skill 如何协作
 
@@ -28,30 +28,30 @@
 ```
 
 - `tuqiang-project-map` 是底层项目上下文。它帮助模型确定代码放在哪层、现有能力在哪里、调用链和状态拓扑怎样连接，但不代替上层 Skill 输出教学代码或决定实现方案。
-- `flutter-to-web` 重新核验当前源码，以用户操作为顶点，分别展开事件/同步调用、异步数据、状态依赖/UI 重建，并给出路径、实时行号、最小 Dart 原文及 Vue3/React 端到端代码。
-- `tuqiang-dev` 使用地图提供的 owner 和复用候选，再在目标子域/package 抽样 2–4 个成熟同类实现，做局部风格、复用、内聚/解耦和验证决策。
+- `flutter-to-web` 重新核验当前源码，以用户操作为顶点，先识别途强 Riverpod/Manager 链或老鹰在线 `LYAppProvider`/controller 链，再分别展开事件、异步数据、状态依赖与 UI 更新，并给出路径、实时行号、最小 Dart 原文及 Vue3/React 端到端代码。
+- `tuqiang-dev` 使用地图提供的产品 owner 和复用候选，先把用户可观察行为、验收标准与待决策点说清，再在目标子域/package 抽样 2–4 个成熟同类实现，做局部风格、复用、内聚/解耦和验证决策。
 - `tuqiang-change-retrospective` 只在用户手动调用时工作；它结合当前源码、diff、Git 历史和验证证据，把已完成变更整理为 Bug、需求或混合复盘，不修改业务代码。
 
 设备目录 → 选择设备 → 定位状态 → GPS UI 只是地图中已整理的一条代表性业务链。项目地图的主职责是整个项目的事实、分层与索引，不是只讲设备或定位。
 
 ## 路径无关的仓库识别
 
-四个 Skill 都把 `<TUQIANG_ROOT>` 当作“本次任务已核验的途强仓库根目录”，不会把占位符或历史绝对路径直接传给 shell。
+四个 Skill 都把 `<TUQIANG_ROOT>` 当作“本次任务已核验的 monorepo 根目录”，不会把占位符或历史绝对路径直接传给 shell。
 
 解析顺序：
 
-1. 用户明确给出的项目路径；
-2. 当前选中/目标文件所在 Git 仓库；
-3. 当前 workspace 的 Git 根目录；
-4. 无法唯一确认时询问用户，不扫描整个磁盘。
+1. 用户在当前请求中明确给出的项目路径；
+2. 当前对话/任务绑定项目或 workspace 的 Git 根目录；
+3. 当前对话未绑定项目时，才复用本次任务已校验的根目录或从用户明确指向的外部文件发现仓库；
+4. 无法唯一确认，或外部文件属于另一有效 checkout 时，列出候选与失败原因并询问用户，不静默切换、不扫描整个磁盘。
 
-候选根目录还要通过三端宿主、共享业务包、项目工具及 `pubspec.yaml` package identity 校验。最终回答中的文件路径和行号均从当前 checkout 实时生成，因此公司与家庭目录不同不会影响使用。
+候选根目录通过稳定的 App 宿主、`tool/project.dart`、Git tracked 状态及 `pubspec.yaml` package identity 校验；feature/shared package 清单从当前源码动态发现，不把迁移中的单一业务包设成永久指纹。最终路径和行号均从当前 checkout 实时生成，因此公司与家庭目录不同不会影响使用。
 
 ## 为什么拆成四个
 
 - 项目事实集中维护，避免教学和开发 Skill 各保存一份静态架构并逐渐冲突；
 - 教学可以详细，但不会把解释模板混入实际代码决策；
-- 开发可以保持最小改动、局部团队风格和三端验证，不会被通用教程带偏；
+- 开发可以保持最小改动、局部团队风格和受影响产品/平台验证，不会把途强与老鹰在线两套架构混用；
 - 复盘独立处理 Git 历史、证据置信度和 Markdown 写入，不会在普通开发时自动创建学习文件；
 - references 按问题渐进加载，完整业务链、Riverpod、网络或风格规则只在相关任务中读取。
 
@@ -61,12 +61,12 @@
 
 ```text
 flutter-skills/
-├── package.json                         # 仓库版本 v1.12.0 与四个 Skill 元数据
+├── package.json                         # 仓库版本 v1.13.0 与四个 Skill 元数据
 ├── AGENTS.md                            # 四联动维护、同步和提交规范
 ├── CHANGELOG.md                         # Keep a Changelog 增量记录
 ├── README.md
 └── skills/
-    ├── tuqiang-project-map/             # 项目事实与架构索引 v1.1.1
+    ├── tuqiang-project-map/             # 双产品项目事实与架构索引 v1.2.0
     │   ├── SKILL.md
     │   ├── references/
     │   │   ├── project-root-discovery.md
@@ -79,17 +79,23 @@ flutter-skills/
     │   │   └── requirement-trace-playbook.md
     │   ├── README.md
     │   └── LICENSE.txt
-    ├── flutter-to-web/                  # Vue3/React 完整链路教学 v1.6.1
+    ├── flutter-to-web/                  # Vue3/React 完整链路教学 v1.7.0
     │   ├── SKILL.md
-    │   ├── references/                  # 动态根目录、完整追踪、Riverpod 与前端对照
+    │   ├── references/
+    │   │   ├── project-root-resolution.md
+    │   │   ├── product-context.md       # Tuqiang / Laoying 状态、路由、网络与资源分流
+    │   │   └── ...                      # 完整追踪、生命周期与前端对照
     │   ├── README.md
     │   └── LICENSE.txt
-    ├── tuqiang-dev/                     # 项目开发规范 v1.11.1
+    ├── tuqiang-dev/                     # 项目开发与决策规范 v1.12.0
     │   ├── SKILL.md
-    │   ├── references/                  # owner、局部风格、复用、状态、网络、三端和测试
+    │   ├── references/
+    │   │   ├── requirement-clarification.md # 需求、素材、契约与范围决策门
+    │   │   ├── assets-guide.md          # 产品资源 owner 与缺素材禁代画规则
+    │   │   └── ...                      # 局部风格、状态、网络、产品/平台和测试
     │   ├── README.md
     │   └── LICENSE.txt
-    └── tuqiang-change-retrospective/    # 变更学习复盘 v1.0.0
+    └── tuqiang-change-retrospective/    # 变更学习复盘 v1.1.0
         ├── SKILL.md
         ├── agents/openai.yaml           # 仅允许显式调用
         ├── references/                  # Git 因果、Bug/需求剧本与 Markdown 契约
@@ -197,17 +203,18 @@ OpenAI 官方约定中，ChatGPT 使用 `@skill-name`，Codex 使用 `$skill-nam
 
 | 信息 | 作用 | 示例 |
 |---|---|---|
-| 项目位置 | 多 checkout 时消除歧义 | `项目根目录是 E:\work\tuqiang_flutter` |
+| 项目位置 | 通常不必重复；仅在切换 checkout 时覆盖当前对话项目 | `项目根目录是 <目标 checkout>` |
+| 产品与 target | 防止把两套 app 架构或平台范围混用 | `途强 standard`、`老鹰在线 laoying_ohos` |
 | 操作起点 | 决定调用链从哪里开始 | `从进入设备列表并点击设备开始` |
 | 目标终点 | 防止只解释选中代码 | `一直追到 GPS 地图和状态文本更新` |
 | 源码锚点 | 帮助快速定位，不作为讲解边界 | 当前文件、Widget、Provider 或方法名 |
 | 重点疑问 | 决定需要展开的机制 | family 参数、缓存、竞态、生命周期 |
 | 任务边界 | 控制是否允许修改 | `先解释，不修改代码` |
-| 验收结果 | 让开发结果可验证 | 切换设备不串状态，三端行为不回退 |
+| 验收结果 | 让开发结果可验证 | 切换设备不串状态，受影响产品和平台行为不回退 |
 | 复盘范围 | 防止混入无关提交或工作区改动 | `当前 diff`、`abc123^..def456` |
 | 输出位置 | 指定学习文档目录 | `输出到 docs/learning` |
 
-不需要把这些信息机械地全部填写。能从当前 workspace、选中文件和需求中确定的内容，应由 Skill 自己检索和核验。
+不需要把这些信息机械地全部填写。当前对话绑定项目就是默认项目；能从 workspace、目标文件和需求中唯一确定的内容，应由 Skill 自己检索和核验。若缺失信息会改变用户可见行为、素材、数据契约、平台范围或修改边界，Skill 应先给出已确认事实和待决项，请用户决定后再写代码。
 
 ## 快速开始
 
@@ -281,7 +288,7 @@ session reset；再从目标 package 选取 2–4 个成熟同类实现作为风
 最小修改。完成后检查调用方、diff 和受影响测试，并说明已验证与未验证项。
 ```
 
-开发 Skill 默认应先调查再修改，但不会为了“复用”强行新增 wrapper、base class、mode flag，也不会借当前需求统一重构整个模块。
+开发 Skill 默认应先调查再修改，但不会为了“复用”强行新增 wrapper、base class、mode flag，也不会借当前需求统一重构整个模块。完成一次 owner、contract 与 2–4 个同类样本的聚焦调查后仍有两种以上合理实现，或无法写出唯一验收标准时，应立即停止扩大搜索并请求用户决策。
 
 ### 5. 开发一个新需求
 
@@ -297,13 +304,15 @@ $tuqiang-dev
 
 这里描述的是期望行为，不需要提前替模型指定 Provider、Repository 或组件抽象；具体放置位置应由项目事实和局部主流风格决定。
 
+如果需求指定的是品牌/业务图片替换，素材本身也是产品输入。例如“非中文起终点改用 S/E 图片”但没有提供目标 PNG 时，Skill 应先给出建议文件名、owner、倍率和需要补齐的资源清单，请用户或设计提供；未经明确授权，不得在旧图片上画字，也不得用 Canvas、CustomPainter、TextPainter、系统图标、emoji 或 AI 生成图替代。
+
 ### 6. 只读评审代码，不进行修改
 
 ```text
 $tuqiang-dev
 
 只读评审当前改动，不修改文件。请结合目标 package 的局部主流写法，检查 owner、
-复用边界、Riverpod 状态隔离、异步竞态、生命周期、i18n、缩放和三端影响。
+复用边界、真实状态隔离、异步竞态、生命周期、i18n、缩放和受影响产品/平台。
 问题按严重程度排序，给出真实文件路径、实时行号、触发条件和修复方向；
 如果没有阻断问题，也要明确说明剩余风险和尚未执行的验证。
 ```
@@ -364,16 +373,16 @@ $tuqiang-change-retrospective
 
 ## 项目路径与多 checkout
 
-Skill 不固定使用 `D:\Code\Flutter`。公司电脑、家庭电脑、Codex worktree 或其他 checkout 都可以使用同一套 Skill。
+Skill 不固定任何机器绝对路径。公司电脑、家庭电脑、Codex worktree 或其他 checkout 都可以使用同一套 Skill。
 
-通常在 Flutter 仓库 workspace 中打开任务即可；Skill 会从用户给出的路径、选中文件或当前 Git workspace 解析 `<TUQIANG_ROOT>`。如果同时打开了多个仓库，建议在提示词第一行明确本次目标：
+通常在 Flutter 仓库项目中打开任务即可；当前对话/任务绑定项目就是默认 `<TUQIANG_ROOT>` 候选，选中文件只在该项目内帮助定位。只有需要覆盖当前项目或同时打开多个有效 checkout 时，才在提示词第一行明确目标：
 
 ```text
-项目根目录：E:\company\flutter-app
+项目根目录：<目标 checkout 的完整路径>
 请先核验它是目标途强 monorepo，再开始追踪源码。
 ```
 
-路径只是本次任务的候选值，不会被写回 Skill。候选目录校验失败或存在多个有效 checkout 时，Skill 应停止猜测并请用户确认；它不会为了寻找项目而扫描整个磁盘。
+路径只是本次任务的候选值，不会被写回 Skill。目标文件位于另一 checkout、候选目录校验失败或存在多个有效 checkout 时，Skill 应停止猜测并请用户确认；它不会静默换项目，也不会为了寻找项目而扫描整个磁盘。
 
 ## 输出验收清单
 
@@ -381,7 +390,7 @@ Skill 不固定使用 `D:\Code\Flutter`。公司电脑、家庭电脑、Codex wo
 
 - 是否以用户操作或页面入口为顶点，而不是从选中代码直接开始；
 - 是否拆清同步事件、异步请求和响应式 UI 重建，避免把它们伪装成一条同步调用栈；
-- 是否说明状态定义、family 参数来源、实例身份、写入源、消费端和生命周期；
+- 是否先识别产品线与真实状态体系，再说明状态定义、参数身份、写入源、消费端和生命周期；
 - 是否把字段落到最终 Widget、文本、地图或交互状态；
 - 是否提供当前 checkout 的真实路径、实时行号和最小必要 Dart 原文；
 - Vue3/React 代码是否覆盖同一条完整链路，而不是只给一行语法类比；
@@ -390,10 +399,12 @@ Skill 不固定使用 `D:\Code\Flutter`。公司电脑、家庭电脑、Codex wo
 ### 开发类结果
 
 - 是否先确认功能 owner、依赖方向、公开 API 和现有复用入口；
+- 是否先写清用户可观察行为、可证伪验收与必须由用户决定的素材/API/平台/范围问题；
 - 是否参考目标 package 中 2–4 个成熟同类样本，而不是套用模型偏好的通用架构；
 - 是否优先最小修改，并避免无收益的 wrapper、公共抽象和顺手重构；
-- 是否检查 Riverpod/Manager/本地状态的完整读写与清理链；
-- 是否覆盖受影响调用方、标准版/OHOS/其他端边界、i18n、资源和缩放；
+- 是否检查 Riverpod/Manager 或 `LYAppProvider`/controller/本地状态的完整读写与清理链；
+- 是否覆盖受影响调用方、产品 scope、`standard`/`ohos`/`laoying_standard`/`laoying_ohos` 中实际受影响的 target、i18n、资源和缩放；
+- 图片变体缺失时是否暂停并索要产品素材，而不是自行绘制或生成替代图；
 - 是否报告真实修改文件、测试命令、验证结果和未执行项。
 
 ### 复盘类结果
@@ -433,7 +444,7 @@ Skill 不固定使用 `D:\Code\Flutter`。公司电脑、家庭电脑、Codex wo
 
 ### 换成其他 Flutter 项目能直接用吗？
 
-`flutter-to-web` 的部分教学思路可以参考，但四个 Skill 中的 package、路由、统一命令和平台约定是为途强 monorepo 维护的。`tuqiang-project-map`、`tuqiang-dev` 与 `tuqiang-change-retrospective` 不应直接套用于无关项目。
+`flutter-to-web` 的部分教学思路可以参考，但四个 Skill 中的 package、路由、统一命令和平台约定是为当前途强/老鹰在线 monorepo 维护的。`tuqiang-project-map`、`tuqiang-dev` 与 `tuqiang-change-retrospective` 不应直接套用于无关项目。
 
 ### `tuqiang-dev` 会自动提交或推送代码吗？
 

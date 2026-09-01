@@ -1,10 +1,12 @@
-# Riverpod：从参数身份到最终 UI 的前端对照
+# 状态：Riverpod / ChangeNotifier 到最终 UI 的前端对照
 
-> 主入口见 [../SKILL.md](../SKILL.md)。项目事实地图可按需读取 `tuqiang-project-map` 的 Riverpod 拓扑；只有当前问题属于设备/定位领域时才读取对应业务链 reference。兄弟 Skill 不可用时直接在已验证的 `<TUQIANG_ROOT>` 中检索。依赖版本、符号和行号始终以本次源码为准。
+> 主入口见 [../SKILL.md](../SKILL.md)。先按 [双产品上下文](product-context.md) 判定产品线。项目事实地图可按需读取 `tuqiang-project-map` 的状态拓扑；只有当前问题属于设备/定位领域时才读取对应业务链 reference。兄弟 Skill 不可用时直接在已验证的 `<TUQIANG_ROOT>` 中检索。依赖版本、符号和行号始终以本次源码为准。
 
-## 1. 先识别当前项目的真实状态形态
+## 1. 先识别产品线与真实状态形态
 
-先核对当前 `pubspec.yaml` 与 lockfile 中的 Riverpod 版本，再搜索实际声明；不要把历史扫描结果或通用教程当成当前事实。常见类型的前端心智近似如下：
+### Tuqiang：Riverpod 与 legacy 状态并存
+
+目标属于 `apps/tuqiang_app`、Tuqiang feature/shared package 或其 shell 时，先核对当前 `pubspec.yaml` 与 lockfile 中的 Riverpod 版本，再搜索实际声明；不要把历史扫描结果或通用教程当成当前事实。当前源码既有 `StateNotifierProvider` / family，也有 `StateProvider`、`StreamProvider`、普通 Provider、Manager/cache、app legacy Model 和页面局部状态，不能声称某一种 Provider“不存在”。常见类型的前端心智近似如下：
 
 | Riverpod 类型 | 常见职责 | Vue3 / React 近似 |
 |---|---|---|
@@ -15,12 +17,31 @@
 | `StateNotifierProvider.autoDispose.family` | 每个实体/查询 key 一份可释放状态 | keyed store + 自动释放策略 |
 | `NotifierProvider.autoDispose.family` | Riverpod 2 Notifier 的 keyed store | keyed store factory |
 | `FutureProvider.autoDispose.family` | 按 key 暴露一次异步结果 | keyed query / React Query |
+| `StateProvider<T>` | 小型可写值 | `ref` / `useState` 或小型 store |
+| `StreamProvider<T>` | 持续异步值 | RxJS/订阅式 query |
 
 表中只是帮助前端开发者入门的近似。最终答案要展示项目实际使用的 Provider 类型、完整泛型和版本，不能声称当前源码中不存在的类型或代码生成方式已经采用。
 
-项目也可能混用 Manager/cache、全局 Model、Notifier 的公开可变字段、页面 `setState/ValueNotifier` 或插件状态。看到 Provider 后仍要继续找真正存储值与触发 UI 的载体。
+项目也可能混用 Manager/cache、全局 Model、Notifier 的公开可变字段、页面 `setState/ValueNotifier` 或插件状态。看到 Provider 后仍要继续找真正存储值与触发 UI 的载体。组合根不只有 `ProviderScope.override`：还要搜索 `apps/tuqiang_app/lib/bootstrap.dart` 中的 Repository override、`*Runtime.configure`、`*ApiPaths.configure`、`.setup` 和构造注入。
 
-## 2. `family(arg)` 为什么能传参数
+### Laoying：`InheritedNotifier` + `ChangeNotifier`
+
+目标属于 `apps/laoying_app` 或 Laoying shell 时，不默认套 Riverpod：
+
+```text
+LYAppScope extends InheritedNotifier<LYAppProvider>
+  → LYAppProvider / LYUserSession extends ChangeNotifier
+  → 页面创建 owner Controller extends ChangeNotifier
+  → ListenableBuilder / AnimatedBuilder / addListener
+  → notifyListeners()
+  → Widget 重建或副作用
+```
+
+源码入口是 `apps/laoying_app/lib/app/session/ly_app_scope.dart` 与 `ly_app_provider.dart`；各业务状态继续追 `apps/laoying_app/lib/app/<owner>/providers/*controller.dart`。对每个 Laoying Controller 说明：route/构造参数从哪里来、Repository/adapter 如何注入、谁创建和持有、哪些方法修改字段并 `notifyListeners()`、哪些 Widget/监听器消费、何时移除 listener 和 `dispose()`，以及是否注册到 `LYSessionResetCoordinator`。
+
+前端近似：`LYAppScope` 类似 Context/provide 的全局可观察对象；`ListenableBuilder` / `AnimatedBuilder` 类似订阅 store 后触发局部 render。它没有 Riverpod family 的实例缓存语义，不得硬凑 family key、`ref.watch` 或 `autoDispose`。
+
+## 2. Tuqiang Riverpod：`family(arg)` 为什么能传参数
 
 第一次解释时可把 `.family` 类比为“以 key 保存多份 store/query 的 Map”：
 
@@ -63,7 +84,7 @@ ref.read(detailProvider(key).notifier).refresh(force: true);
 
 Vue keyed store 或 React query key 能辅助理解“按 key 分区”，但 Riverpod 还受 `ProviderScope`、依赖图、override 和 autoDispose 控制，不能把类比冒充完全等价。
 
-## 3. `read/watch/listen/select` 看的是依赖关系
+## 3. Tuqiang Riverpod：`read/watch/listen/select` 看的是依赖关系
 
 术语首次出现时先给前端心智，再说明真实语义：
 
@@ -87,22 +108,22 @@ ref.listen(detailProvider(key), (previous, next) { /* side effect */ });
 
 还要区分 Riverpod 的 `provider.select((state) => field)` 与项目 Notifier 中可能同名的 `select(model)` 业务 action。
 
-## 4. Provider 被读取不等于自动发请求
+## 4. Provider 或 Controller 被创建不等于自动发请求
 
 检查构造函数或 `build(arg)` 是否真正触发 I/O。许多 Notifier 只保存 key，需要由 Host、RouteObserver、页面首次加载、listener 或按钮显式调用 `.refresh()`。
 
 ```text
-provider(key) 被 watch/read
+provider(key) 被 watch/read，或 Laoying Controller 被构造
   ≠ 一定发请求
 
 某个真实触发点
-  → provider(key).notifier.refresh()
+  → provider(key).notifier.refresh() / controller.load()
   → Repository/HTTP/缓存/插件
-  → state = ...
+  → state = ... / 字段更新 + notifyListeners()
   → 订阅者更新
 ```
 
-讲解时必须把“实例创建”和“业务请求触发”分成两跳，并分别给出调用处源码。
+讲解时必须把“实例创建”和“业务请求触发”分成两跳，并分别给出调用处源码。Laoying 还要区分 `LYAppScope.of(context)` 读取 app 级会话与页面自己创建的 owner Controller。
 
 ## 5. 状态定义、全部写入源与字段血缘
 
@@ -124,7 +145,7 @@ provider(key) 被 watch/read
 
 ## 6. 派生 Provider 与最终展示
 
-一个通用拓扑可能是：
+Tuqiang 的一个通用拓扑可能是：
 
 ```text
 selectedEntityProvider
@@ -139,7 +160,9 @@ selectedEntityProvider
 
 对每个派生 Provider 列出它 `watch` 的上游、输出的 ViewModel/展示字段，以及哪个 Widget 消费哪个字段。仅说“Provider 自动刷新页面”不够；必须说明是哪一次 State 写入导致哪个依赖重新计算，并区分 `ref.listen` 副作用与 Widget 重建。
 
-## 7. `autoDispose`、长期订阅与清理
+Laoying 常见的是 Repository 结果写入 owner Controller 字段，`notifyListeners()` 后由 `ListenableBuilder` / `AnimatedBuilder` 重建，或由手动 listener 触发副作用。必须找出具体字段与具体 builder/listener，不能用“ChangeNotifier 自动刷新所有页面”概括。
+
+## 7. `autoDispose` / listener、长期订阅与清理
 
 `autoDispose` 的准确含义是“实例无人监听后具备被释放的条件”，不是“页面 pop 就必定清空”。检查：
 
@@ -152,9 +175,11 @@ selectedEntityProvider
 
 某些常驻 App Host 可能持续订阅当前 key 的多组 `autoDispose.family`，使页面离开后状态仍然存活。必须由当前源码证明该长期订阅，不得复用其他业务链的结论。
 
-## 8. `ProviderScope` override 是跨 Feature 接线
+Laoying 要成对检查 `addListener/removeListener`、Controller 的创建 owner、`dispose()`、页面替换 Repository/Controller 时的解绑，以及 `LYSessionResetParticipant` 的 register/unregister。两种产品的清理机制只能按实际源码解释，不能互换术语。
 
-第一次出现时可类比 Vue `app.provide` 或 React 根 Context Provider；Riverpod 的真实链路仍要找齐三处：
+## 8. 组合根接线因产品而异
+
+Tuqiang 的 `ProviderScope` override 第一次出现时可类比 Vue `app.provide` 或 React 根 Context Provider；真实链路仍要找齐三处：
 
 ```text
 Feature 声明 Provider<Contract>
@@ -162,7 +187,9 @@ Feature 声明 Provider<Contract>
   → Feature 内 ref.read(contractProvider).openXxx()
 ```
 
-如果缺少其中任何一处，用户仍无法理解“抽象从哪里获得具体实现”。
+如果缺少其中任何一处，用户仍无法理解“抽象从哪里获得具体实现”。若源码使用 `*Runtime.configure`、`*ApiPaths.configure` 或 Repository 构造注入，也要展示配置声明、bootstrap 注入和业务读取三处，不能只搜索 override。
+
+Laoying 则从 `apps/laoying_app/lib/bootstrap.dart` 追：backend client / `LYAppProvider` 的创建 → `LYHttp*Repository` / adapter 构造 → `LYApp` / `LYAppRouter` / 页面参数 → owner Controller。不要把这种显式构造注入改名为 Riverpod override。
 
 ## 9. Vue3 端到端等价实现要求
 
@@ -208,13 +235,13 @@ function DetailPanel({ entityId }: { entityId: string }) {
 
 ## 11. 回答检查单
 
-- [ ] 当前 Riverpod 版本和真实 Provider 类型是否已从源码核验？
+- [ ] 是否先判定产品线，并核验 Riverpod 或 ChangeNotifier 的真实状态形态？
 - [ ] 完整泛型每一项是否解释？
-- [ ] family key 从哪里得到、为何包含这些字段、相等性在哪里？
+- [ ] Riverpod family key 从哪里得到；或 Laoying Controller 由谁以哪些参数创建和持有？
 - [ ] Provider 构造是否真的发请求，真正触发点是谁？
 - [ ] route/family/action 参数和 State 字段是否区分？
 - [ ] 全部相关写入源和最终消费者是否列出？
-- [ ] `watch/read/listen/select` 是否按当前语义解释？
-- [ ] `autoDispose` 是否检查长期订阅、keepAlive、invalidate、cleanup 与 reset？
-- [ ] 是否追到 Manager/cache/setState/ValueNotifier 等旁路？
+- [ ] `watch/read/listen/select` 或 `LYAppScope/ListenableBuilder/addListener` 是否按当前语义解释？
+- [ ] `autoDispose` 或 Controller listener/dispose 是否检查长期订阅、cleanup 与 session reset？
+- [ ] 是否追到 Manager/cache/ChangeNotifier/setState/ValueNotifier 等旁路？
 - [ ] Vue3/React 代码是否覆盖当前完整业务链，而不是复用通用片段？

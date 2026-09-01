@@ -1,143 +1,139 @@
 # 启动、Composition Root 与路由
 
-## 1. 三端启动主链
+本页同时索引两条产品线，但一次追踪必须先选择 Tuqiang 或 Laoying。两者只有平台宿主的形态相似，根状态和路由不是同一套。
 
-标准端：
+## 1. Tuqiang 启动主链
+
+标准端与 HarmonyOS 都先进入各自 runner，再完成首屏前准备。runner 的调用形态因平台和环境而异：非生产分支直接 `runApp(getApp())`，生产分支把 `getApp(...)` 返回给 APM runner。不要把某一分支的调用顺序泛化为全部环境。
 
 ```text
 apps/standard/lib/main.dart::main
-  -> 平台 recorder/plugin 配置
-  -> apps/tuqiang_app/lib/bootstrap.dart::runStandardApp
-  -> _runApp
-  -> prepareAppStartupData + initialI18nData
-  -> getApp
-  -> ProviderScope(overrides)
-  -> LocationContainerHost
-  -> StrongApp
+  -> runStandardApp
+  -> bootstrap::_runApp
+  -> AppStartupDataCoordinator.prepareBeforeRunApp
+  -> 非生产：runApp(getApp())
+     或生产：APM appRunner 返回 getApp(...)
+  -> AppStartupDataCoordinator.scheduleAfterFirstFrame（注册首帧后任务）
 ```
 
 HarmonyOS：
 
 ```text
 apps/ohos/lib/main.dart::main
-  -> OHOS native backend/binding 配置
-  -> apps/tuqiang_app/lib/bootstrap.dart::runOhosApp
-  -> _runOhosApp
-  -> prepareAppStartupData + initialI18nData
-  -> getApp
-  -> 与共享 App 相同的根组合链
+  -> OHOS recorder/auth/map/vsdk binding 配置
+  -> runOhosApp
+  -> bootstrap::_runOhosApp
+  -> 与标准端相同的 startup coordinator 与 getApp；生产/非生产同样由不同 runner 挂载
 ```
 
-关键文件与 symbol：
-
-| 文件 | Symbol | 追踪重点 |
-|---|---|---|
-| `apps/standard/lib/main.dart` | `main` | 标准端在进入共享 bootstrap 前做什么 |
-| `apps/ohos/lib/main.dart` | `main` | OHOS 特有 backend/binding 如何注入 |
-| `apps/tuqiang_app/lib/bootstrap.dart` | `runStandardApp`、`runOhosApp`、`_runApp`、`_runOhosApp` | 首帧延迟、初始化并发与异常分支 |
-| 同上 | `prepareAppStartupData` | 环境、用户、配置、缓存、地图、网络等启动数据 |
-| 同上 | `getApp` | composition callback、Provider override、根 Widget |
-| `apps/tuqiang_app/lib/app/coordinators/location_container_host.dart` | `LocationContainerHost` | 根级 Riverpod 监听和设备/定位状态激活 |
-| `apps/tuqiang_app/lib/app.dart` | `StrongApp`、`_StrongAppState` | 启动 coordinator、尺寸、MaterialApp、locale、home |
-
-## 2. 为什么 `getApp` 不能跳过
-
-`getApp` 不只是 `runApp` 前的样板。它通过根 `ProviderScope(overrides: ...)` 把 app 层实现注入各 feature 暴露的 contract，例如：
-
-- feature 导航 callback；
-- GPS/Camera/Pet 等跨 feature 页面 builder；
-- 设备管理、分享、增值服务、Mine、MiFi 等入口；
-- route observer、screen secure 或清理 callback；
-- 平台插件和 AppTarget 配置。
-
-当 feature 中只看到 `ref.read(<contractProvider>)` 或某个 Navigator/Composition 对象时，必须回到 `bootstrap.dart::getApp` 查它是否被 override，再追 override 的闭包最终打开的 route/page。仅解释 feature 文件会丢失真正的实现绑定。
-
-实时定位：
-
-```powershell
-rg -n "ProviderScope|overrides:|overrideWith|overrideWithValue|getApp\(" apps/tuqiang_app/lib/bootstrap.dart
-rg -n "Provider<.*Navigator|Provider<.*Composition|Provider<.*Callback" packages/feature packages/shared --glob '*.dart'
-```
-
-## 3. App 壳与首屏
-
-`apps/tuqiang_app/lib/app.dart` 需要分开追：
-
-- `_home`/相关 builder：依据本地用户、登录和首次启动状态选择启动页；
-- `_StrongAppState.initState`：启动 `ApplicationStartupCoordinator` 等生命周期编排；
-- `build`：初始化 `TQSizeFit`，创建 `MaterialApp`；
-- `routes`：来自 `AppRouters.getRouters`；
-- `onGenerateRoute`：处理未在静态 map 中命中的路由；
-- locale/supportedLocales：连接 `TQI18nManager` 与 manifest 数据；
-- builder：固定 text scaler，并叠加 EasyLoading 等 App 级 UI。
-
-解释“进入某页”时还要检查该页是首屏、静态 named route、`onGenerateRoute`、native route，还是 composition builder 直接创建。
-
-## 4. 路由聚合
-
-### AppRouters
-
-文件：`apps/tuqiang_app/lib/app/router/app_router.dart`
-
-重点 symbol：
-
-- `AppRouters`：app route 常量和兼容 alias；
-- `getRouters`：静态 route map 聚合；
-- `onGenerateRoute`：动态参数/兼容分支；
-- 具体 route builder：确认构造参数、ProviderContainer 读取和最终页面。
-
-### FeatureRouterRegistry
-
-文件：`apps/tuqiang_app/lib/app/router/feature_router_registry.dart`
-
-重点 symbol：
-
-- `FeatureRouterRegistry`；
-- feature checked route registries；
-- native routes；
-- screen-secure/route effects；
-- registry 合并和冲突检查。
-
-feature 自己的 route owner 通常位于：
+`scheduleAfterFirstFrame` 的调用点在非生产分支位于 `runApp` 之后，在生产 APM 分支位于 `return getApp(...)` 之前；它的语义是注册首帧后任务，不表示 Widget 树已经按文字顺序构建。根 Widget 组成应单独写为：
 
 ```text
-packages/feature/<feature>/lib/**/router*.dart
-packages/feature/<feature>/lib/**/routes*.dart
-packages/feature/<feature>/lib/<feature>.dart   # barrel
+getApp(...)
+  -> ProviderScope(overrides)
+  -> LocationContainerHost
+  -> StrongApp
 ```
 
-不要只搜路由字符串。还要搜：路由常量名、目标 Page 类、`Navigator.push*`、feature Navigator contract，以及 `bootstrap.dart` 中注入的 callback。
+首屏前数据入口仍应实时追 `AppStartupDataCoordinator.prepareBeforeRunApp`，而不是已删除的旧 helper。
 
-## 5. 一次路由追踪模板
+| 文件 | 关键 symbol | 追踪重点 |
+|---|---|---|
+| `apps/tuqiang_app/lib/app/coordinators/app_startup_data_coordinator.dart` | `prepareBeforeRunApp`、`scheduleAfterFirstFrame`、`_initializeI18n` | 环境、用户、i18n、HTTP、缓存任务；首帧前/后边界 |
+| `apps/tuqiang_app/lib/bootstrap.dart` | `runStandardApp`、`runOhosApp`、`getApp` | 平台分支、根 overrides、runtime/callback |
+| `apps/tuqiang_app/lib/app/coordinators/location_container_host.dart` | `LocationContainerHost` | 根 Riverpod 监听和设备外部上下文激活 |
+| `apps/tuqiang_app/lib/app.dart` | `StrongApp`、`getHomePage` | 首屏、`ApplicationStartupCoordinator`、尺寸、locale、MaterialApp |
+
+## 2. Tuqiang composition root
+
+`bootstrap.dart::getApp` 不是样板。根 `ProviderScope(overrides: ...)` 当前会注入：
+
+- 各 feature 的导航、composition builder 与 app callback；
+- `shared_device` 的 repository/runtime，外部上下文由 app 连接定位与消息；
+- `shared_location` 的 repository/runtime，坐标副作用在 app 层连接旧 Manager；
+- `shared_message` repository、`shared_media` session、`shared_advertising` repository/login state；
+- route observer、screen secure、平台插件和 AppTarget 配置。
+
+feature/shared 中只看到 contract provider 或 runtime callback 时，必须回到 `getApp` 查 override，再追闭包的最终 page、manager、repository 或 plugin。
+
+```powershell
+rg -n "ProviderScope|overrides:|overrideWith|overrideWithValue|deviceCoreRuntimeProvider|locationRuntimeProvider|getApp\(" apps/tuqiang_app/lib/bootstrap.dart
+rg -n "Provider<.*Navigator|Provider<.*Composition|Provider<.*Runtime|Provider<.*Callback" packages/feature packages/shared --glob '*.dart'
+```
+
+## 3. Tuqiang App 壳与路由
+
+`apps/tuqiang_app/lib/app.dart::StrongApp` 需要分开追：
+
+- `getHomePage` 根据 `AppRuntimeState` 等当前状态选择入口；
+- `initState` 启动 `ApplicationStartupCoordinator`；
+- `build` 初始化尺寸并创建 `MaterialApp`；
+- `routes: AppRouters.getRouters()`；
+- `onGenerateRoute: AppRouters.generateRoute`；
+- locale/supportedLocales 连接 i18n manifest；
+- builder 固定 text scaler 并叠加 App 级 UI。
+
+`apps/tuqiang_app/lib/app/router/app_router.dart::AppRouters` 负责 app route/兼容 alias、静态 route map、checked 合并 feature routes 与动态参数。`FeatureRouterRegistry` 当前负责：
+
+- `nativeRouters()`；
+- `screenSecureRoutes`；
+- `routeEffects()`；
+- 定位/相机刷新与路由退出分类。
+
+不要再把 feature Dart route map 合并归给 `FeatureRouterRegistry`。具体 route owner 仍要追 feature router、Page builder 和 `getApp` callback。
+
+## 4. Laoying 启动主链
+
+标准端：
+
+```text
+apps/laoying_standard/lib/main.dart::main
+  -> runLaoyingStandardApp(platform adapters)
+  -> apps/laoying_app/lib/bootstrap.dart::_runLaoyingApp
+  -> WidgetsFlutterBinding.ensureInitialized
+  -> LYI18nInitializer.initialize
+  -> _createSkinController
+  -> LYAppProvider
+  -> backend/repository/controller 组合
+  -> runApp(LYApp(...))
+```
+
+OHOS 从 `apps/laoying_ohos/lib/main.dart::main` 调用 `runLaoyingOhosApp`，注入 OHOS 地图/平台能力，再进入相同 `_runLaoyingApp`。回答平台差异时必须对比两个宿主传入的 adapter，不能只看共享 App。
+
+`apps/laoying_app/lib/app.dart::LYApp` 在 build 中通过 `LYAppScope` 暴露 `LYAppProvider`，创建 `MaterialApp`，并把未命中路由交给 `LYAppRouter.onGenerateRoute`。
+
+## 5. Laoying 状态与路由
+
+- `apps/laoying_app/lib/app/session/ly_app_provider.dart::LYAppProvider extends ChangeNotifier` 是根 session 协调对象；查 `resetSession`、reset coordinator、refresh bus 与每个 `notifyListeners` 的条件。
+- `apps/laoying_app/lib/app/router/ly_route_registry.dart::LYAppRouteRegistry` checked 合并 app shell、auth、gps、pet、mine、overview、message、device share、device management routers，并检查重复 route/owner。
+- `apps/laoying_app/lib/app/router/ly_app_router.dart::LYAppRouter.onGenerateRoute` 解析 route 与 arguments 并构建最终页面。
+- 目标业务 owner 位于 `apps/laoying_app/lib/app/<domain>`；继续追 `ly_*_router.dart`、controller、repository、Page 与 asset 常量。
+
+不要在 Laoying 链路中虚构 `ProviderScope` 或 Tuqiang feature router。若一个公共 core/plugin 同时被两产品使用，分别找各自的 composition 接入。
+
+## 6. 路由追踪模板
 
 ```text
 用户动作 / 外部事件
-  -> Widget callback 或 native/scheme/push handler
-  -> Navigator / feature navigator contract
-  -> app composition override（若有）
-  -> AppRouters / FeatureRouterRegistry / onGenerateRoute
-  -> route builder 与参数解析
-  -> 目标 Page 构造
-  -> Page 首次 build/initState/useEffect
-  -> Provider/Controller 请求与 UI
+  -> 产品内 Widget callback、scheme/push/native handler
+  -> 产品路由 contract/Navigator
+  -> composition 绑定（若有）
+  -> AppRouters + feature router（Tuqiang）
+     或 LYAppRouter + LYAppRouteRegistry + app-local router（Laoying）
+  -> arguments 转换与最终 Page
+  -> initState/build/controller
+  -> 状态/Repository/插件
 ```
 
-必须回答：
+必须回答 route owner、参数来源与 fallback、导航类型、observer/effect/security、目标页首笔数据触发点。若 route 字符串在两产品都出现，按入口和最终 builder 分别核验。
 
-1. 路由名由谁拥有，谁只是兼容 alias？
-2. 参数从哪里产生，传递途中有没有转换、fallback 或从 ProviderContainer 补值？
-3. 是 push、replacement、popUntil 还是嵌入式 builder？
-4. route effect、screen secure、observer 是否参与？
-5. 目标页何时发起第一笔数据请求？
-
-## 6. 实时核验命令
+## 7. 实时核验命令
 
 ```powershell
 Set-Location -LiteralPath $tuqiangRoot
-rg -n "runStandardApp|runOhosApp|_runApp|_runOhosApp|prepareAppStartupData|initialI18nData|getApp" apps --glob '*.dart'
-rg -n "ProviderScope|LocationContainerHost|StrongApp|MaterialApp|onGenerateRoute|getRouters" apps/tuqiang_app/lib --glob '*.dart'
-rg -n "<路由常量>|<路由字符串>|class <目标页面>" apps packages --glob '*.dart'
-rg -n "Navigator\.(of\([^)]*\)\.)?(push|pushNamed|pop)|open[A-Z]|PageBuilder" <相关目录> --glob '*.dart'
+rg -n "runStandardApp|runOhosApp|AppStartupDataCoordinator|prepareBeforeRunApp|scheduleAfterFirstFrame|getApp" apps/standard apps/ohos apps/tuqiang_app --glob '*.dart'
+rg -n "ProviderScope|LocationContainerHost|StrongApp|MaterialApp|AppRouters\.getRouters|AppRouters\.generateRoute" apps/tuqiang_app/lib --glob '*.dart'
+rg -n "runLaoyingStandardApp|runLaoyingOhosApp|_runLaoyingApp|LYI18nInitializer|LYAppProvider|class LYApp" apps/laoying_* --glob '*.dart'
+rg -n "class LYAppRouter|class LYAppRouteRegistry|onGenerateRoute|LYBusinessRouter" apps/laoying_app/lib/app --glob '*.dart'
+rg -n "<路由常量>|<路由字符串>|class <目标页面>" <已确认产品目录> --glob '*.dart'
 ```
-
-输出时将占位符替换为实际 symbol，并引用本次命中的当前行号。

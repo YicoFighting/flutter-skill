@@ -1,10 +1,20 @@
 # 完整业务链追踪与讲解模板
 
-> 主入口见 [../SKILL.md](../SKILL.md)。先按 [动态项目根目录协议](project-root-resolution.md) 解析 `<TUQIANG_ROOT>`。本文件把“选中代码”扩展成可核验的端到端业务链，适合完整需求、Riverpod 状态来源/去向、页面进入或点击事件分析。
+> 主入口见 [../SKILL.md](../SKILL.md)。先按 [动态项目根目录协议](project-root-resolution.md) 解析 `<TUQIANG_ROOT>`，再按 [双产品上下文](product-context.md) 判定产品与 target。本文件把“选中代码”扩展成可核验的端到端业务链，适合完整需求、状态来源/去向、页面进入或点击事件分析。
+
+## 0. 先锁定追踪问题
+
+开始大范围搜索前，明确三件事：
+
+1. 用户从哪个可感知操作或生命周期入口开始；
+2. 要解释哪个目标页面、功能或状态；
+3. 终点是 Repository/HTTP、缓存/插件/原生边界，还是还要反向追到某个最终 UI。
+
+能由目标路径、route、调用方唯一确定时直接继续。若任一项有两个以上合理解释且会改变业务链，先问一个最小选择题；不要在多条链之间长时间猜测后自行选一条。外部系统不可见但仓库内链路唯一时，追到边界并标未知即可。
 
 ## 1. 先画三条链，不要伪造一条连续调用栈
 
-Flutter + Riverpod 的异步流程通常分为：
+Flutter 的异步与响应式流程通常分为：
 
 ```text
 事件/同步调用链
@@ -14,7 +24,7 @@ Flutter + Riverpod 的异步流程通常分为：
 请求发出 → await 返回 → DTO/Model 转换 → State/缓存写入
 
 状态依赖/重建链
-Provider 通知 → derived Provider 重算 → Widget/ref.listen → 重建或副作用 → 字段展示
+Provider/ChangeNotifier 通知 → derived state 重算 → Widget/listener → 重建或副作用 → 字段展示
 ```
 
 `await` 之后以及 Provider 通知阶段不等于仍处于最初点击回调的同步栈帧。回答中分别列出三条链，再用时间顺序把它们拼成业务闭环。术语第一次出现时立即补上 Vue3/React 心智，例如把 `ref.listen` 先解释为类似 `watch`/effect 的副作用订阅，再说明 Riverpod 的真实语义。
@@ -26,15 +36,15 @@ Provider 通知 → derived Provider 重算 → Widget/ref.listen → 重建或�
 - 路由常量、builder owner、`Navigator.pushNamed`；
 - `onTap/onPressed/onChanged`；
 - `initState/didChangeDependencies/didPush/didPopNext`；
-- `ProviderScope` override 与 app composition callback；
+- `ProviderScope` override、`LYAppScope`、构造注入、`*Runtime.configure` / `*ApiPaths.configure` 与 app composition callback；
 - Timer、推送、原生/插件回调。
 
 ### 向下：数据最终来自哪里
 
 - Provider 的 builder/build；
-- Notifier/Command 方法；
+- Notifier/Command/ChangeNotifier Controller 方法；
 - Repository/Service；
-- `TQHttp`、数据库、缓存、Manager 或插件边界；
+- 当前产品的 `TQHttp` 或 `LYBackendHttpClient`、数据库、缓存、Manager 或插件边界；
 - Model/DTO 的解析和字段映射。
 
 ### 向旁：还有谁写同一份数据
@@ -46,6 +56,7 @@ state =
 copyWith(
 .notifier).
 seed / apply / update / refresh
+notifyListeners
 ref.invalidate
 setState / ValueNotifier
 Manager / cache 写入
@@ -62,10 +73,11 @@ Manager / cache 写入
 
 分类记录：
 
-- `ref.watch`：响应式订阅；
+- `ref.watch`：Tuqiang Riverpod 响应式订阅；
 - `ref.watch(provider.select(...))`：字段级订阅；
 - `ref.listen` / `ProviderContainer.listen`：副作用；
 - `ref.read` / `ProviderContainer.read`：一次性快照或命令；
+- `LYAppScope.of`、`ListenableBuilder/AnimatedBuilder`、`addListener`：Laoying app 状态或 owner Controller 的订阅；
 - Manager/cache getter：非 Riverpod 真正数据源；
 - `Text/Image/Switch/Map` 等最终 Widget。
 
@@ -77,26 +89,26 @@ Manager / cache 写入
 rg -n "目标Widget|目标方法|目标Provider" "<TUQIANG_ROOT>"
 rg -n "目标Provider\(" "<TUQIANG_ROOT>/apps" "<TUQIANG_ROOT>/packages"
 rg -n "state\s*=|copyWith\(|seed\(|apply[A-Z]|invalidate\(" <相关目录>
-rg -n "watch\(|read\(|listen\(|select\(" <相关目录>
+rg -n "watch\(|read\(|listen\(|select\(|notifyListeners\(|ListenableBuilder|AnimatedBuilder" <相关目录>
 ```
 
 随后逐行读取命中位置上下文。不要用静态 reference 的旧行号直接回答；不要优先展开生成文件。本项目当前未使用 Riverpod codegen，若未来出现 `.g.dart`，先展示手写声明或注解，只有生成层本身影响问题时才下钻。
 
-## 4. Provider 身份卡
+## 4. Provider / Controller 身份卡
 
-每个关键 Provider 至少输出：
+每个关键 Provider 或 ChangeNotifier Controller 至少输出适用字段：
 
 | 项目 | 必答问题 |
 |---|---|
 | 声明 | 绝对路径、实时行号、完整泛型 |
-| 实例身份 | 普通 Provider 还是 family；family key 是什么、从哪来 |
+| 实例身份 | 普通 Provider/family 及 key；或 Controller 由谁以哪些 route/构造参数创建和持有 |
 | 相等性 | 对象 key 是否不可变，`==/hashCode` 是否按业务值实现 |
 | State | 初始值、关键字段、loading/error/data 表达 |
 | 写入者 | Notifier/Command/回调/其他旁路 |
-| 依赖 | builder 中 watch/read 哪些 Provider/Repository |
-| 消费者 | watch/select/listen/read 各自在哪 |
-| 生命周期 | autoDispose、根 Host 订阅、keepAlive、onDispose |
-| 清理 | 切 key、显式 invalidate、切语言、登出 reset |
+| 依赖 | builder 中 watch/read 哪些 Provider/Repository；或构造注入哪些 Repository/adapter/app provider |
+| 消费者 | watch/select/listen/read；或 LYAppScope/ListenableBuilder/addListener 各自在哪 |
+| 生命周期 | autoDispose/keepAlive/onDispose；或页面 ownership、removeListener/dispose |
+| 清理 | 切 key、invalidate、切语言、登出 reset；或 session reset participant |
 
 必须区分：
 
@@ -183,6 +195,8 @@ function DetailPanel({ entityId }: { entityId: string }) {
 ```markdown
 ## 一句话结论
 
+产品线 / target：
+
 ## 1. 用户操作与入口
 
 ## 2. 事件/同步调用链
@@ -191,7 +205,7 @@ function DetailPanel({ entityId }: { entityId: string }) {
 
 ## 4. 状态依赖与 UI 重建链
 
-## 5. Provider/状态身份与参数
+## 5. Provider/Controller/状态身份与参数
 
 ## 6. 逐跳源码证据
 
@@ -210,7 +224,7 @@ function DetailPanel({ entityId }: { entityId: string }) {
 
 - 起点是用户可感知操作，而非任意被选代码；
 - 一端追到 UI，另一端追到 API、缓存、数据库或插件；
-- family 参数来源、相等性、状态隔离和生命周期说清；
+- Riverpod family 参数来源/相等性，或 ChangeNotifier Controller 的创建、持有、通知和生命周期说清；
 - 同一状态的所有可发现写入源均列出；
 - 明确哪些读取会重建、哪些只是快照、哪些是副作用；
 - 真实 Dart、Vue3、React 三套代码覆盖同一条完整业务链并能逐段对照；

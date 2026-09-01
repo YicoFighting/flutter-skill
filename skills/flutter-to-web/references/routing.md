@@ -1,76 +1,75 @@
-# 路由导航 · 前端深度对照表
+# 路由导航：Tuqiang 与 Laoying 分流
 
-> 主文档见 [../SKILL.md](../SKILL.md)。本文件展开 §1 的「路由导航」部分。
-> 先看代码实际使用哪套路由。途强项目当前主要是 `MaterialApp.routes` + `onGenerateRoute` + `Navigator.pushNamed`；只有代码确实出现 `go_router` 时，才按 Vue Router / React Router 对照。
+> 主文档见 [../SKILL.md](../SKILL.md)。先按 [双产品上下文](product-context.md) 确认产品与 target，再解释当前源码实际使用的命名路由；只有代码确实出现 `go_router` 时才按 go_router 展开。
 
-## 1. 概念对照表
+## 1. 先找当前产品的路由 owner
 
-| Vue Router / React Router | go_router | 大白话 |
+| 产品线 | App 接线 | 聚合/注册 | 参数契约 |
+|---|---|---|---|
+| Tuqiang | `apps/tuqiang_app/lib/app.dart` 的 `MaterialApp.routes` / `onGenerateRoute` | `AppRouters`、`apps/tuqiang_app/lib/app/router/feature_router_registry.dart` 与各 feature router | route 常量、arguments、返回值与 route effect |
+| Laoying | `apps/laoying_app/lib/app.dart` 的 `LYAppRouter.onGenerateRoute` | `apps/laoying_app/lib/app/router/ly_app_router.dart`、`ly_route_registry.dart`、`LYAuthRouter` | `apps/laoying_app/lib/app/contracts/ly_route_contract.dart` 中的稳定引用、查询与 mutation result |
+
+同名“首页、登录、GPS、设备详情”在两条产品线都有可能存在。若用户未给路径或 target，且两条路由会产生不同答案，先确认产品线和目标页面；不要默认选择熟悉的一条。
+
+## 2. Tuqiang 命名路由
+
+```dart
+Navigator.pushNamed(context, routeName, arguments: routeArguments);
+```
+
+Tuqiang 大量使用字符串命名路由：先在 `MaterialApp.routes` / `onGenerateRoute` 注册，再由 `AppRouters` 聚合 feature router。追踪时找齐：
+
+```text
+用户入口
+  → Navigator.pushNamed / AppRouters helper
+  → route 常量与 arguments
+  → feature router / app registry 的唯一 builder
+  → ProviderScope override、route effect 或页面 Host
+  → 目标 Widget
+```
+
+还要检查 `nativeRouters`、route effect、定位刷新、防截屏集合及兼容 alias 是否参与当前 route。路由字符串、参数类型、返回值和栈行为是兼容契约，不能用通用教程中的 go_router 模型覆盖真实实现。
+
+## 3. Laoying 路由
+
+Laoying 使用独立的 `LYAppRouter.onGenerateRoute`。它先通过 registry 判定 path，再把 bootstrap 注入的 Repository、adapter、skin controller 和 home tab coordinator 传给目标页面。
+
+```text
+用户入口 / LYBusinessRouter
+  → Navigator.pushNamed + LY route path
+  → LYAppRouteRegistry / LYAuthRouter
+  → LYAppRouter.onGenerateRoute
+  → 根据 arguments 构造页面并注入 Repository/adapter
+  → 页面创建 owner Controller
+```
+
+重点核验 `ly_route_contract.dart`：当前多条业务路由刻意传稳定服务端 ID、不可变 query 或轻量 result，而不是跨路由传完整业务 Model。解释时分别说明：
+
+- route path 的 owner；
+- arguments 的准确类型及产生位置；
+- 为什么目标页仍需 Repository 拉取或刷新展示数据；
+- pop 返回的 mutation/navigation result 如何让上一页刷新；
+- 页面/Controller 的创建与释放边界。
+
+不得把 `LYAppRouter` 说成 `AppRouters` 的另一份 feature registry，也不得把 Tuqiang 的 route effect 集合自动套给 Laoying。
+
+## 4. Web 心智映射
+
+| Flutter 当前项目 | Vue Router / React Router 近似 | 非等价点 |
 |---|---|---|
-| `createRouter({ routes })` | `GoRouter(routes: [...])` | 建一份"URL → 页面"映射表 |
-| `<RouterView />` | 壳 Widget 里的嵌套内容 | 子页面渲染的占位口 |
-| `path: '/detail/:id'` | `path: '/detail/:id'` | 动态段写法完全一致 |
-| `route.params.id` | `state.pathParameters['id']` | 取 URL 参数 |
-| `route.query.keyword` | `state.uri.queryParameters['keyword']` | 取查询串 |
-| `router.push('/x')` | `context.push('/x')` | 压栈跳转（可以返回） |
-| `router.replace('/x')` | `context.replace('/x')` | 替换当前页（不能返回到它） |
-| `router.back()` | `context.pop()` | 返回上一页 |
-| 重定向守卫 `beforeEach` | `redirect: (ctx, state) => ...` | 登录拦截：没 token 一律踢回 `/login` |
-| 嵌套路由 `children` | `routes: [GoRoute(routes: [...])]` | 父子页面层级 |
-| `meta.requiresAuth` | 通常直接在 redirect 里判断 | 标记哪些路由要登录 |
+| route registry / route name | routes 配置中的 name/path | Flutter named route 不等于浏览器 URL |
+| `Navigator.pushNamed` | `router.push` / navigate | arguments 是内存对象，不是自动序列化的 URL params |
+| `RouteSettings.arguments` | route params/state | 真实类型由项目 contract 约束 |
+| `Navigator.pop(result)` | 返回后由调用方处理结果 | Web router 通常没有同样的 typed pop result |
+| app router 构造注入 | route element 外层 provider | Laoying 可直接把 Repository/adapter 传入页面 |
 
-## 2. 完整路由表翻译示例
+如果源码真的使用 go_router，再解释 path parameters、query parameters、redirect 和 nested routes；不要为了类比而虚构 URL、deep link 或 guard。
 
-```dart
-final router = GoRouter(
-  initialLocation: '/login',                       // = 首次进入的默认页
-  redirect: (context, state) {
-    final loggedIn = ref.read(authProvider).loggedIn;
-    if (!loggedIn && state.matchedLocation != '/login') return '/login';  // 全局守卫
-    return null;                                   // null = 放行
-  },
-  routes: [
-    GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
-    GoRoute(
-      path: '/pet/:id',
-      builder: (_, state) => PetDetailScreen(id: state.pathParameters['id']!),
-    ),
-  ],
-);
-```
+## 5. 路由解释检查
 
-大白话总结：**「这就是一份带登录守卫的路由表：`/` 到首页，`/pet/:id` 到详情页并把 URL 上的
-id 传给组件。跟你在 Vue Router 写 `routes + beforeEach` 没有任何本质区别。」**
-
-## 3. 途强项目的命名路由
-
-```dart
-Navigator.pushNamed(context, '/detail', arguments: pet.id);   // ≈ router.push，参数塞 arguments 里
-```
-
-途强在 `apps/tuqiang_app` 中大量使用字符串命名路由：先在
-`MaterialApp.routes` / `onGenerateRoute` 注册名字，再按名字跳转。当前 app 由
-`AppRouters` 聚合各 feature router，新增页面应先确认 owner，不能因为通用教程推荐
-`go_router` 就改变现有路由体系。
-
-## 4. 深链与 Web URL
-
-go_router 天然支持浏览器地址栏和 App 冷启动直达某页（deep link），
-≈ Web 里的「直接访问 /history 刷新后还能还原页面」+ App 版的分享落地页。
-
-## 5. 常见坑速查
-
-| 现象 | 大白话解释 |
-|---|---|
-| pop 之后页面数据没刷新 | 上个页面没重新 watch；回来自动刷新要用 `await context.push()` 后手动 invalidate |
-| 弹窗里的 context 跳转失败 | Dialog 是另一棵子树，拿不到路由上下文；用全局 navigatorKey（= router 实例提到模块顶层） |
-| Web 地址栏出现 `#/` | 默认 hash 路由策略，≈ Vue Router 的 `createWebHashHistory` |
-
-## 6. 途强命名路由解释检查
-
-解释途强命名路由时还要说明：
-
-- 路由字符串是兼容契约，历史拼写、参数类型、返回值和栈行为不能无意修改；
-- 需要检查 feature router、app alias、`nativeRouters`、route effect、定位刷新和防截屏集合；
-- 路由 owner 应唯一，避免 feature 和 app 同时保留两个 builder；
-- 复杂迁移要补 route contract test，而不是只确认 analyzer 通过。
+- [ ] 产品线、target、操作起点与目标页面已唯一确定；
+- [ ] route 名/常量、发起调用、arguments、唯一 builder 与目标 Widget 已闭环；
+- [ ] Tuqiang 的 AppRouters/feature registry 或 Laoying 的 LYAppRouter/contract 没有混用；
+- [ ] 参数只传稳定 ID/query 还是传 Model，已由当前 contract 证明；
+- [ ] 返回值、刷新、副作用、页面/Controller 生命周期已说明；
+- [ ] 外部 deep link 或原生入口无法从仓库确认时已标未知。

@@ -5,6 +5,28 @@
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-09-01
+
+### Added
+- `tuqiang-project-map` 增加双产品识别与事实路由：先区分途强 `standard/ohos/tuqiang_app` 和老鹰在线 `laoying_standard/laoying_ohos/laoying_app`，再选择各自的 App composition、状态体系、路由、网络、资源和测试证据；同步收录 `tool/project.dart` 的四个 target 及边界脚本的 `all/tuqiang/laoying` 产品 scope。
+- `tuqiang-dev` 新增需求澄清与决策门 reference：先写清用户可观察行为和可证伪验收标准；完成一次 owner、contract 与 2–4 个同类样本的聚焦调查后仍有多种合理实现，或素材、文案、数据契约、平台范围、公开 API、owner/架构及修改范围需要用户取舍时，必须在写代码前立即请求决策。
+- 静态资源规范增加“业务素材保持素材语义”规则：语言、状态或主题变化要求替换图片时使用独立 asset 变体；缺少目标 PNG/SVG 时先向用户或设计方索要，未经明确授权不得用 Canvas、CustomPainter、TextPainter、文字叠加、系统图标、emoji、AI 或其他程序生成方式代替。
+
+### Changed
+- 四个 Skill 统一把用户显式路径之后的默认候选改为“当前对话/任务绑定项目的 Git 根目录”；选中、打开、附件或目标文件仅作为项目内定位锚点，不得静默切换到另一个 checkout，冲突时列出候选与失败原因并请求确认。
+- 仓库身份验证改用稳定的 App 宿主、`tool/project.dart` 与 package identity；业务 package 清单从当前 pubspec、源码与门禁动态发现，不再把迁移中的单一 shared 聚合包当作永久仓库指纹。
+- 依据 2026-09-01 当前源码重建项目事实：原 `shared_business` 已拆为 `shared_account`、`shared_activity`、`shared_advertising`、`shared_command`、`shared_device`、`shared_location`、`shared_media` 与 `shared_message`，遗留 app 能力回到 `apps/tuqiang_app/lib/app/legacy_shared`，设备/定位/媒体与 session contract 的路径、symbol 和依赖边界全部重新索引。
+- 启动、路由与状态说明按真实产品线分流：途强继续追 `ProviderScope`、Riverpod family、`AppRouters` 与 Feature contracts；老鹰在线追 `LYAppProvider`、`LYAppScope`、app-local controller/repository、`LYAppRouter/LYAppRouteRegistry`、八个业务 owner 与独立资源 resolver，禁止把两套架构互相套用。
+- 网络、国际化、资源、平台与验证规则改为产品感知：途强使用 `TQHttp/ResultModel/TCheck` 和 9 语言 manifest；老鹰在线使用自身 backend client、2 语言 manifest、app-local assets/typed route contract 与独立边界测试；统一命令覆盖 `standard`、`ohos`、`laoying_standard`、`laoying_ohos`。
+- `tuqiang-project-map` 升级至 1.2.0，`flutter-to-web` 升级至 1.7.0，`tuqiang-dev` 升级至 1.12.0，`tuqiang-change-retrospective` 升级至 1.1.0，根包升级至 1.13.0；同步根 README 与四个 Skill README。
+
+### Fixed
+- 修复最新 checkout 因不存在的 `packages/shared/shared_business/pubspec.yaml` 被四个 Skill 错误判定为“非途强仓库”，继而回退到其他机器历史路径或错误 checkout 的根因。
+- 修复开发流程仅在“业务或架构歧义”时才询问的过窄门槛，避免模型自行补全素材、交互、文案、接口 null 语义、平台范围或验收标准；调查无法收敛时不再用扩大搜索或试探性实现代替用户决策。
+- 修复图片需求被擅自改写为运行时绘制的问题；例如非中文起点/终点要求 `S/E` 图标但缺少目标 PNG 时，默认动作是索要对应资源并建立语言到 asset 的映射，而不是在原图上绘字。
+- 修复把老鹰 `check_app_boundaries.dart` 当作必须全绿门禁的错误；当前检查器仍禁止已被最新 allowlist 和源码正式采用的 `core_ui`，因此规则修复前只记录为已知基线诊断，实际边界由 ProductScope 与聚焦 architecture/contract tests 验证。
+- 移除 `AGENTS.md` 全局同步说明中的具体用户名示例，统一使用当前进程的 `$env:USERPROFILE`，避免换电脑后同步到不存在或无权限的用户目录。
+
 ## [1.12.0] - 2026-08-30
 
 ### Added

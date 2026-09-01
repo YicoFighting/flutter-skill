@@ -1,226 +1,160 @@
 # 完整需求追踪 Playbook
 
-目标：从一次可观察操作出发，恢复真实的同步调用、异步数据流、状态拓扑与 UI 消费，并用当前路径、行号和源码证据回答。用户选中的代码是搜索锚点，不是分析边界。
+目标：从可观察操作恢复当前产品的同步调用、异步数据流、状态拓扑与 UI/插件消费，并用实时路径、行号和最小源码证据回答。用户选中代码只是锚点。
 
-## 1. 先定义问题
+## 1. 产品与问题前置
 
-把用户问题改写成一句可验证的问题：
+先填：
 
 ```text
-当 <用户/系统事件> 发生时，<输入或设备> 如何经过 <路由/状态/数据层>，
-最终让 <页面字段/组件> 呈现 <结果>，失败、切换或退出时如何处理？
+项目根：<已校验 Git root>
+产品：tuqiang | laoying | cross-product
+平台：Android/iOS | HarmonyOS | 全平台
+事件：<启动/进入/点击/刷新/推送/native callback/session>
+终点：<具体 Page/Widget/route/资源/插件/本地写入>
 ```
 
-先确认：
+产品证据优先取 app 路径、入口调用方和路由 owner。仅凭需求中的业务名不能区分产品。产品、平台、账号/设备类型、目标资源或验收结果缺失，且会改变 owner/实现链时，停止并向用户提一个最小决策问题。
 
-- 起点：启动、进入页、点击、刷新、输入、推送、scheme、原生 callback、Timer 或 session 事件；
-- 终点：具体 Widget、route、插件调用、本地写入或可观察副作用；
-- 标识：route 常量、Page 类、方法、Provider、State 字段、DTO/model 字段；
-- 分支：设备类型、账号类型、平台、权限、缓存命中、登录态。
+将问题改写为：
 
-如果用户只给一段代码，先识别其中最有辨识度的 symbol，再向上搜调用方、向下搜消费者。
+```text
+当 <事件> 发生时，<输入> 如何经过 <当前产品的路由/状态/数据层>，
+最终让 <可观察终点> 呈现 <结果>；失败、切换或退出时怎样处理？
+```
 
-## 2. 七段追踪法
+## 2. 七段追踪
 
-### A. 用户操作或生命周期入口
+### A. 入口
 
-找 `onTap`/`onPressed`/`onRefresh`、`initState`、首次 build gate、route/native handler 或 observer。记录 Widget 参数和当时可用的设备/账号/route 数据。
+找 `onTap/onPressed/onRefresh`、`initState`、首次 build gate、route/native handler、observer、Timer 或 session 事件，记录当时的 route、设备、账号、平台和资源参数。
 
 ### B. 页面与路由装配
 
-追 route 常量、Navigator 调用、`AppRouters`、`FeatureRouterRegistry`、feature router、`onGenerateRoute` 和最终 Page builder。若调用的是 Navigator/Composition contract，回到 `bootstrap.dart::getApp` 查 Provider override。
+- Tuqiang：Navigator/contract → `bootstrap.dart::getApp` override（若有）→ `AppRouters`/feature router → `AppRouters.generateRoute`/Page。
+- Laoying：Navigator/LY contract → `LYAppRouter.onGenerateRoute` → `LYAppRouteRegistry`/app-local business router → Page。
+
+查 route 常量、arguments 产生/转换/fallback、导航类型、observer/effect/security 与最终 builder。
 
 ### C. 状态拓扑
 
-对每个 Provider 建立一行：
-
-| Provider 实例 | 声明/State/Notifier | key 来源 | 写入者 | watch/listen/read 消费者 | 生命周期/reset |
+| 状态/对象实例 | 声明与类型 | key/实例来源 | 谁写 | 谁订阅/读取 | 生命周期/reset |
 |---|---|---|---|---|---|
 
-普通 Provider、全局选择、family keyed state 和 presentation 派生值必须分开。
+Tuqiang 分开普通 Provider、全局选择、family state、presentation、Manager/setState。Laoying分开 `LYAppProvider`、domain controller、Widget state 与 repository，不把 `notifyListeners` 写成 Riverpod rebuild。
 
-### D. 数据边界
+### D. 数据与资源边界
 
-继续追 Notifier/Controller 方法到 Repository、Manager、插件或直接 `TQHttp`。写出参数从 UI/route/key 到请求 DTO 的变换，并写出响应从 `ResultModel.data`、`TCheck<T>`、`fromJson` 到 state 的变换。
+状态/Controller → Repository/Manager/plugin/直接 HTTP；写清 UI/route/key 到请求 DTO、响应到 model/state 的转换。
 
-只引用 API 常量名，不打开或复制 endpoint 具体值；不输出 Token、Key、证书、签名或生产配置。
+资源需求还要追：实际文件 → pubspec 声明 → asset 常量/参数 → Flutter Widget 或原生插件消费。目标资源不存在时标记缺失并询问来源，不发明 Canvas、临时文件或默认替代。
 
-### E. 状态发布与异步时序
+只引用 API 常量名，不展示 endpoint、Token、Key、证书、签名或生产配置。
 
-标出 loading、成功、空数据、错误，以及：
+### E. 异步发布
 
-- `await`/`unawaited` 的分叉；
-- requestVersion/generation/mounted；
-- pending future 去重；
-- 直接写入：`state =`、Notifier 的 `apply/seed/update`、Manager setter、缓存回写；
-- 触发入口：页面/Timer/listener/RouteObserver 调用的 `refresh/load/request`，与直接写入者分开列；
-- `ref.listen` 的副作用或 post-frame 调度。
+标出 loading/success/empty/error，以及 `await/unawaited`、requestVersion/generation/mounted、pending 去重、post-frame/listener、`state =`、seed/apply/update、`notifyListeners`、Manager setter 与缓存回写。
 
-### F. UI 消费
+触发 refresh 的入口与最终写状态的方法必须分开。
 
-从 Provider/State 字段反向搜索消费者。最终落到实际 Widget 属性或插件调用，说明 `watch`/`select` 的字段怎样触发重建。若 presentation mapper 中间转换了字段，把映射也放进链路。
+### F. UI/插件消费
+
+从字段反向搜到实际 Text/Image/颜色/可见性/按钮、地图 marker、相机画面、原生参数或 loading/error/empty 分支。中间有 presentation mapper/asset selector 时一并列出。
 
 ### G. 失效与恢复
 
-查页面离开、切换 family key、`autoDispose`、`keepAlive`、`onDispose`、`invalidate`、语言切换和 logout/session reset。说明下一次进入是复用、重建、磁盘恢复还是重新请求。
+查页面离开、切 family key、controller dispose、autoDispose/keepAlive/onDispose、invalidate、语言切换与 logout/session reset。说明下次进入是复用、重建、磁盘恢复还是重请求。
 
-## 3. 同步栈、异步流与依赖图要分开
-
-错误表达：
+## 3. 时间阶段分开
 
 ```text
-onTap -> network -> UI
+同步调用：用户事件 -> 方法 -> 状态/命令入口
+
+状态/调度：状态发布 -> listener/notifyListeners -> post-frame/刷新事件
+
+异步数据：repository -> await HTTP/plugin -> 映射 -> 新状态
+
+响应式消费：watch/select/ChangeNotifier/controller listener -> rebuild -> UI/插件变化
 ```
 
-推荐表达：
+这些阶段不能压成“onTap -> network -> UI”的虚假同步栈。
 
-```text
-同步调用：onTap -> _selectDevice -> setModelFromList -> selectedDeviceNotifier.select
+## 4. Tuqiang family 专项
 
-状态/调度：selectedDevice state 发布
-  -> LocationContainerHost 的 ref.listen 收到变化
-  -> addPostFrameCallback
-  -> requestSelectedLocationContext
+遇到 `someProvider(arg)` 必须回答：
 
-异步数据：snapshotNotifier.refresh
-  -> repository.fetchStatus
-  -> await TQHttp
-  -> applyStatus
-  -> state 发布
+1. provider 类型和声明；
+2. arg 类型与业务来源；
+3. value object 的 `==/hashCode`；
+4. 同 Container 相同/不同 key 的实例隔离；
+5. autoDispose、根 Host watch、keepAlive；
+6. Notifier/state 的写入者与同 key 消费者；
+7. invalidate 指定 key 还是整个 family；
+8. 跨 shared runtime callback 是否参与。
 
-响应式依赖：Page ref.watch(snapshotProvider(key).select(...))
-  -> 所选字段变化
-  -> Widget rebuild
-  -> Text/地图/按钮更新
-```
+Laoying 目标未实际使用 Riverpod 时跳过本节，改查 controller/ChangeNotifier 实例的创建、注入、监听与 dispose。
 
-`ref.listen`、post-frame、Future 和 rebuild 是跨时间阶段，不要称为同一条同步函数栈。
-
-## 4. family 专项追踪
-
-遇到 `someProvider(arg)`，必须依次回答：
-
-1. Provider 是哪种 `.family`，声明在哪里？
-2. `arg` 是 String、record 还是 value object？
-3. 它从 route 参数、Widget 参数还是另一个 Provider 派生？
-4. key 的 `==`/`hashCode` 是什么；哪些字段决定实例身份？
-5. 同一 Container 内相同 key 是否复用，切 key 后旧实例如何处理？
-6. `autoDispose` 是否被根 Host/其他页面的 watch 延长，是否调用 `keepAlive`？
-7. 状态写入哪个 Notifier 的 `state`，谁读取同一个 key？
-8. session reset 是 invalidate 指定实例还是整个 family？
-
-不要回答成“Riverpod 支持传参数所以可以”。参数的业务来源、实例隔离和生命周期才是重点。
-
-## 5. 搜索步骤
-
-在项目根执行，优先缩小目录：
+## 5. 搜索协议
 
 ```powershell
 Set-Location -LiteralPath $tuqiangRoot
 
-# 1. 锚点定义与调用方
-rg -n "<方法名>|<类名>|<字段名>" apps packages --glob '*.dart'
+# 产品入口与锚点
+rg -n "<方法>|<类>|<字段>|<资源常量>" <已确认产品目录> packages --glob '*.dart'
 
-# 2. 路由与最终 builder
-rg -n "<路由常量>|<路由字符串>|<Page类>|onGenerateRoute|routes\(" apps packages --glob '*.dart'
+# 路由和最终 builder
+rg -n "<route>|<Page>|generateRoute|onGenerateRoute|routes\(" <已确认产品目录> packages --glob '*.dart'
 
-# 3. Provider 声明和所有实例化/读写
-rg -n "final <Provider名>|<Provider名>\(|<Provider名>\.notifier|invalidate\(<Provider名>" apps packages --glob '*.dart'
+# Tuqiang Provider/State 或 Laoying provider/controller
+rg -n "final <Provider>|<Provider>\(|<Provider>\.notifier|invalidate\(<Provider>|class LYAppProvider|class .*Controller|notifyListeners" <相关目录> --glob '*.dart'
 
-# 4. State 与写入点
-rg -n "class <State名>|state\s*=|copyWith\(|seed\(|select\(|refresh\(" <相关目录> --glob '*.dart'
+# 数据、资源与消费
+rg -n "<Repository>|TQHttp\.|ResultModel|TCheck|fromJson|<状态字段>|<资源文件名>" <相关目录> --glob '*.dart' --glob 'pubspec.yaml'
 
-# 5. 数据层与响应映射
-rg -n "<Repository名>|TQHttp\.|ResultModel|TCheck|fromJson|toJson" <相关目录> --glob '*.dart'
-
-# 6. 最终消费者和非 Riverpod 状态
-rg -n "<状态字段>|ref\.(watch|listen|read)|\.select\(|setState\(|Manager|Controller" <相关目录> --glob '*.dart'
-
-# 7. 生命周期与 reset
-rg -n "autoDispose|keepAlive|onDispose|dispose\(|invalidate\(|SessionReset|clearForLogout" apps packages --glob '*.dart'
+# 生命周期
+rg -n "autoDispose|keepAlive|onDispose|dispose\(|invalidate\(|SessionReset|resetSession|clearForLogout" <相关目录> --glob '*.dart'
 ```
 
-如果 symbol 名很常见，组合“文件目录 + 类型名 + 方法名”，不要依赖一次全仓宽泛搜索得出结论。
+symbol 常见时组合目录、类型与方法，不用一次全仓宽搜替代证据链。
 
-## 6. 行号与源码证据
+## 6. 证据规则
 
-references 不保存易漂移行号，最终回答必须保存本次搜索结果的当前行号。每个关键阶段采用：
+最终引用格式：
 
 ```text
-<TUQIANG_ROOT>/<相对路径>:<起始行>  <symbol>
+<TUQIANG_ROOT>/<相对路径>:<当前行>  <symbol>
 ```
 
-随后给 3–20 行足以证明结论的 Dart 源码片段。单个片段要小，但总证据不能因为“代码应短”而跳过入口、Provider 定义、family key、写入、Repository 和消费端。
+每个关键阶段给足以证明结论的 3–20 行片段。行号来自本次 `rg -n`/当前文件；跨文件逐个引用；不能拼接不连续代码制造调用。命名推断必须标为推断并说明缺失证据。缩小上下文以避开敏感值。
 
-路径与行号的要求：
+## 7. 输出结构
 
-- 行号必须来自本次 `rg -n`/当前文件，而不是 reference 中的旧数字；
-- 同一结论跨文件时逐个给路径，不能只给目录；
-- 标注片段省略了什么，不能用不连续代码制造一条不存在的调用；
-- 若只通过命名或邻近代码推断，明确写“推断”，并说明还缺哪份运行时证据；
-- 不展示 endpoint/token/key/cert 等敏感值，即使它们恰好在上下文行中；缩小片段或脱敏字段值。
+1. 一句话结论：产品、触发者、状态/owner、可观察终点。
+2. 操作时间线：标注同步、listener/post-frame、await、rebuild。
+3. 状态/对象拓扑表：定义、实例/key、写入、消费、清理。
+4. 参数/资源与生命周期：family 或 controller 实例、资源来源、跨层 callback。
+5. 按调用顺序的源码证据。
+6. 实际涉及的产品/平台/设备/账号/loading/error 分支。
+7. 已核验边界与需要用户决策/运行时/后端/原生证据的部分。
 
-## 7. 金字塔输出模板
+## 8. 歧义停止
 
-### 第一层：一句话结论
+出现以下情况不继续替用户推断：
 
-用业务语言回答“谁触发、状态存哪、谁展示”。
+- Tuqiang/Laoying 或平台选择会改变链路；
+- route/owner/资源有多个合理候选；
+- 验收描述与仓库现有资产/contract 不一致；
+- 持续搜索仍没有唯一入口或终点，缺的是业务场景而不是 symbol。
 
-### 第二层：操作时间线
+先报告已核验事实和候选差异，再问能排除分支的最小问题。不要以“先做一个能跑的版本”为理由修改事实或默认用户选择。
 
-```text
-进入/点击
-  -> 同步方法
-  -> 状态发布
-  -> listener/异步请求
-  -> 新状态
-  -> UI 重建/副作用
-```
+## 9. 完成条件
 
-为异步边界标注 `await`、`unawaited`、post-frame、listener、rebuild。
-
-### 第三层：状态拓扑表
-
-| 状态 | 定义 | 实例/key | 谁写 | 谁读/展示 |
-|---|---|---|---|---|
-
-至少覆盖用户问到的状态，以及决定它 key/生命周期的上游状态。
-
-### 第四层：参数与生命周期
-
-专门解释 family 参数来源、相等性、缓存隔离、autoDispose/keepAlive、invalidate/session reset。非 family 也说明作用域。
-
-### 第五层：源码证据
-
-按调用顺序展示当前文件路径、行号、symbol 与最小源码片段，不按文件名随意排序。
-
-### 第六层：分支与异常
-
-列出这次需求真正涉及的设备/账号/平台/权限/缓存分支，以及 loading、error、旧请求和页面退出处理。
-
-### 第七层：核验边界
-
-明确哪些已由源码确认，哪些需要运行时日志、后端契约、原生实现或产品规则才能确认。
-
-## 8. 质量反例
-
-- 只解释用户选中代码的“自上而下”，没找上游入口和下游消费者。
-- 把 Provider 声明叫“全局变量”，不说明 ProviderContainer 和 family key。
-- 说“参数传给 Provider”，但不展示参数从路由/设备选择何处产生。
-- 找到 `state =` 就结束，没有找谁 watch/select 以及哪个 Widget 展示。
-- 把 `setState`、Manager、缓存或直接 TQHttp 隐藏掉，伪装成纯 Riverpod 架构。
-- 把 `ref.listen`、Future 完成和 Widget rebuild 写成连续同步调用栈。
-- 用迁移文档目标代替当前 route/owner。
-- 给旧行号、只给目录、只贴概念示例或输出敏感配置。
-
-## 9. 停止条件
-
-只有同时满足以下条件才算追踪完成：
-
-- 有明确操作入口与最终可观察终点；
-- 每个关键状态有定义、写入、读取、key 与生命周期；
-- 数据请求有参数来源、Repository/直接网络边界、响应映射；
-- 异步边界与分支没有被压成虚假的同步栈；
-- Riverpod 之外的 Manager/setState/Controller/缓存已按实际链路列出；
-- 关键结论均有当前路径、行号与源码证据；
-- 未确认项和敏感信息边界已明确。
+- 根、产品、平台与可观察起终点明确；
+- 关键状态/对象有定义、写入、读取、实例/key 与生命周期；
+- 数据有参数来源、Repository/网络/插件边界和响应映射；
+- 资源有实际文件、声明、常量与消费端，或明确标为缺失；
+- 异步边界没有被压成同步栈；
+- 非 Riverpod 状态按实际链路列出；
+- 关键结论有当前路径、行号和源码；
+- 未决策项与敏感信息边界明确。

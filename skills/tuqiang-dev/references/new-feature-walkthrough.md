@@ -1,98 +1,47 @@
-# 新需求实施清单（项目版）
+# 新需求实施清单
 
-本清单用于在途强项目新增页面、接口或跨端能力。它是决策顺序，不要求所有需求机械复制同一套目录。
+## 1. 先澄清
 
-## 1. 先确认 owner 和现状
+写明目标产品、用户可观察行为和可证伪验收。素材、文案、API、平台、Product Scope、owner 或范围会改变结果且不唯一时，按 [requirement-clarification.md](requirement-clarification.md) 先问用户。
 
-- 找到所属 feature；新业务域才考虑新包；
-- 先找公开 barrel/API 和已有复用入口，再搜索相邻页面、route、Provider、asset、Repository、测试和 app 注入；
-- 在目标 package 内选 2–4 个成熟同类实现；命名、目录、Provider、Model、Repository、Widget 分别按 [local-style-and-reuse.md](local-style-and-reuse.md) 记录依据；
-- 确认是新增、修复还是迁移，区分当前实现和迁移目标；
-- 涉及路由时记录旧字符串、arguments、返回值、栈行为和 native/route effect；
-- 涉及三端时记录 standard/OHOS 的依赖、override、原生能力和验证端。
+老鹰需求先核对当前 `docs/laoying` Product Scope 与 API/route/resource/native contract；设计稿或途强现有功能不等于老鹰范围批准。
 
-## 2. 确认数据和设计来源
+## 2. 找 owner 与样本
 
-- 接口文档存在：按真实字段创建 endpoint、Repository、request/response Model；
-- 接口未就绪：不编造 URL、字段或生产假数据；先完成抽象，UI 预览和单测使用可注入 fake；
-- 有设计稿：按设计稿和现有 `core_ui` 对齐；
-- 无设计稿：参考同类页面，使用实际存在的 `TQAppBar`、按钮、空态和 loading 组件；
-- 新图片按 [assets-guide.md](assets-guide.md) 判断 owner、路径、倍率和 pubspec。
+- 途强单业务放对应 `feature_*`；跨 Feature 稳定能力落到职责匹配的拆分 `shared_*`；
+- 老鹰业务放 `apps/laoying_app/lib/app/auth|gps|pet|mine|overview|message|device_share|device_management`；
+- 找公开入口、调用方、route、状态、Repository、asset、测试和宿主注入；
+- 在同产品同 owner 采样 2–4 个成熟实现；老鹰不拿途强 Feature 页面当模板；
+- 一次聚焦调查后仍多解，停止实现并询问。
 
-## 3. 按真实模块结构实现
+## 3. 数据、状态与页面
 
-优先沿用目标 feature 当前结构，常见组成包括 `api`、`repository`、`model`、
-`state`/`controller`、`pages`/`page`、`router`、`callbacks`、`assets`。
+- 接口来自真实 contract；未就绪时不编造 URL/字段/成功数据，使用可注入 fake/unavailable；
+- 途强沿用当前 Riverpod/Manager 模式并核对 family key、写入源、消费者和 reset；
+- 老鹰沿用 `LYAppProvider`/`LYAppScope`、app-local ChangeNotifier Controller 和 Repository；
+- 异步覆盖 loading/success/empty/error、generation、mounted/dispose；
+- UI 沿同产品视觉体系；业务图片缺失先索要，不用 Canvas、叠字、系统图标或生成素材替代；
+- i18n 按目标产品 manifest：途强当前九语言，老鹰当前 `zh_CN/en_US`。
 
-不要为了套模板把成熟模块改成另一种目录；包外只消费公开 barrel/API，不能 import 其他 feature 的私有 `src/**`。
+## 4. 路由与平台
 
-## 4. Model 和网络边界
+- 途强保持 Feature Router、`AppRouters`、arguments/result 和 route effect；
+- 老鹰使用 `LYAppRouteRegistry`、`LYBusinessRouter` 与 typed LY payload/result；
+- 平台能力明确 Android/iOS/HarmonyOS 行为和降级；产品/平台策略不唯一时询问；
+- 公共能力才扩到四 target，产品配置、凭据、channel 和资源保持隔离。
 
-```dart
-factory XxxResponse.fromJson(Map<String, dynamic> json) {
-  return XxxResponse(
-    id: TCheck<String>(json['id']),
-    count: TCheck<int>(json['count']),
-  );
-}
-```
-
-响应字段的 null 性和 `toJson` 是否过滤 null 由接口契约决定。请求 DTO 可以用
-`required` 表达调用方必须提供的字段；不要用“所有字段可空”或“所有 null 都过滤”替代接口设计。
-
-## 5. 状态和页面
-
-- 沿用所在模块的 `StateNotifierProvider`、`NotifierProvider` 或其他实际模式；
-- 异步操作处理 loading、success、empty、error、并发和销毁后的回调；
-- UI 用 `watch` 订阅数据、`read` 调 controller、`listen` 处理副作用；
-- 不在 `build` 中同步修改 Provider；Widget 创建的 Controller、FocusNode、Subscription 要释放；
-- 页面尺寸遵循设计尺寸的 `.sc`，不把系统尺寸和动画参数机械转换。
-
-## 6. 路由接入
-
-```dart
-abstract final class FeaturePetRouter {
-  static const bathList = 'pet_bath_list';
-  static const routeNames = <String>{bathList};
-}
-```
-
-在 feature router 定义 owner，在 app 的 `AppRouters` 聚合；保持命名路由的兼容契约，
-按 [routing.md](routing.md) 检查 arguments、返回值、重复 builder、nativeRouters 和 route effect。
-
-## 7. 国际化和资源
-
-```dart
-Text('洗澡记录'.tr)
-```
-
-在 9 个语言 JSON 中使用相同中文 key：
-
-```json
-// zh_CN.json
-"洗澡记录": "洗澡记录"
-// en_US.json
-"洗澡记录": "Bath Records"
-```
-
-不要在 Widget/State 成员里缓存会随语言变化的 `.tr` 结果。
-
-## 8. 测试与验证
-
-按 [testing.md](testing.md) 选择行为测试，不按文件数量机械生成。通常需要：
-
-- Model/Repository：解析、错误和 null 语义；
-- State/Notifier：成功、失败、空数据、并发和销毁；
-- 路由：字符串、owner、builder、参数和返回值；
-- 关键页面：用户可观察的 loading/empty/error/content 和按钮行为。
-
-根据影响范围执行：
+## 5. 验证
 
 ```powershell
+# 途强
 dart run tool/project.dart analyze standard
 dart run tool/project.dart analyze ohos
-pwsh .\tool\check_migration_boundaries.ps1
-pwsh .\tool\run_migration_tests.ps1 -FlutterExecutable <path>
+pwsh .\tool\check_migration_boundaries.ps1 -ProductScope tuqiang
+
+# 老鹰
+dart run tool/project.dart analyze laoying_standard
+dart run tool/project.dart analyze laoying_ohos
+pwsh .\tool\check_migration_boundaries.ps1 -ProductScope laoying
 ```
 
-不适用或未执行的命令要在交付说明中写明。
+老鹰业务还需在 `apps/laoying_app` 运行 analyze/test 与聚焦 architecture/contract tests；app boundary 检查器仅在与当前 allowlist 一致时作为门禁，已知基线见 [testing.md](testing.md)。公共 core/shared/plugin 使用 `-ProductScope all` 并检查四 target。未执行的构建、签名、联调和真机验证逐项说明。

@@ -19,9 +19,9 @@ Text('标题', style: TextStyle(fontSize: 16.sc))
 - 底部按钮、BottomSheet 和输入区域用 `SafeArea` 或 `Screen.bottomSafeHeight`；
 - 不手算刘海、手势条和系统栏高度，优先使用 `Screen` 封装；
 - 新页面先查 `packages/core/core_ui/lib/`，统一顶栏用实际存在的 `TQAppBar`；
-- Toast、loading、空态、确认按钮等优先复用 `TQ*` 组件；
-- 只属于一个 feature 的组件放 feature；跨 feature 且稳定的组件才进入 `core_ui`；
-- 品牌色优先使用 `core_base/tq_colors.dart`。
+- Toast、loading、空态、确认按钮等优先复用当前产品已经采用的公共组件；
+- 途强单业务组件放 Feature；老鹰业务组件放对应 LY app-local owner；稳定无业务 UI 才进入 `core_ui`；
+- 途强可沿用现有 TQ 品牌 token；老鹰品牌色、文案和图片由自身 skin/asset owner 提供，不能因复用 `core_ui` 泄漏途强视觉。
 
 ## 3. 布局防御
 
@@ -33,11 +33,12 @@ Text('标题', style: TextStyle(fontSize: 16.sc))
 
 ## 4. 图标和资源
 
-设计稿有对应切图时使用 owner asset 常量；没有对应切图且是标准语义控件时才使用
-`Icons.*`。资源路径、package 参数和倍率目录遵循 [assets-guide.md](assets-guide.md)，不要假定
-所有 feature 都有完全相同的 2x/3x 目录。
+设计稿有对应切图时使用目标产品 owner asset 常量。缺少目标业务图片时先索要，不得用
+Canvas、文字叠加、系统图标或生成图片替代；只有标准语义控件才考虑 `Icons.*`。资源路径、
+package 参数和倍率目录遵循 [assets-guide.md](assets-guide.md)。
 
 ## 5. 验证
 
 影响 UI 的行为改动：对应 package analyze 和必要的 Widget/页面验证；
-影响公共 UI、尺寸工具或平台安全区：standard/OHOS analyze，必要时补 boundary/真机检查。
+影响公共 UI、尺寸工具或平台安全区：检查受影响产品的两个 target；公共能力检查四 target，
+并按 ProductScope 运行 boundary，必要时补真机检查。
