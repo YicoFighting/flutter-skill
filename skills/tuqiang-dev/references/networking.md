@@ -38,5 +38,5 @@ Model 规则：
 
 - 途强 Feature/shared：Model/Repository 测试、受影响 package analyze、`-ProductScope tuqiang`；
 - 老鹰：业务 Repository/fake/failure 测试、`apps/laoying_app` analyze/test、聚焦 architecture tests、`-ProductScope laoying`；app boundary 已知基线按 [testing.md](testing.md) 处理；
-- 修改公共 HTTP/parser：四 target analyze、`-ProductScope all`，并运行受影响产品测试；
+- 修改 core/shared HTTP/parser：先枚举两产品消费者；同时影响两产品调用或公共 contract 时做四 target analyze、`-ProductScope all` 与两产品测试，否则验证已确认产品并记录另一产品不受影响证据；
 - 联调未执行或环境未配置时明确记录，不能用 fake 测试声称真实接口通过。

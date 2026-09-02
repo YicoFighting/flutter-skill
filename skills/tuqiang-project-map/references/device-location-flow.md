@@ -49,7 +49,11 @@ requestVersion/mounted 防止旧筛选请求覆盖新结果。T20 唤醒、页�
 
 ## 3. 点击设备与路由分支
 
-`DeviceListPage._selectDevice` 先检查升级/兼容，再调用 `ref.read(deviceCoreCommandsProvider).setModelFromList(...)`，然后按设备类型、scene 与服务状态进入 GPS、人员、Pet、Tag、MiFi、行车记录仪或监控等 route。共同状态写入发生在路由分支前；必须按实际 model 继续追最终 route/Page。
+`DeviceListPage._selectDevice` 先检查升级/兼容，再调用 `ref.read(deviceCoreCommandsProvider).setModelFromList(...)`，然后按设备类型、scene 与服务状态进入不同 route。共同状态写入发生在路由分支前，但页面实现并不共同：GPS 还会按基础服务、novice mode 以及 normal/person/keys/pet scene 分流；LBS、Tag、MiFi 与 Camera 各走独立页面族，Camera 又按 jank/driving/parking/monitor 等 camera scene 分支。必须按实际 model 继续追每个最终 route/Page。
+
+入口后的“设备详情”“更多详情”“更多设置”也要继续追：GPS 普通、人员、base/novice、Pet callback、MiFi、Beacon、Camera 与 Tag 并不保证复用同一个 Page 或同一组参数。当前离线客服卡片就在 GPS、person、scene、Pet、Wi-Fi/MiFi 多个页面分别消费，说明共享组件不等于只有一个页面入口。
+
+开发调查的完整分支索引与搜索方法见 [variant-surface.md](variant-surface.md)。只有任务命中本节所述设备选择、设备首页/详情、“更多详情/更多设置”或跨设备状态卡片入口，并且实时源码存在两个以上 route/Page 或页面消费叶子时，才启用设备范围门；此时用户若未明确全部或指定 `deviceType/scene/cameraScene`，项目地图应先返回当前候选页面矩阵，把范围决定交给用户与 `tuqiang-dev`。共享组件、当前打开页面或单个复现设备不能代替范围确认；普通 GPS 页面文案或与这些入口无关的局部 UI 不得仅因目录位置触发提问。
 
 ## 4. shared_device 写入与 app runtime
 
@@ -118,6 +122,8 @@ deviceLocationSnapshotProvider(ref)
 ```powershell
 Set-Location -LiteralPath $tuqiangRoot
 rg -n "requestDeviceList|_loadMoreData|pullToRefresh|_selectDevice|setModelFromList" apps/tuqiang_app/lib/app/home/device_list_page.dart
+rg -n "_openDeviceMoreSettings|更多详情|设备详情|更多设置|openDeviceDetail|DeviceDetail" apps packages --glob '*.dart'
+rg -n "TQOfflineCustomerServiceCard|isCustomerServiceAvailableProvider" apps packages --glob '*.dart'
 rg -n "deviceCatalogProvider|class DeviceCatalogNotifier|_requestDevicePage|requestVersion|T20|fetchStatuses" packages/shared/shared_device/lib
 rg -n "class DeviceCoreRuntime|invalidateExternalContext|requestExternalContext|selectedDeviceProvider|deviceIdentityProvider" packages/shared/shared_device/lib
 rg -n "class LocationContainerHost|applyCatalogStatus|requestSelectedLocationContext|selectedLocationDeviceProvider" apps/tuqiang_app packages/shared --glob '*.dart'

@@ -1,6 +1,6 @@
 {
   "name": "flutter-skill",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "服务途强与老鹰在线双产品 Flutter monorepo 的四个 Agent Skills：项目事实地图、Vue3/React 全链路讲解、团队风格开发与变更学习复盘",
   "keywords": [
     "antigravity",
@@ -40,14 +40,14 @@
     {
       "name": "tuqiang-dev",
       "path": "skills/tuqiang-dev",
-      "version": "1.12.0",
-      "description": "按双产品真实分层、需求决策边界、现有复用入口与局部主流风格执行开发、修复、验证和代码评审"
+      "version": "1.13.0",
+      "description": "按双产品真实分层与局部主流风格开发，并用三端、地图后端和设备页面覆盖矩阵防止漏改"
     },
     {
       "name": "tuqiang-project-map",
       "path": "skills/tuqiang-project-map",
-      "version": "1.2.0",
-      "description": "动态识别当前 checkout 与产品线，并提供架构分层、模块 owner、状态拓扑、复用入口与业务链事实索引"
+      "version": "1.3.0",
+      "description": "动态识别当前 checkout 与产品线，并提供架构、状态、平台、地图后端及设备页面变体事实索引"
     },
     {
       "name": "tuqiang-change-retrospective",

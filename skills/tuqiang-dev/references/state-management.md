@@ -66,4 +66,4 @@ Feature 定义 Provider<Contract>
 
 老鹰重点测 Controller 初始/成功/失败/空态/并发/dispose、listener、Repository fake、`LYAppProvider.resetSession()` 和 refresh bus；在 `apps/laoying_app` 运行 analyze/test、聚焦 architecture tests，并跑 `-ProductScope laoying`。app boundary 检查器仅在其规则与当前 allowlist 一致时作为门禁，已知基线见 [testing.md](testing.md)。
 
-公共 core/shared/plugin 状态变化检查四 target 和 `-ProductScope all`。未执行真机或 CI 项必须明确记录。
+core/shared/plugin 状态变化先枚举两产品消费者；同时影响两产品调用或公共 contract 时检查四 target 和 `-ProductScope all`，否则验证已确认产品并记录另一产品不受影响证据。未执行真机或 CI 项必须明确记录。

@@ -1,8 +1,8 @@
 ---
 name: tuqiang-dev
-description: 为途强智能与老鹰在线共仓的 Flutter monorepo 提供开发、修复、测试与代码评审规范；适用于澄清用户可观察需求，确定产品与 feature/shared/LY app-local owner，按当前源码修改状态、Model、Repository、Widget、路由、网络、i18n、资源或平台能力，并验证 Android、iOS、HarmonyOS 四个宿主 target。架构事实从 tuqiang-project-map 与当前源码核验，本 skill 负责实现与复用决策。
+description: 为途强智能与老鹰在线共仓的 Flutter monorepo 提供开发、修复、测试与代码评审规范；适用于澄清用户可观察需求，确定产品与 owner，按当前源码修改状态、页面、路由、地图或平台能力，并用强制覆盖矩阵防止遗漏 Android/iOS/HarmonyOS、地图后端及设备类型/详情页变体。架构事实从 tuqiang-project-map 与当前源码核验，本 skill 负责实现与复用决策。
 metadata:
-  version: "1.12.0"
+  version: "1.13.0"
 ---
 
 # 途强 Flutter 项目开发规范
@@ -13,11 +13,11 @@ metadata:
 
 `<TUQIANG_ROOT>` 是“本次任务已核验的仓库根目录”占位符，不是固定路径，也不能原样传给 shell。开工前必须按公共 [项目根目录发现协议](../tuqiang-project-map/references/project-root-discovery.md) 解析，不在本 Skill 复制一份容易过期的仓库 identity。用户明确路径优先；否则默认使用当前对话/任务绑定的项目或 workspace Git 根目录。选中、打开、附件或目标文件只作为该项目内的定位锚点，不得据此静默切换到另一份 checkout；仅在当前对话没有绑定项目或用户明确要求处理 workspace 外文件时，才从目标文件发现仓库。读取适用的 `AGENTS.md`，校验失败或无法唯一确认时停止写入并说明失败原因，不扫描整个磁盘或任意父目录，不硬编码历史路径。
 
-先按 [需求澄清与用户决策门](references/requirement-clarification.md) 写清用户可观察行为和可证伪验收标准。缺失信息会改变素材、文案、API、平台行为、owner/架构、公开契约或修改范围时，先询问用户，不得以模型偏好补全。
+先按 [需求澄清与用户决策门](references/requirement-clarification.md) 写清变更类型、用户可观察行为和可证伪验收标准，再按作为唯一规范源的 [跨端、地图实现与设备页面覆盖门](references/implementation-coverage.md) 建立候选矩阵。缺失信息会改变素材、文案、API、平台行为、owner/架构、公开契约或修改范围时，先询问用户，不得以模型偏好补全。
 
 事实判断按维度进行：
 
-1. 用户当前请求、项目 `AGENTS.md` 和明确验收结论决定本次授权与交付范围；
+1. 用户当前请求、项目 `AGENTS.md` 和明确验收结论决定本次授权、产品范围与业务范围；平台最低基线以 [implementation-coverage.md](references/implementation-coverage.md) 为唯一规范源，除非用户明确变更该组织规则或源码/Product Scope 证明某平台不适用；
 2. 当前源码、各 package 的 `pubspec.yaml`/lockfile、测试、`tool/project.dart` 和 CI 决定实际运行结构；
 3. 老鹰在线的产品范围、阻塞项和契约分别以 `docs/laoying/product_scope_matrix.md`、`route_contract.md`、`api_contract.md`、`resource_inventory.md`、`native_capability_matrix.md` 的当前状态为准；代码存在不代表产品已批准，设计图也不能覆盖 Product Scope；
 4. `tool/check_migration_boundaries.ps1 -ProductScope <tuqiang|laoying|all>`、产品契约与当前有效测试决定依赖和资源边界；产品专属检查器先与当前 allowlist/源码交叉核验，已知基线误报不得冒充新改动失败；
@@ -76,6 +76,17 @@ apps/ohos ─────┘        ↓                apps/laoying_ohos ──�
 
 这份图不要求交付成长文，但必须足以回答：修改哪一个 owner、会影响哪些写入/消费端、哪个平台和生命周期需要验证。若追到后端、外部 SDK 或原生未知边界，明确停止点，不编造行为。
 
+### 变更覆盖矩阵
+
+影响链建立后、写代码前，必须按 [implementation-coverage.md](references/implementation-coverage.md) 分类并逐项关闭矩阵：
+
+- Bug 修复的最低闭环是 Android + HarmonyOS；iOS 需要检查共享路径和专属差异，明确未运行/未验收及同事交接，不能用 Android 或 `standard` analyze 冒充；
+- 新需求必须实现 Android + iOS + HarmonyOS；本机无法运行 iOS 只影响运行验证，不允许省略 iOS 代码或宿主差异；
+- Tuqiang 地图 Bug 必须把 Android/iOS 各自的百度、高德、Google 与 HarmonyOS 华为 Map Kit 拆成 7 个平台 × 后端候选行；地图新需求在所有当前可达行落地。共享 Dart 证据可以复用，但不得合并掉平台行；用户所称“花瓣地图”只映射到当前 Map Kit 后端，不是源码 SDK 名，不虚构第四个 `TQMapSourceType`；
+- 设备列表、设备首页/详情及“更多详情/更多设置”命中多个 device/scene/route leaf 时，用户未明确范围就必须先问“所有设备类型还是指定类型”，确认前不写代码。
+
+覆盖表不机械生成平台 × 地图源 × 设备类型的笛卡尔积；设备与业务页面只列当前源码可达组合，Tuqiang 主地图则保留 7 个候选行。任何 `无需修改` 都必须给出 route、Product Scope、adapter 或调用证据，不能写“其余类似”。项目事实枚举见 [平台、地图后端与设备页面变体](../tuqiang-project-map/references/variant-surface.md)。
+
 ### 状态变更预检
 
 途强智能最近扫描基线为 Riverpod 2.6.1；修改前先核对当前 `pubspec.yaml` 与 lockfile。它采用 Riverpod、Manager/单例、`setState`、`ValueNotifier`、直接 `TQHttp` 与插件状态并存的混合架构。老鹰在线当前业务代码不使用 Riverpod：应用会话与刷新由 `LYAppProvider`、`LYAppScope`、`LYUserSession` 和 `LYSessionResetCoordinator` 组织，各业务以 app-local ChangeNotifier Controller、Repository 和局部 Widget State 为主。不得把任一产品的状态模板套到另一个产品。
@@ -112,24 +123,26 @@ apps/ohos ─────┘        ↓                apps/laoying_ohos ──�
 - 公共 Dart 代码不得泄漏 `Platform.isOhos`、`OhosView`、OHOS-only 包或定制 SDK 独有类型；
 - HarmonyOS 差异按产品隔离：Tuqiang 可使用 bootstrap 已配置的 `AppTargetConfig.isOhos`，Laoying 由两个产品壳注入平台 adapter；公共层依赖抽象、callback/bridge，不读取某一产品的 target flag；
 - 新增依赖先检查 OHOS override、现有 adapter、`core_*_ohos`、plugins 与锁文件；
-- `standard`/`ohos` 与 `laoying_standard`/`laoying_ohos` 各有独立 pubspec、lockfile 和平台配置。只更新受影响产品与端，检查无关依赖漂移；
-- standard-only 插件不自动要求补 OHOS 实现；先判断能力是否进入公共路径，再决定适配范围；
-- 变更途强 Feature contract、Provider override、route effect 或插件时检查 `standard` 与 `ohos`；变更老鹰 app-local contract、LY Router、原生 channel 或插件时检查 `laoying_standard` 与 `laoying_ohos`；改 core/shared/plugin 公共能力时检查四 target；
+- `standard`/`ohos` 与 `laoying_standard`/`laoying_ohos` 各有独立 pubspec、lockfile 和平台配置；同时记住一个 standard target 承载 Android+iOS，单次 analyze 不能替代两端运行时证据；
+- 平台交付范围按变更类型执行：Bug 至少闭环 Android+HarmonyOS 并记录 iOS 影响/交接；新需求实现 Android+iOS+HarmonyOS。standard-only 能力若进入新需求公共路径，必须补 OHOS adapter 或请求用户决定可见降级，不能静默跳过；
+- 途强与老鹰产品范围分别核对，不把“三端”扩大成“两产品全做”。变更途强 Feature contract、Provider override、route effect 或插件时检查 `standard` 与 `ohos`；变更老鹰 app-local contract、LY Router、原生 channel 或插件时检查 `laoying_standard` 与 `laoying_ohos`；改 core/shared/plugin 时先枚举两产品真实消费者，只有改动触及两产品调用或公共 contract 才检查四 target，否则验证已确认产品并给出另一产品不受影响证据；
+- Tuqiang 地图标准端有百度/高德/Google 分支，OHOS 通过宿主映射使用华为 Map Kit；地图改动按当前 scene 和可达后端逐项核查，不把 OHOS 兼容 factory id 当成百度/高德原生实现；
 - 老鹰的应用标识、签名/凭据、URL scheme/channel/authority、后端配置、品牌文案和图片必须独立。产品范围明确永久排除或延期的能力不得因途强已有实现而接入。
 
 ## 6. 实施工作流
 
-1. 解析 `<TUQIANG_ROOT>`，读取适用的 `AGENTS.md`，按 [需求澄清与用户决策门](references/requirement-clarification.md) 确认产品、用户可观察行为、验收标准和待决项；
-2. 用当前 Product Scope、项目地图和源码确定正确 owner、层级、公开 API 与复用入口；同时核对调用方、状态图、路由、pubspec、资源、测试和平台注入点；
-3. 在同一产品、同一 owner 内抽样 2–4 个成熟同类实现和相邻文件，分别记录命名、文件组织、状态、Model、Repository、Widget 与测试写法；老鹰不以途强 Feature 页面作为实现模板；
-4. 以“同产品同 owner 的成熟实现 > 同产品相邻 owner > 允许复用的公开 core/shared/plugin 能力 > 全局通用”为证据优先级。样本冲突时沿当前 owner 中有真实调用方、测试和产品契约支持的模式，并记录选择依据；
-5. 先复用语义一致的公开能力；只有多个真实消费者且职责稳定时才抽公共抽象。单点逻辑或抽象会引入 mode flag、透传 callback、转发 wrapper 时，保留 owner 内的小而直接实现；
-6. 写出产品/owner、复用结论、采样依据、最小文件范围和可证伪验收标准；完成一次聚焦调查后仍有多种会改变用户可见结果或契约的合理方案时，立即询问用户，不继续扩大搜索或试探实现；
-7. UI 有设计源时按设计与当前产品视觉体系对齐；无设计源时沿用同产品同类页面。业务图片缺失时按 [assets-guide.md](references/assets-guide.md) 请求素材，不擅自程序绘制或生成替代；
-8. 动态接口未提供时不得编造 URL、字段或生产假数据；只有产品契约允许时才用当前个人端实现提取准确契约，预览/测试使用可注入 fake/unavailable Repository；
-9. 保持既有路由字符串、arguments、返回值、栈行为、H5/scheme/push/native 语义；
-10. 让业务规则、状态和数据访问留在真实 owner，跨包只暴露必要 contract；只做直接相关的最小改动，不为统一命名、目录或架构顺手重排存量；
-11. 行为变化与适当验证一起完成，不机械要求每个文件一份测试，并用 diff 证明没有冗长胶水、重复入口或无关扩散。
+1. 解析 `<TUQIANG_ROOT>`，读取适用的 `AGENTS.md`，按 [需求澄清与用户决策门](references/requirement-clarification.md) 确认变更类型、产品、用户可观察行为、验收标准和待决项；
+2. 用项目地图和当前源码建立 [实施覆盖台账](references/implementation-coverage.md)：平台/target 是基线，地图实现和设备 route leaf 只在任务实际命中对应入口时展开，否则明确记为“不涉及”；设备详情族范围未明确时先询问，确认前不写代码；
+3. 用当前 Product Scope、项目地图和源码确定正确 owner、层级、公开 API 与复用入口；同时核对调用方、状态图、路由、pubspec、资源、测试和平台注入点；
+4. 在同一产品、同一 owner 内抽样 2–4 个成熟同类实现和相邻文件，分别记录命名、文件组织、状态、Model、Repository、Widget 与测试写法；老鹰不以途强 Feature 页面作为实现模板；
+5. 以“同产品同 owner 的成熟实现 > 同产品相邻 owner > 允许复用的公开 core/shared/plugin 能力 > 全局通用”为证据优先级。样本冲突时沿当前 owner 中有真实调用方、测试和产品契约支持的模式，并记录选择依据；
+6. 先复用语义一致的公开能力；只有多个真实消费者且职责稳定时才抽公共抽象。单点逻辑或抽象会引入 mode flag、透传 callback、转发 wrapper 时，保留 owner 内的小而直接实现；
+7. 写出产品/owner、复用结论、采样依据、最小文件范围和可证伪验收标准；完成一次聚焦调查后仍有多种会改变用户可见结果或契约的合理方案时，立即询问用户，不继续扩大搜索或试探实现；
+8. UI 有设计源时按设计与当前产品视觉体系对齐；无设计源时沿用同产品同类页面。业务图片缺失时按 [assets-guide.md](references/assets-guide.md) 请求素材，不擅自程序绘制或生成替代；
+9. 动态接口未提供时不得编造 URL、字段或生产假数据；只有产品契约允许时才用当前个人端实现提取准确契约，预览/测试使用可注入 fake/unavailable Repository；
+10. 保持既有路由字符串、arguments、返回值、栈行为、H5/scheme/push/native 语义；
+11. 让业务规则、状态和数据访问留在真实 owner，跨包只暴露必要 contract；只做直接相关的最小改动，不为统一命名、目录或架构顺手重排存量；
+12. 行为变化与适当验证一起完成，逐行更新覆盖台账；用 diff 证明没有漏改可达变体、冗长胶水、重复入口或无关扩散，不机械要求每个文件一份测试。
 
 “项目主流风格”不是全仓投票结果。Provider、Model、Repository、Widget 可以分别沿用当前 owner 内不同的成熟模式；不得为了表面统一，把 `TQ`/`Tq`/无前缀、`StateNotifier`/`ChangeNotifier` 或旧/新目录一次性改成一套。完整采样和决策表见 [references/local-style-and-reuse.md](references/local-style-and-reuse.md)。
 
@@ -164,7 +177,7 @@ dart run tool/project.dart build laoying_ohos hap --debug
 pwsh .\tool\run_migration_tests.ps1 -FlutterExecutable <对应端 Flutter 可执行文件>
 ```
 
-`tool/check_migration_boundaries.ps1` 是支持 Product Scope 的架构门禁：途强改动用 `-ProductScope tuqiang`，老鹰改动用 `-ProductScope laoying`，core/shared/plugin 或跨产品改动用 `-ProductScope all`。优先用 PowerShell 7；未运行时如实报告，不能用 analyze 冒充通过。
+`tool/check_migration_boundaries.ps1` 是支持 Product Scope 的架构门禁：只影响途强的改动用 `-ProductScope tuqiang`，只影响老鹰的改动用 `-ProductScope laoying`；当前消费者证据表明同时影响两产品或公共 contract 时才用 `-ProductScope all`，不能只凭文件位于 core/shared/plugin 选择 `all`。优先用 PowerShell 7；未运行时如实报告，不能用 analyze 冒充通过。
 
 ## 8. 风险分级验证
 
@@ -174,8 +187,11 @@ pwsh .\tool\run_migration_tests.ps1 -FlutterExecutable <对应端 Flutter 可执
 | 单个 Feature 的 Dart 逻辑 | 对应 package analyze + 相关单测 |
 | 老鹰 app-local 业务逻辑 | `apps/laoying_app` analyze + 聚焦/全量 test + architecture/contract tests；检查对应 LY Controller/Repository/session |
 | Provider family key/生命周期/状态写入 | 相关 Provider/Repository 测试 + 消费页面验证；检查切 key 和 reset |
+| 设备列表/详情/更多详情 | 按已确认设备范围逐个验证 route leaf、最终 Page、状态分支与公共组件；范围不明时先询问，不进入实现 |
+| Tuqiang 地图 | 当前 scene 下逐项验证 Android/iOS 各自的百度、高德、Google 与 HarmonyOS Map Kit；Bug 记录 7 个候选行的排查结论，新需求记录各当前可达行的实现证据 |
+| Laoying 地图 | 服从当前 Product Scope，把 `laoying_standard` 再拆为 Android/iOS 平台行并加 HarmonyOS 行，逐项验证宿主注入、目标 scene 的 view id → resolver → 已注册 factory，不套用 Tuqiang 三供应商矩阵 |
 | route/asset/package 边界/i18n manifest | ProductScope boundary + 对应 contract/解析测试；app-local 检查器仅在当前规则与 allowlist 一致时作为门禁 |
-| core/shared/公共插件/依赖 | 四 target analyze + `-ProductScope all` boundary；必要时途强 migration tests 与老鹰 app tests |
+| core/shared/公共插件/依赖 | 先枚举两产品消费者；同时影响两产品调用或公共 contract 时跑四 target + `-ProductScope all`，否则验证已确认产品并记录另一产品不受影响证据 |
 | 权限、MethodChannel、OHOS override、系统能力 | 静态验证 + 受影响端行为/真机验证 |
 | App 构建、渠道、签名、DevEco | 走 `tool/project.dart`，记录未执行的 CI/签名步骤 |
 
@@ -184,7 +200,11 @@ pwsh .\tool\run_migration_tests.ps1 -FlutterExecutable <对应端 Flutter 可执
 ## 9. 交付检查
 
 - [ ] 目标产品、Product Scope、owner、依赖方向、state/route/asset 唯一来源正确；
-- [ ] 用户可观察行为、可证伪验收与需用户决策项已明确；缺素材或产品/API/平台口径时没有擅自补全；
+- [ ] 变更已分类为 Bug/新需求/混合；用户可观察行为、可证伪验收与需用户决策项已明确；
+- [ ] 已按规则覆盖 Android/iOS/HarmonyOS：Bug 的 Android+OHOS 闭环与 iOS 影响/交接清楚，新需求三端均有代码实现；
+- [ ] 设备详情族已枚举 route leaf；用户未说明全部或指定设备类型时已先询问，未从单一页面擅自推断；
+- [ ] Tuqiang 地图变更已逐项关闭 Android/iOS 各三源与 HarmonyOS Map Kit 的 7 个候选行，不可达行使用 `无需修改` 并附源码证据；Laoying 地图变更已按当前 Product Scope、两个宿主 adapter 与实际 scene mapping 关闭；两者均区分代码覆盖、静态/运行验证、无需修改与 iOS 交接；
+- [ ] 缺素材或产品/API/平台口径时没有擅自补全；
 - [ ] 已找到现有公开复用入口，并用目标 package 的 2–4 个成熟同类样本说明命名、目录及 Provider/Model/Repository/Widget 选择；
 - [ ] 样本冲突的取舍有调用方、测试或当前 owner 证据，没有借需求顺手统一存量；
 - [ ] 入口到数据源再到 UI 的影响链已核验，没有漏掉 Manager/cache/Timer/插件旁路；
@@ -193,7 +213,7 @@ pwsh .\tool\run_migration_tests.ps1 -FlutterExecutable <对应端 Flutter 可执
 - [ ] 目标产品的 i18n manifest、`.tr/keyTr/multiKeyTr`、`.sc`、core_ui 与资源 Resolver 按实际 API 使用；
 - [ ] 异步竞态、mounted/generation、Controller/Timer/Subscription 释放正确；
 - [ ] 途强 route/screen secure/route effect/跨 Feature callback，或老鹰 LY typed payload/result/checked registry 无意外变化；
-- [ ] 受影响平台和实际执行的命令已记录；
+- [ ] 覆盖台账每行都有可达证据、代码状态和验证状态；实际执行命令与未执行/交接项已记录；
 - [ ] diff 只覆盖必要 owner，没有纯转发 wrapper、模式开关胶水、投机性公共抽象或无关重排；
 - [ ] 未泄露敏感值，文本为 UTF-8 无 BOM；
 - [ ] 未经用户明确要求，不执行 `git commit` 或 `git push`。
@@ -203,6 +223,7 @@ pwsh .\tool\run_migration_tests.ps1 -FlutterExecutable <对应端 Flutter 可执
 | 文件 | 什么时候读 |
 |---|---|
 | [references/requirement-clarification.md](references/requirement-clarification.md) | 修改前验收、需求多解、缺素材/契约和用户决策门 |
+| [references/implementation-coverage.md](references/implementation-coverage.md) | Bug/新需求三端基线、Tuqiang 七个平台 × 地图后端候选单元、Laoying 产品边界、设备详情强制提问与覆盖台账 |
 | [references/project-structure.md](references/project-structure.md) | 双产品 app/feature/shared/core/plugin owner 与迁移边界 |
 | [references/local-style-and-reuse.md](references/local-style-and-reuse.md) | 目标 package 局部风格采样、复用/抽象/内联决策与可验证检查 |
 | [references/state-management.md](references/state-management.md) | 途强 Riverpod 与老鹰 LYAppProvider/ChangeNotifier、生命周期、并发和 session reset |
@@ -211,7 +232,7 @@ pwsh .\tool\run_migration_tests.ps1 -FlutterExecutable <对应端 Flutter 可执
 | [references/i18n.md](references/i18n.md) | 途强 9 语言与老鹰独立 zh/en bundle、切换清理 |
 | [references/sizing-ui.md](references/sizing-ui.md) | `.sc`、SafeArea、core_ui 与布局 |
 | [references/assets-guide.md](references/assets-guide.md) | 设计源、资源 owner、package asset 与倍率目录 |
-| [references/testing.md](references/testing.md) | 四 target、ProductScope、老鹰 app boundary 已知基线、单测与 migration runner |
+| [references/testing.md](references/testing.md) | 按消费者证据选择 target/ProductScope、老鹰 app boundary 已知基线、单测与 migration runner |
 | [references/permissions.md](references/permissions.md) | 权限申请、永久拒绝与 manifest |
 | [references/compatibility.md](references/compatibility.md) | Android/iOS/OHOS 差异与插件选择 |
 | [references/code-review-checklist.md](references/code-review-checklist.md) | 高风险缺陷审查 |

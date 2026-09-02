@@ -19,6 +19,10 @@
 ## 3. 路由、平台和资源
 
 - 已确认目标产品、Product Scope 和唯一 owner；老鹰业务没有依赖途强 Feature、资源或运行时配置；
+- 已分类 Bug/新需求并满足平台基线：Bug 有 Android+OHOS 修复证据和 iOS 影响/交接；新需求三端都有代码实现；
+- 设备列表/详情/更多详情已按 `deviceType`、scene、cameraScene 和最终 route/Page 审查；未确认设备范围时不接受只改当前页面的补丁；
+- Tuqiang 地图改动已逐项检查 Android/iOS 各三源与 HarmonyOS Map Kit 的 7 个候选行及实际 map scene，不可达行使用 `无需修改` 并附源码证据；没有把 OHOS factory alias 误当供应商，也没有虚构 `petal` Dart 枚举；
+- Laoying 地图改动只按当前 Product Scope、两个宿主 adapter 与实际 scene mapping 检查，没有反向套用 Tuqiang 三供应商矩阵；
 - 路由字符串、参数、返回值和栈行为没有无意变化；途强 feature/app 或老鹰 LY registry 不重复提供 builder；
 - `url_launcher` 类调用应处理 `launchUrl` 的返回值和异常；不要把 `canLaunchUrl` 当成绝对能力证明，也不要无理由做双重检查；
 - 公共 Dart 不出现 OHOS 专属类型或包名；standard-only 能力必须明确隔离；
@@ -37,7 +41,8 @@
 ## 5. 最终核对
 
 - [ ] 改动范围没有无关重构、依赖升级或格式化噪音；
-- [ ] 相关 package、实际受影响 target、ProductScope、聚焦 architecture/contract tests 和真机验证按范围执行；app boundary 已知基线未误归因；
+- [ ] [覆盖台账](implementation-coverage.md) 没有空白行或无证据的“无需修改”；相关 package、平台、target、地图后端、设备页面、ProductScope、聚焦 architecture/contract tests 和真机验证按规则执行；
+- [ ] `standard` analyze 未被当作 iOS 运行证据，iOS 未执行项与同事交接明确；app boundary 已知基线未误归因；
 - [ ] 未执行的验证已在交付说明中列出；
 - [ ] 没有敏感信息、生产假 URL 或生产假数据进入代码；
 - [ ] 使用 `git diff --check` 检查空白和补丁质量。

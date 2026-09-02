@@ -5,6 +5,27 @@
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-09-02
+
+### Added
+- `tuqiang-project-map` 新增 `references/variant-surface.md`，把产品、Android/iOS/HarmonyOS、宿主 target、地图逻辑 source/平台 backend、设备类型/scene/cameraScene 与最终 route/Page 拆成可实时核验的影响面矩阵；收录设备列表、设备搜索、详情/更多详情、服务状态和嵌套点击区域的追踪方法。
+- `tuqiang-dev` 新增 `references/implementation-coverage.md`，建立 Bug/新需求/混合变更的不同完成标准、逐行覆盖台账、iOS 交接状态和“无需修改必须附证据”规则。
+- 新增设备详情族强制范围门：当设备列表/搜索 → 首页或详情 → “更多详情/设备详情/更多设置”存在多个当前可达页面，而用户未说明范围时，必须先枚举候选并询问“所有设备类型还是指定类型”，确认前不得写代码。
+
+### Changed
+- Bug 修复默认至少闭环 Android 与 HarmonyOS；共享 Dart 对 iOS 的代码覆盖、iOS 原生专属差异、未运行/未验收项和同事交接分别记录，不再用 `standard` analyze 或 Android 结果冒充 iOS 已修复。
+- 新需求按组织最低基线要求 Android、iOS、HarmonyOS 三端均有代码实现；Windows 无法运行 iOS 只影响 build/模拟器/真机验证，必须完成可行静态检查并给出交接清单。
+- Tuqiang 地图 Bug 改为按 Android/iOS 各自的百度、高德、Google 加 HarmonyOS 华为 Map Kit 建立 7 个平台 × 后端候选单元；用户所称“花瓣地图”只作为 Map Kit 的业务称谓映射，不写成源码 SDK 名。地图新需求覆盖所有当前可达单元，并同时记录 `location`、`lineTrace`、`smartTrace`、`pointTrace`、`fence` 等真实 map scene、坐标、回调、生命周期与资源影响。
+- 项目地图补全当前设备分流事实：GPS 服务/模式和 normal/person/keys/pet scene、LBS、Camera 子场景、Tag、MiFi 等并非同一详情实现；路由核验必须检查最终 builder 和父子 Gesture/InkWell 的真实 hit target，不能按文案或方法名猜下一跳。
+- `tuqiang-project-map` 升级至 1.3.0，`tuqiang-dev` 升级至 1.13.0，根包升级至 1.14.0；同步根 README、两个 Skill README、reference 索引与 package 元数据。
+
+### Fixed
+- 修复开发流程只按“受影响 target”或当前打开页面收敛，导致同一需求遗漏其他设备详情页、设备搜索入口、客户端或平台实现的问题。
+- 修复把 `standard` target 合并视为 Android+iOS 双端运行证明，以及本机无法运行 iOS 时直接省略新需求 iOS 实现的问题。
+- 修复地图覆盖概念混淆：Dart `TQMapSourceType` 当前只有百度/Google/高德；HarmonyOS 的 BMap/AMap factory id 会映射到 Map Kit 平台 View，因此不得虚构 `petal` 枚举，也不得把兼容 id 当成鸿蒙运行了百度/高德 SDK。
+- 修复把 Tuqiang 多地图策略机械套到 Laoying 的风险；产品范围仍先由当前 Product Scope 与宿主 adapter 决定，冲突时请求用户决策。
+- 修复仅因文件位于 core/shared/plugin 就自动扩大为双产品和四 target 的范围漂移；先枚举两产品真实消费者，只有同时影响两产品调用或公共 contract 时才使用 `ProductScope all`。
+
 ## [1.13.0] - 2026-09-01
 
 ### Added

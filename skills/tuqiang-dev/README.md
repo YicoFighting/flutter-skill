@@ -1,11 +1,17 @@
 # tuqiang-dev
 
-当前版本：1.12.0
+当前版本：1.13.0
 
 途强 Flutter monorepo 的开发、修复、测试与评审 Skill，覆盖途强智能与老鹰在线、Android/iOS/HarmonyOS 及 `standard`、`ohos`、`laoying_standard`、`laoying_ohos` 四个 target。
 
-## 1.12.0 重点
+## 1.13.0 重点
 
+- 新增强制覆盖台账，分开记录变更类型、产品、Android/iOS/HarmonyOS、宿主 target、地图实现、设备 route leaf、代码状态和验证状态；
+- Bug 至少闭环 Android+HarmonyOS；iOS 共享路径与专属差异必须核查并交接，不能把 `standard` analyze 或 Android 结果写成 iOS 已验收；
+- 新需求必须实现 Android+iOS+HarmonyOS；Windows 无法运行 iOS 只影响运行验证，不允许省略 iOS 代码；
+- Tuqiang 地图 Bug 按 Android/iOS 各自的百度、高德、Google 与 HarmonyOS 华为 Map Kit 建立 7 个平台 × 后端候选行，地图新需求覆盖全部当前可达单元；用户所称“花瓣地图”只是 Map Kit 的业务称谓映射，不是新的 SDK 或 `TQMapSourceType` 枚举；
+- 设备列表 → 详情/首页 → “更多详情/更多设置”存在多种设备页面时，用户未说明全部或指定类型就必须先枚举并询问，不能只改当前页面；
+- core/shared/plugin 目录不自动代表跨产品；先查两产品真实消费者，只有同时影响两产品调用或公共 contract 时才扩到四 target 与 `ProductScope all`；
 - 未显式给路径时，优先使用当前对话/任务绑定的项目或 workspace Git 根目录；统一调用 `tuqiang-project-map` 的公共 project-root-discovery，不复制固定路径或过期 identity；
 - 动手前写清用户可观察行为和可证伪验收；素材、文案、API、平台、Product Scope、owner 或范围有多解时先询问；
 - 一次聚焦调查后仍无法唯一实现，立即给出已确认事实、待决定问题和方案差异，不继续长时间搜索或试探性改代码；
@@ -29,6 +35,7 @@
 |---|---|
 | `SKILL.md` | 根目录、事实优先级、双产品架构、实施流程、四 target 与验证矩阵 |
 | `references/requirement-clarification.md` | 用户可观察行为、可证伪验收、一次聚焦调查和决策门 |
+| `references/implementation-coverage.md` | Bug/新需求三端基线、地图后端、设备详情强制提问、覆盖台账与 iOS 交接 |
 | `references/project-structure.md` | 双产品 owner、拆分 shared、老鹰 app-local 边界与 Product Scope |
 | `references/local-style-and-reuse.md` | 同产品同 owner 采样及复用/抽象决策 |
 | `references/state-management.md` | 途强 Riverpod 与老鹰 LYAppProvider/ChangeNotifier |
@@ -37,7 +44,7 @@
 | `references/i18n.md` | 途强九语言与老鹰当前双语言独立加载 |
 | `references/sizing-ui.md` | 尺寸、安全区、公共 UI 与产品视觉边界 |
 | `references/assets-guide.md` | 双产品资源 owner、package asset 与缺素材禁代画规则 |
-| `references/testing.md` | 四 target、ProductScope、app boundary 已知基线与 migration runner 覆盖 |
+| `references/testing.md` | 按消费者证据选择 target/ProductScope、app boundary 已知基线与 migration runner 覆盖 |
 | `references/permissions.md` | 双产品权限 owner、原生声明和真机验证 |
 | `references/compatibility.md` | 双产品三端、宿主隔离与平台能力决策门 |
 | `references/code-review-checklist.md` | 异步、类型、产品、平台、路由和资源风险 |
@@ -47,8 +54,12 @@
 
 ```text
 @tuqiang-dev
-非中文地图起终点需要显示 S/E。先检查是否已有目标 PNG 和语言选择契约；
-若素材缺失，请列出所需文件并等我提供，不要用 Canvas 或文字叠加替代。
+修复设备离线时详情页的客服卡片。先从设备列表入口枚举所有
+deviceType/scene/cameraScene 和“更多详情”最终页面；如果我没有说明范围，
+先问我是要覆盖所有设备类型还是指定类型，不要直接只改当前页面。
+
+若涉及 Tuqiang 地图，按 Android/iOS 各三源与 HarmonyOS Map Kit 逐项关闭 7 个候选行，不可达行使用 `无需修改` 并附源码证据；Laoying 则按当前 Product Scope、宿主 adapter 与实际 scene mapping 建表；
+Bug 闭环 Android+OHOS 并列出 iOS 交接，新需求则完成三端代码实现。
 ```
 
 ## 四 target 命令示例
@@ -61,7 +72,7 @@ dart run tool/project.dart analyze laoying_ohos
 pwsh .\tool\check_migration_boundaries.ps1 -ProductScope all
 ```
 
-完整范围按风险选择。`tool/run_migration_tests.ps1` 当前不覆盖 `apps/laoying_app` 自身测试；未执行的构建、签名、真机或 CI 必须如实说明。
+产品范围按事实选择，平台范围按 Bug/新需求基线执行。`standard` analyze 不能证明 Android+iOS 运行时都通过；`tool/run_migration_tests.ps1` 当前不覆盖 `apps/laoying_app` 自身测试。未执行的 iOS、构建、签名、真机或 CI 必须如实说明并交接。
 
 ## 适用边界
 

@@ -73,7 +73,7 @@ auth  gps  pet  mine  overview  message  device_share  device_management
 - 老鹰可见资源必须复制为产品独立 asset，并由 `LYAppAssets`/业务 Resolver 访问；
 - 老鹰八个业务目录不得互相直接 import，不能依赖 `feature_*` 或途强 app；
 - 新依赖进入实际 owner 的 pubspec；只有受影响 target 的 lockfile 可以变化；
-- `tool/check_migration_boundaries.ps1 -ProductScope tuqiang` 检查途强，`-ProductScope laoying` 检查老鹰，公共包改动使用 `-ProductScope all`。
+- `tool/check_migration_boundaries.ps1 -ProductScope tuqiang` 检查只影响途强的改动，`-ProductScope laoying` 检查只影响老鹰的改动；core/shared/plugin 改动先枚举两产品消费者，同时影响两产品调用或公共 contract 时才使用 `-ProductScope all`。
 
 迁移范围以当前脚本、`docs/feature_business_package_split_plan.md` 和老鹰 Product Scope 文档为准，不凭本文件概括扩大范围。
 

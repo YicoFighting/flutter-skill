@@ -10,6 +10,8 @@
 | Controller/Notifier/Repository | 成功、失败、空数据、重复请求、竞态与销毁 |
 | 路由/payload/result/route effect | contract test：字符串、owner、builder、参数、返回和副作用 |
 | 关键页面/表单 | Widget test：loading/empty/error/content 和按钮行为 |
+| 设备列表/详情族 | 按已确认的 deviceType/scene/cameraScene 与最终 route/Page 验证；共享组件要覆盖每个当前消费者 |
+| 地图 Widget/protocol/adapter | Tuqiang 按 Android/iOS 各三源与 HarmonyOS Map Kit 的 7 个候选行检查当前 scene 的渲染、事件、坐标与生命周期；Laoying 按 Product Scope 与宿主 adapter 检查实际可达行 |
 | asset/i18n manifest | 路径、package、key/fallback、语言/状态选择与独立性测试 |
 | 权限/MethodChannel/OHOS override | 静态边界 + 受影响端行为，必要时真机 |
 | 文档/注释/纯格式 | diff、链接与编码检查 |
@@ -34,9 +36,11 @@ pwsh .\tool\check_migration_boundaries.ps1 -ProductScope laoying
 pwsh .\tool\check_migration_boundaries.ps1 -ProductScope all
 ```
 
-- 途强业务：目标 Feature/shared 的 analyze/test，`standard`/`ohos` 按影响运行；
-- 老鹰业务：在 `apps/laoying_app` 运行 `flutter analyze`、`flutter test` 和目标 architecture/contract tests，再检查 `laoying_standard`/`laoying_ohos`；
-- core/shared/plugin 公共变化：四 target analyze，加 `-ProductScope all` 与两产品受影响测试。
+- 途强业务：目标 Feature/shared 的 analyze/test，并检查 `standard`/`ohos`；Bug 至少闭环 Android+OHOS，新需求实现 Android+iOS+OHOS；
+- 老鹰业务：在 `apps/laoying_app` 运行 `flutter analyze`、`flutter test` 和目标 architecture/contract tests，再检查 `laoying_standard`/`laoying_ohos`；同样按 Bug/新需求平台基线记录，但不擅自扩大 Product Scope；
+- core/shared/plugin 变化：先枚举两产品消费者；同时影响两产品调用或公共 contract 时做四 target analyze、`-ProductScope all` 与两产品测试，否则验证已确认产品并记录另一产品不受影响证据。
+
+target 结果与平台结果分开记录：`standard`/`laoying_standard` analyze 只能证明共享 Dart/依赖层面的静态状态，不能同时充当 Android 和 iOS build/运行证明。Windows 无法执行 iOS 时，新需求仍需完成 iOS 代码；Bug 记录共享路径覆盖与专属差异，随后列出同事交接项。
 
 ## 3. 老鹰 app boundary 检查器的已知基线
 
@@ -63,5 +67,9 @@ pwsh .\tool\run_migration_tests.ps1 -FlutterExecutable <对应端 Flutter 可执
 - 途强 Provider 测试使用实际 Provider 类型和 `ProviderContainer`/override；
 - 老鹰使用实际 `LYAppProvider`、ChangeNotifier Controller、Repository fake 和 reset/listener；
 - Widget 测试断言用户能看到或操作的结果，不绑定 Flutter 内部实现；
+- 设备详情族测试以最终 route/Page 为行，不以第一个页面通过代表全部类型；用户未确认设备范围时不先写测试固化模型猜测；
+- Tuqiang 地图变更逐项记录 Android/iOS 各三源与 HarmonyOS Map Kit 的 7 个候选行；共享测试可复用，但必须说明每个平台 × 后端通过哪条调用证据被覆盖；
 - asset 变体测试断言语言/状态选中了真实目标文件，不接受 Canvas/叠字/placeholder；
 - 只有用户或仓库流程要求时才生成提测单，执行结果不能预填 PASS。
+
+交付使用 [implementation-coverage.md](implementation-coverage.md) 的台账状态，把“已实现/共享覆盖/无需修改”和“静态/构建/运行/未执行/交接”分开。任何空白行、无证据的“无需修改”或“其他端类似”都不算验证闭环。

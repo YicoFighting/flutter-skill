@@ -9,12 +9,16 @@
 ```text
 项目根：<已校验 Git root>
 产品：tuqiang | laoying | cross-product
-平台：Android/iOS | HarmonyOS | 全平台
+平台：Android | iOS | HarmonyOS | 多平台（逐项列出，禁止写 Android/iOS 合并项）
+宿主 target：standard | ohos | laoying_standard | laoying_ohos
+设备范围：不涉及 | 全部 | deviceType/scene/cameraScene | 待确认
+地图 scene：不涉及 | 当前 TQMapUseSceneType enum symbol 集合
+地图实现：不涉及 | 百度/高德/Google | HarmonyOS 华为 Map Kit（对应用户所称“花瓣地图”，不是源码 SDK 名）
 事件：<启动/进入/点击/刷新/推送/native callback/session>
 终点：<具体 Page/Widget/route/资源/插件/本地写入>
 ```
 
-产品证据优先取 app 路径、入口调用方和路由 owner。仅凭需求中的业务名不能区分产品。产品、平台、账号/设备类型、目标资源或验收结果缺失，且会改变 owner/实现链时，停止并向用户提一个最小决策问题。
+产品证据优先取 app 路径、入口调用方和路由 owner。仅凭需求中的业务名不能区分产品。产品、平台、账号/设备类型、目标资源或验收结果缺失，且会改变 owner/实现链时，停止并向用户提一个最小决策问题。特别是设备列表 → 详情/首页 → “更多详情/更多设置”存在多个 route leaf 时，先按 [variant-surface.md](variant-surface.md) 枚举当前候选；用户未明确范围就必须问“全部设备类型还是指定类型”。
 
 将问题改写为：
 
@@ -36,6 +40,8 @@
 
 查 route 常量、arguments 产生/转换/fallback、导航类型、observer/effect/security 与最终 builder。
 
+设备入口不能只追一条示例链：同时枚举 `deviceType`、scene/category、cameraScene、服务/激活/分享状态；从每个可达 route 追到最终 Page，并对“更多详情/设备详情/更多设置”再追一层。
+
 ### C. 状态拓扑
 
 | 状态/对象实例 | 声明与类型 | key/实例来源 | 谁写 | 谁订阅/读取 | 生命周期/reset |
@@ -50,6 +56,8 @@ Tuqiang 分开普通 Provider、全局选择、family state、presentation、Man
 资源需求还要追：实际文件 → pubspec 声明 → asset 常量/参数 → Flutter Widget 或原生插件消费。目标资源不存在时标记缺失并询问来源，不发明 Canvas、临时文件或默认替代。
 
 只引用 API 常量名，不展示 endpoint、Token、Key、证书、签名或生产配置。
+
+地图需求还要标注 `TQMapUseSceneType`，区分标准端百度/高德/Google 分派与 HarmonyOS 的 Map Kit 平台后端。OHOS 的 BMap/AMap factory id 兼容映射不能被误写成实际运行两套供应商，也不能虚构 `TQMapSourceType.petal`。
 
 ### E. 异步发布
 
@@ -135,13 +143,15 @@ symbol 常见时组合目录、类型与方法，不用一次全仓宽搜替代�
 4. 参数/资源与生命周期：family 或 controller 实例、资源来源、跨层 callback。
 5. 按调用顺序的源码证据。
 6. 实际涉及的产品/平台/设备/账号/loading/error 分支。
-7. 已核验边界与需要用户决策/运行时/后端/原生证据的部分。
+7. 变更任务附候选矩阵：平台/target、设备 route leaf、地图 scene/后端；不可达或不受影响时使用“无需修改”并给出证据。
+8. 已核验边界与需要用户决策/运行时/后端/原生证据的部分。
 
 ## 8. 歧义停止
 
 出现以下情况不继续替用户推断：
 
 - Tuqiang/Laoying 或平台选择会改变链路；
+- 设备详情族存在多个 `deviceType`/scene/cameraScene 页面，而用户没有确认全部或指定类型；
 - route/owner/资源有多个合理候选；
 - 验收描述与仓库现有资产/contract 不一致；
 - 持续搜索仍没有唯一入口或终点，缺的是业务场景而不是 symbol。
@@ -157,4 +167,5 @@ symbol 常见时组合目录、类型与方法，不用一次全仓宽搜替代�
 - 异步边界没有被压成同步栈；
 - 非 Riverpod 状态按实际链路列出；
 - 关键结论有当前路径、行号和源码；
+- 变更调查已覆盖当前可达的平台、地图后端和设备页面叶子，或明确列出待用户决定的范围；
 - 未决策项与敏感信息边界明确。

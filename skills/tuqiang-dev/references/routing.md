@@ -17,6 +17,8 @@
 
 检查 Feature router、`AppRouters` alias、`nativeRouters`、registry 与 route effect；不能 Feature/app 同时保留两个 builder。
 
+设备列表到详情必须额外枚举 `deviceType`、scene/category、cameraScene、服务/激活状态和最终 builder；再从各首页/详情的“更多详情/设备详情/更多设置”继续追一层，并核对父子 `GestureDetector`/`InkWell` 的实际 hit target，不能用文案或方法名猜 route。若发现多个 route leaf 而用户未说明全部或指定设备类型，按 [implementation-coverage.md](implementation-coverage.md) 先询问，不能把当前打开的 Page 当作全部范围。
+
 ## 2. 老鹰在线
 
 老鹰使用 app-local `LYAppRouteRegistry` 聚合八个 `LYBusinessRouter`。registry 的 checked merge 会检查重复 owner、重复 path、缺 owner/path；新增或改路由不能绕过它。
@@ -30,7 +32,7 @@
 
 ## 3. 验证
 
-- 新增/修改均验证进入、参数、返回、重复进入和栈行为；
+- 新增/修改均验证进入、参数、返回、重复进入和栈行为；设备详情族按已确认的每个 route leaf 分别记录；
 - 途强运行 route contract、受影响 package/app analyze 与 `-ProductScope tuqiang`；
 - 老鹰运行 registry/typed payload-result/owner contract tests 与 `-ProductScope laoying`；app boundary 检查器按 [testing.md](testing.md) 先排除当前 allowlist 冲突；
 - 涉及 native/scheme/route effect 时验证对应宿主和真机；duplicate route 先全量搜索 registry/alias，不随意删除注册。

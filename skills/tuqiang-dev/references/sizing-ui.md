@@ -40,5 +40,5 @@ package 参数和倍率目录遵循 [assets-guide.md](assets-guide.md)。
 ## 5. 验证
 
 影响 UI 的行为改动：对应 package analyze 和必要的 Widget/页面验证；
-影响公共 UI、尺寸工具或平台安全区：检查受影响产品的两个 target；公共能力检查四 target，
-并按 ProductScope 运行 boundary，必要时补真机检查。
+影响公共 UI、尺寸工具或平台安全区：先枚举两产品消费者；只影响单一产品时检查该产品两个 target 并记录另一产品不受影响证据，同时影响两产品调用或公共 contract 时才检查四 target。
+按上述证据选择 ProductScope boundary，必要时补真机检查。

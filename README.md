@@ -4,9 +4,9 @@
 
 | Skill | 版本 | 职责 | 典型场景 |
 |---|---:|---|---|
-| [`tuqiang-project-map`](skills/tuqiang-project-map/) | 1.2.0 | 识别当前产品线并提供架构分层、模块 owner、状态/数据拓扑、公共封装、复用入口与业务链事实 | “这个逻辑属于哪层”“状态实际经过哪些文件” |
+| [`tuqiang-project-map`](skills/tuqiang-project-map/) | 1.3.0 | 识别当前产品线并提供架构、状态、平台/地图后端、设备页面变体与业务链事实 | “这个逻辑属于哪层”“还有哪些平台或页面分支” |
 | [`flutter-to-web`](skills/flutter-to-web/) | 1.7.0 | 从用户操作追踪事件、异步数据、真实状态体系与 UI 更新，并用 Vue3/React 口吻和代码讲解 | “从进入页面/点击开始讲到接口、状态和 UI” |
-| [`tuqiang-dev`](skills/tuqiang-dev/) | 1.12.0 | 先处理需求决策点，再依据产品分层、现有复用入口和目标 owner 的局部主流风格完成修改与验证 | “按同事现有写法修复这个 Bug” |
+| [`tuqiang-dev`](skills/tuqiang-dev/) | 1.13.0 | 先处理需求决策点，再用三端、地图实现与设备 route leaf 覆盖矩阵完成修改和验证 | “修复这个 Bug，并确认没有漏端或漏设备类型” |
 | [`tuqiang-change-retrospective`](skills/tuqiang-change-retrospective/) | 1.1.0 | 在变更完成后按产品范围追溯 Git 因果、拆解输入输出与事件流，并生成学习复盘 Markdown | “把刚修好的 Bug 或刚完成的需求整理成学习文档” |
 
 ## 四个 Skill 如何协作
@@ -27,12 +27,12 @@
        Git 因果、学习复盘与 MD
 ```
 
-- `tuqiang-project-map` 是底层项目上下文。它帮助模型确定代码放在哪层、现有能力在哪里、调用链和状态拓扑怎样连接，但不代替上层 Skill 输出教学代码或决定实现方案。
+- `tuqiang-project-map` 是底层项目上下文。它帮助模型确定代码放在哪层、现有能力在哪里、调用链和状态拓扑怎样连接，并把平台/target、地图后端、设备类型与最终页面拆成带可达证据的候选矩阵，但不代替上层 Skill 决定实现方案。
 - `flutter-to-web` 重新核验当前源码，以用户操作为顶点，先识别途强 Riverpod/Manager 链或老鹰在线 `LYAppProvider`/controller 链，再分别展开事件、异步数据、状态依赖与 UI 更新，并给出路径、实时行号、最小 Dart 原文及 Vue3/React 端到端代码。
-- `tuqiang-dev` 使用地图提供的产品 owner 和复用候选，先把用户可观察行为、验收标准与待决策点说清，再在目标子域/package 抽样 2–4 个成熟同类实现，做局部风格、复用、内聚/解耦和验证决策。
+- `tuqiang-dev` 使用地图提供的产品 owner、复用候选和变体矩阵，先把变更类型、用户可观察行为、设备范围与验收说清，再按 Bug/新需求分别关闭 Android/iOS/HarmonyOS、地图后端和页面叶子。
 - `tuqiang-change-retrospective` 只在用户手动调用时工作；它结合当前源码、diff、Git 历史和验证证据，把已完成变更整理为 Bug、需求或混合复盘，不修改业务代码。
 
-设备目录 → 选择设备 → 定位状态 → GPS UI 只是地图中已整理的一条代表性业务链。项目地图的主职责是整个项目的事实、分层与索引，不是只讲设备或定位。
+设备目录 → 选择设备 → 定位状态 → GPS UI 只是代表性主链；真实入口还会按 GPS scene、LBS、Camera scene、Tag、MiFi、服务状态等进入不同详情族。涉及“设备详情/更多详情/更多设置”而范围不明时，开发 Skill 必须先列出当前页面叶子，再询问用户是覆盖全部设备类型还是指定类型。
 
 ## 路径无关的仓库识别
 
@@ -51,7 +51,7 @@
 
 - 项目事实集中维护，避免教学和开发 Skill 各保存一份静态架构并逐渐冲突；
 - 教学可以详细，但不会把解释模板混入实际代码决策；
-- 开发可以保持最小改动、局部团队风格和受影响产品/平台验证，不会把途强与老鹰在线两套架构混用；
+- 开发可以保持最小改动和局部团队风格，同时用强制覆盖台账区分 Bug/新需求、三端、地图后端与设备页面，不会把途强与老鹰在线两套架构混用；
 - 复盘独立处理 Git 历史、证据置信度和 Markdown 写入，不会在普通开发时自动创建学习文件；
 - references 按问题渐进加载，完整业务链、Riverpod、网络或风格规则只在相关任务中读取。
 
@@ -61,12 +61,12 @@
 
 ```text
 flutter-skills/
-├── package.json                         # 仓库版本 v1.13.0 与四个 Skill 元数据
+├── package.json                         # 仓库版本 v1.14.0 与四个 Skill 元数据
 ├── AGENTS.md                            # 四联动维护、同步和提交规范
 ├── CHANGELOG.md                         # Keep a Changelog 增量记录
 ├── README.md
 └── skills/
-    ├── tuqiang-project-map/             # 双产品项目事实与架构索引 v1.2.0
+    ├── tuqiang-project-map/             # 双产品项目事实与变体索引 v1.3.0
     │   ├── SKILL.md
     │   ├── references/
     │   │   ├── project-root-discovery.md
@@ -75,6 +75,7 @@ flutter-skills/
     │   │   ├── startup-routing.md
     │   │   ├── riverpod-topology.md
     │   │   ├── device-location-flow.md
+    │   │   ├── variant-surface.md       # 平台、地图后端与设备 route leaf
     │   │   ├── infrastructure-and-cross-cutting.md
     │   │   └── requirement-trace-playbook.md
     │   ├── README.md
@@ -87,10 +88,11 @@ flutter-skills/
     │   │   └── ...                      # 完整追踪、生命周期与前端对照
     │   ├── README.md
     │   └── LICENSE.txt
-    ├── tuqiang-dev/                     # 项目开发与决策规范 v1.12.0
+    ├── tuqiang-dev/                     # 项目开发与覆盖规范 v1.13.0
     │   ├── SKILL.md
     │   ├── references/
     │   │   ├── requirement-clarification.md # 需求、素材、契约与范围决策门
+    │   │   ├── implementation-coverage.md # 三端、地图与设备页面覆盖台账
     │   │   ├── assets-guide.md          # 产品资源 owner 与缺素材禁代画规则
     │   │   └── ...                      # 局部风格、状态、网络、产品/平台和测试
     │   ├── README.md
@@ -205,7 +207,10 @@ OpenAI 官方约定中，ChatGPT 使用 `@skill-name`，Codex 使用 `$skill-nam
 |---|---|---|
 | 项目位置 | 通常不必重复；仅在切换 checkout 时覆盖当前对话项目 | `项目根目录是 <目标 checkout>` |
 | 产品与 target | 防止把两套 app 架构或平台范围混用 | `途强 standard`、`老鹰在线 laoying_ohos` |
+| 变更类型 | 决定 Bug 与新需求的三端完成标准 | `Bug 修复`、`新需求`、`混合变更` |
 | 操作起点 | 决定调用链从哪里开始 | `从进入设备列表并点击设备开始` |
+| 设备范围 | 防止只改某一详情实现 | `所有设备类型`、`仅 GPS-person scene` |
+| 地图场景 | 决定需核查的 source/backend 与 use scene | `定位页，百度/高德/Google/鸿蒙 Map Kit` |
 | 目标终点 | 防止只解释选中代码 | `一直追到 GPS 地图和状态文本更新` |
 | 源码锚点 | 帮助快速定位，不作为讲解边界 | 当前文件、Widget、Provider 或方法名 |
 | 重点疑问 | 决定需要展开的机制 | family 参数、缓存、竞态、生命周期 |
@@ -288,7 +293,17 @@ session reset；再从目标 package 选取 2–4 个成熟同类实现作为风
 最小修改。完成后检查调用方、diff 和受影响测试，并说明已验证与未验证项。
 ```
 
-开发 Skill 默认应先调查再修改，但不会为了“复用”强行新增 wrapper、base class、mode flag，也不会借当前需求统一重构整个模块。完成一次 owner、contract 与 2–4 个同类样本的聚焦调查后仍有两种以上合理实现，或无法写出唯一验收标准时，应立即停止扩大搜索并请求用户决策。
+开发 Skill 默认应先调查再修改，但不会为了“复用”强行新增 wrapper、base class、mode flag，也不会借当前需求统一重构整个模块。Bug 至少闭环 Android+HarmonyOS，并把 iOS 共享覆盖、专属差异和未运行项交接；新需求必须有 Android+iOS+HarmonyOS 代码实现。完成一次 owner、contract 与 2–4 个同类样本的聚焦调查后仍有两种以上合理实现，或无法写出唯一验收标准时，应立即停止扩大搜索并请求用户决策。
+
+设备详情族可用下面的提示检查强制范围门：
+
+```text
+$tuqiang-dev
+
+修复设备离线时详情页的客服卡片。请先从设备列表和设备搜索入口枚举
+deviceType/scene/cameraScene、最终 route/Page 以及“更多详情”下一跳。
+如果我没有说明设备范围，先问我是要覆盖全部设备类型还是指定类型，确认前不要修改。
+```
 
 ### 5. 开发一个新需求
 
@@ -303,6 +318,8 @@ $tuqiang-dev
 ```
 
 这里描述的是期望行为，不需要提前替模型指定 Provider、Repository 或组件抽象；具体放置位置应由项目事实和局部主流风格决定。
+
+地图新需求还会按当前可达组合覆盖 Android/iOS 各自的百度、高德、Google 与 HarmonyOS 华为 Map Kit；用户所称“花瓣地图”只是 Map Kit 后端的业务称谓映射，不是源码 SDK 名。支持三源的 Tuqiang 主地图场景默认建 7 个平台 × 后端候选行，而不是把同名供应商合并后只改当前默认地图源。`standard` target 同时承载 Android/iOS，但 analyze 结果不等于两端运行时都通过；Windows 上不能运行的 iOS 验证会作为交接项单独列出。
 
 如果需求指定的是品牌/业务图片替换，素材本身也是产品输入。例如“非中文起终点改用 S/E 图片”但没有提供目标 PNG 时，Skill 应先给出建议文件名、owner、倍率和需要补齐的资源清单，请用户或设计提供；未经明确授权，不得在旧图片上画字，也不得用 Canvas、CustomPainter、TextPainter、系统图标、emoji 或 AI 生成图替代。
 
@@ -400,12 +417,15 @@ Skill 不固定任何机器绝对路径。公司电脑、家庭电脑、Codex wo
 
 - 是否先确认功能 owner、依赖方向、公开 API 和现有复用入口；
 - 是否先写清用户可观察行为、可证伪验收与必须由用户决定的素材/API/平台/范围问题；
+- 是否先分类 Bug/新需求：Bug 闭环 Android+OHOS 并交接 iOS，新需求三端均实现；
+- 设备详情族是否先枚举每个 route leaf，范围不明时是否先问“全部还是指定设备类型”；
+- Tuqiang 地图变更是否按 Android/iOS 各三源与 HarmonyOS Map Kit 逐项关闭 7 个候选行，并为不可达行记录 `无需修改` 与源码证据；是否标出实际 map scene；Laoying 是否只按当前 Product Scope 和宿主 adapter 验证；
 - 是否参考目标 package 中 2–4 个成熟同类样本，而不是套用模型偏好的通用架构；
 - 是否优先最小修改，并避免无收益的 wrapper、公共抽象和顺手重构；
 - 是否检查 Riverpod/Manager 或 `LYAppProvider`/controller/本地状态的完整读写与清理链；
 - 是否覆盖受影响调用方、产品 scope、`standard`/`ohos`/`laoying_standard`/`laoying_ohos` 中实际受影响的 target、i18n、资源和缩放；
 - 图片变体缺失时是否暂停并索要产品素材，而不是自行绘制或生成替代图；
-- 是否报告真实修改文件、测试命令、验证结果和未执行项。
+- 是否按矩阵报告真实修改文件、共享覆盖/无需修改证据、测试命令、静态/构建/运行结果和 iOS/其他未执行交接项。
 
 ### 复盘类结果
 

@@ -11,7 +11,7 @@
 - 定位权限与系统定位服务开关分别检查；
 - 平台差异集中在 manager/plugin/adapter，不散落于页面。
 
-原生声明位于 `apps/standard/android`、`apps/standard/ios`、`apps/ohos/ohos`，只修改受影响端，并验证用途文案与 Dart 行为一致。
+原生声明位于 `apps/standard/android`、`apps/standard/ios`、`apps/ohos/ohos`。按 [implementation-coverage.md](implementation-coverage.md) 逐端分类：Bug 至少修复 Android+OHOS 并列出 iOS 影响/交接，新需求三端均实现；某端声明无需修改时给出已有权限或不可达证据，并验证用途文案与 Dart 行为一致。
 
 ## 2. 老鹰在线
 
@@ -28,4 +28,4 @@
 
 ## 3. 验证
 
-真机按受影响产品/平台覆盖：未询问 → 首次申请 → 普通拒绝 → 再次进入 → 永久拒绝 → 设置引导 → 系统服务关闭/恢复。并运行对应 target analyze、ProductScope boundary 与聚焦 contract/architecture tests；老鹰 app boundary 检查器的已知基线按 [testing.md](testing.md) 处理。没有真机结果时明确写“未执行”，不能从编译通过推断授权流程通过。
+真机按已确认产品和 Bug/新需求平台基线覆盖：未询问 → 首次申请 → 普通拒绝 → 再次进入 → 永久拒绝 → 设置引导 → 系统服务关闭/恢复。并运行对应 target analyze、ProductScope boundary 与聚焦 contract/architecture tests；老鹰 app boundary 检查器的已知基线按 [testing.md](testing.md) 处理。没有真机结果时明确写“未执行/交接”，不能从编译通过推断授权流程通过。

@@ -97,6 +97,8 @@ Laoying 当前业务主要直接由 `apps/laoying_app/lib/app` 拥有：
 
 资源需求必须查实际文件、pubspec 声明、asset 常量和各平台消费端。目标图片不存在时应报告缺失并询问来源，不能把“可以动态画”当成既定实现。
 
+地图 owner 还要区分逻辑 source 与平台 backend：Tuqiang 的 `tq_map_plugin` Dart 层当前分百度/Google/高德，HarmonyOS 宿主则把兼容 factory id 接到华为 Map Kit；Laoying 有自己的产品范围与宿主 adapter。完整映射、scene 和设备页面分支见 [variant-surface.md](variant-surface.md)。
+
 ## 7. Owner 定位顺序
 
 1. 确认产品线和平台。
