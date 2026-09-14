@@ -1,6 +1,6 @@
 # flutter-skill
 
-版本 2.1.0。四个 Skill 服务用户指定的 `D:\Code\tuqiang` 项目，只关注 Tuqiang 产品。当前任务显式指定的新 checkout/worktree 优先，技能库目录与业务仓库目录分开校验。
+版本 2.1.1。四个 Skill 只服务 Tuqiang 产品，通过当前任务的业务路径或绑定项目动态定位仓库，不绑定盘符和目录名。项目移动、改名或换机器后，打开新位置的项目或在任务中指定新路径即可，技能库无需修改。
 
 | Skill | 职责 |
 |---|---|
@@ -9,7 +9,7 @@
 | [tuqiang-dev](skills/tuqiang-dev/SKILL.md) | 开发、修复、测试与评审 |
 | [tuqiang-change-retrospective](skills/tuqiang-change-retrospective/SKILL.md) | 用户显式要求后，只读复盘并生成学习 Markdown |
 
-2.1.0 基于目标项目当前源码补齐只读根校验、Android flavor/分发渠道与 SDK/测试范围。共用规则继续按需加载：
+2.1.1 修正根目录发现的可移植性；保留 2.1.0 的只读根校验、Android flavor/分发渠道与 SDK/测试范围。共用规则继续按需加载：
 
 - [根目录](skills/tuqiang-project-map/references/project-root-discovery.md)：用户路径优先；脚本验证 Git 跟踪标记、package identity 与 worktree。
 - [构建上下文](skills/tuqiang-project-map/references/build-runtime-context.md)：allvendor/combined/firebase、Walle channel、原生依赖与标准/OHOS SDK。

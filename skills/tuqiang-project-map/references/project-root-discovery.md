@@ -1,19 +1,23 @@
 # 仓库根目录发现与校验
 
-本技能库当前服务 `D:\Code\tuqiang` 的 Tuqiang 产品；这是用户指定的工作副本，不是所有机器必须存在的盘符。根目录选择顺序：
+本技能库服务 Tuqiang 项目身份，不绑定盘符、目录名或开发者机器。根目录按以下顺序发现：
 
-1. 当前任务中用户明确指定或已确认的 Tuqiang checkout；
-2. 当前任务绑定的 Tuqiang 项目/worktree；
-3. 在本技能库维护任务或无业务 workspace 时，以 `D:\Code\tuqiang` 为已约定候选。
+1. 当前任务中用户明确指定或已确认的业务路径；支持仓库根、子目录或源码文件。
+2. 当前任务绑定的业务项目/workspace/worktree 的 Git 根；不得把技能库 cwd 当作业务根。
+3. 本任务已校验且项目上下文未变化的业务根。
+4. 未绑定业务 workspace 时，当前目标源码文件所属的 Git 根。
 
-显式业务路径优先于技能库 cwd，两者不同是正常的“技能源 / 被服务源码”关系，不必重复询问。合法的新 checkout/worktree 可以替代约定路径；路径不存在或身份校验失败时报告原因并询问，不扫描磁盘，也不静默改用其他任务的 checkout。
+取最高优先级的明确候选并执行下面的身份校验。没有可用候选、候选指向不同业务 checkout 且当前任务无法确定目标，或权威候选校验失败时，只询问当前业务路径；不扫描磁盘，不静默回退到其他 checkout，不将历史聊天中的绝对路径写成默认值。
+
+显式业务路径优先于技能库 cwd，两者不同是正常的“技能源 / 被服务源码”关系，不必重复询问。项目移动、改名或换机器后，以当前任务的新路径重新校验；只要仓库标记和 package identity 满足条件，就无需修改或重新安装 Skill。
 
 ## 确定性校验
 
 从当前 Skill 目录执行（Python 3.10+、Git）：
 
 ```powershell
-$rootJson = python -X utf8 .\scripts\validate_project_root.py --root 'D:\Code\tuqiang'
+# $tuqiangCandidate 来自上面的当前任务候选发现，不能取技能库目录。
+$rootJson = python -X utf8 .\scripts\validate_project_root.py --root $tuqiangCandidate
 if ($LASTEXITCODE -ne 0) { throw 'Tuqiang 根目录校验失败' }
 $tuqiangRoot = ($rootJson | ConvertFrom-Json).root
 ```

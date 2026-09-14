@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-09-14
+
+### Changed
+- `tuqiang-project-map` 与根包升级至 2.1.1；其余三个 Skill 保持 2.1.0 并继续复用统一根目录协议。
+- 根目录候选改为当前任务明确路径、绑定业务 workspace/worktree、本任务有效校验结果及无业务 workspace 时的目标源码根；项目移动、改名或换机器后重新校验身份即可。
+- 同步根 README、项目地图 README 与当前用户 Gemini/Codex 项目地图副本；示例通过动态 `$tuqiangCandidate` 传入校验脚本。
+
+### Fixed
+- 移除活动技能规范和 README 中将本机业务绝对路径作为默认候选的规则，避免后续移动项目时误用旧位置；历史 CHANGELOG 原样保留。
+- 明确技能库 cwd 不代表业务仓库，没有有效候选时只询问当前路径，不扫描磁盘或静默切换 checkout。
+
 ## [2.1.0] - 2026-09-14
 
 ### Added

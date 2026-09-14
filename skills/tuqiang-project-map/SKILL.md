@@ -3,7 +3,7 @@ name: tuqiang-project-map
 description: 为 Tuqiang Flutter monorepo 从当前源码定位仓库事实、个人/企业账号模式、模块 owner、状态/数据拓扑及平台、地图和设备页面变体；用于架构、路由、依赖、业务链或影响面调查。只提供证据，不修改代码或输出 Web 教学。
 license: Apache-2.0
 metadata:
-  version: "2.1.0"
+  version: "2.1.1"
 ---
 
 # Tuqiang 项目地图
