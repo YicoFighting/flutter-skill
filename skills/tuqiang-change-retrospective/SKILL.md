@@ -1,150 +1,69 @@
 ---
 name: tuqiang-change-retrospective
-description: 在途强 Flutter monorepo 的 Tuqiang 或 Laoying Bug 已修复、需求已完成后，基于当前源码、Git diff/history 与验证证据生成可长期学习的 Markdown 复盘；适用于追溯缺陷引入、暴露与修复改动，拆解需求动机、输入输出、事件/异步/状态流，并按需借助 flutter-to-web 给出前端对照。仅在用户明确要求复盘或生成学习文档时使用，不负责修改业务代码、重新实现需求或提交推送。
+description: 仅在用户明确要求时，复盘已经完成的 Tuqiang Flutter Bug、需求或混合改动；基于当前源码、Git 与验证证据生成学习 Markdown，覆盖账号模式、国际化、异步生命周期和业务链。只读调查，不修改业务代码或 Git。
 license: Apache-2.0
 metadata:
-  version: "1.1.0"
+  version: "2.0.1"
 ---
 
-# 途强 Flutter 变更复盘
+# Tuqiang 变更复盘
 
-本 Skill 是开发完成后的“证据复盘与学习文档层”。它把 Tuqiang、Laoying 或公共层中已经修复的 Bug、已经完成的需求，或二者交织的改动，还原成一份可追溯、适合初学者反复阅读的 Markdown。
+仅在用户显式要求复盘或学习文档时使用。产品固定为 Tuqiang，不调查或汇报其他产品线业务。
 
-## 1. 手动触发与职责边界
+## 边界与范围
 
-仅在用户显式调用本 Skill，并表达“复盘、整理原因、生成学习文档”等意图时工作。普通开发、修复、解释或评审过程中不要自动生成文档。
+- 只读源码、Git history/diff、测试结果和任务上下文；默认唯一写入是新的复盘 Markdown。
+- 不修改业务代码、测试或配置，不执行 checkout/reset/pull/fetch/bisect/commit/push，不顺手修复新问题。
+- 无关工作区改动不纳入；证据不足标记未知或未验证。
+- 按 [根目录协议](../tuqiang-project-map/references/project-root-discovery.md) 校验 Git 根并读取项目 AGENTS.md。
 
-- 只读调查源码、Git 历史、diff、测试结果和已有任务上下文；
-- 唯一默认写入是最终复盘 Markdown，不修改业务源码、测试、配置或 Git 历史；
-- 不执行 `checkout`、`reset`、`pull`、`fetch`、`bisect`、`commit` 或 `push`；即使用户需要二分调查，也应另开隔离任务并单独授权，不在本复盘流程切换工作树；
-- 不把“用户说已完成”扩展成重新实现或顺手修复；证据不足时在文档中标记未验证；
-- 若工作区存在无关改动，只纳入与本次复盘范围有直接证据关系的文件和 hunk。
+开始前记录：
 
-## 2. 三种复盘模式
+    mode: Bug | feature | hybrid
+    product: Tuqiang
+    accountMode: personal | enterprise | both | unknown
+    target: standard | ohos | both | unknown
+    scope: <commit/range/diff/file/symbol>
+    acceptance: <症状或目标、期望、验证状态>
+    output: <用户路径、项目约定或 docs/learning>
 
-根据用户描述、当前对话、diff 和提交范围选择：
+账号敏感改动必须读取 [账号模式事实](../tuqiang-project-map/references/account-mode.md) 并核验 isEnterprise；不能从 accountType、目录或 target 猜测。会改变主结论的范围歧义只问一个必要问题。
 
-| 模式 | 适用情况 | 主问题 |
-|---|---|---|
-| Bug | 已完成缺陷修复 | 为什么出现、何时引入/暴露、如何排查和避免 |
-| 需求 | 已完成需求开发 | 为什么这样做、如何实现、输入输出和事件怎样流转 |
-| 混合 | 需求开发中引入、暴露或顺带修复 Bug | 需求主链与 Bug 因果如何相互影响 |
+## 按需读取
 
-能可靠判断时直接选择。若复盘范围、产品线、target、验收行为或产品意图存在多个合理解释，且选择会实质改变 Git 归因、因果结论或文档主线，先用简短具体的问题请用户选择，未澄清前不落盘；不要根据提交标题、资源像素或代码形状擅自补产品意图。若歧义不影响结论，继续生成并把它记录为“未知边界”。混合模式默认生成一份主文档，在需求主线中嵌入 Bug 复盘卡；用户明确要求时再拆成多个文件。
-
-## 3. 项目事实与兄弟 Skill 协作
-
-先按 [flutter-to-web 的当前对话项目协议](../flutter-to-web/references/project-root-resolution.md) 确定并验证 `<TUQIANG_ROOT>`，读取目标仓库中适用的 `AGENTS.md`。优先级是用户当前请求的显式路径 → 当前对话绑定的项目/workspace → 本任务已验证根；只有当前对话没有项目上下文或用户明确要求处理外部文件时，才从目标文件或当前目录发现 Git 根。选中/附件文件不得静默把任务切到另一 checkout。兄弟 Skill 不可用时按下表直接核验；无法唯一确定且选择会改变复盘时停止写入并请求确认。
-
-项目地图不可用时，候选根目录至少同时满足：
-
-| 必须存在的文件 | `pubspec.yaml` 中的 `name` |
+| 场景 | Reference |
 |---|---|
-| `apps/standard/pubspec.yaml` | `tuqiang_standard` |
-| `apps/ohos/pubspec.yaml` | `tuqiang_ohos` |
-| `apps/tuqiang_app/pubspec.yaml` | `tuqiang` |
-| `tool/project.dart` | 不适用 |
+| Bug 或 hybrid 的 Bug 卡 | [bug-retrospective.md](references/bug-retrospective.md) |
+| feature 或 hybrid 的需求主线 | [feature-retrospective.md](references/feature-retrospective.md) |
+| 引入、暴露、修复与防线缺失 | [git-causality.md](references/git-causality.md) |
+| 每次最终文档 | [report-contract.md](references/report-contract.md) |
+| owner 或业务链不清 | [项目地图](../tuqiang-project-map/SKILL.md) |
+| 可见文本或语言切换 | [国际化](../tuqiang-dev/references/i18n.md) |
+| 实现约束需要核验 | [开发规范](../tuqiang-dev/SKILL.md) 的对应 reference |
+| 用户要求 Web 对照 | [flutter-to-web](../flutter-to-web/SKILL.md) |
 
-这四个基础 marker 必须属于目标 Git checkout、全部被 Git 跟踪，三个 pubspec 的 `name:` 必须匹配上表。`shared_business` 已拆分，不能再作为仓库身份标志。若出现任一 Laoying App，则校验 `apps/laoying_standard`、`apps/laoying_ohos`、`apps/laoying_app` trio 完整、被 Git 跟踪，且 identity 分别为 `laoying_standard`、`laoying_ohos`、`laoying_app`。不得沿用其他对话或其他机器的历史路径，也不为寻找项目扫描整个磁盘。
+只加载当前模式需要的内容；源码、Git、测试和项目规则高于 reference。
 
-验证仓库后记录产品线与 target：
+## 工作流
 
-| 产品线 | owner | target |
-|---|---|---|
-| Tuqiang | `apps/tuqiang_app` | `standard`（Android/iOS）、`ohos`（HarmonyOS） |
-| Laoying | `apps/laoying_app` | `laoying_standard`（Android/iOS）、`laoying_ohos`（HarmonyOS） |
-| 共享/双产品 | `packages/core`、`packages/shared`、`packages/plugins` 等 | 从真实调用方分别确认受影响 target |
+1. 记录分支、HEAD、相关 staged/unstaged diff、提交范围和验证状态，不改工作树。
+2. 建证据账本，将关键结论分成已证实事实、高可信推断和未知边界。
+3. 从用户操作或生命周期入口，分开还原同步事件、异步数据、状态发布/UI 重建和清理。
+4. 若相关，分别记录：
+   - accountMode 来源、请求/DTO、cache/provider identity、UI 与切换/退出清理；
+   - 可见文本 key、当前 manifest 全 locale、占位符、回退与翻译缓存；
+   - owner 存活、结果新鲜度、device/key/session/account 身份、资源释放。
+5. 按模式还原问题/目标、实现取舍、验证和预防；用 Git 证据区分引入、暴露、修复与防线缺失。
+6. 按输出契约生成 UTF-8 无 BOM 文档，不覆盖同名文件，并检查链接、行号、SHA 与敏感信息。
 
-目标属于 Laoying 时，状态、网络与路由分别从 `LYAppProvider` + `ChangeNotifier/InheritedNotifier`、`LYBackendHttpClient`、`LYAppRouter` 取证；目标属于 Tuqiang 时再使用 Riverpod/Manager、TQHttp、AppRouters 语义。产品资源与测试入口按需读取 [flutter-to-web 双产品上下文](../flutter-to-web/references/product-context.md)，但每个事实仍须从当前 checkout 重验。
+异步 owner-specific 规则读 [异步生命周期](../tuqiang-dev/references/async-lifecycle.md)。纯 Repository 不机械要求 mounted；一次 mounted 也不能证明新鲜度、身份和释放。
 
-按需复用，不一次加载全部内容：
+## Git 与输出底线
 
-- [tuqiang-project-map](../tuqiang-project-map/SKILL.md)：提供 owner、依赖边界、调用链和状态拓扑的事实索引；跨文件需求链再读其 [需求追踪剧本](../tuqiang-project-map/references/requirement-trace-playbook.md)；
-- [flutter-to-web](../flutter-to-web/SKILL.md)：涉及 Flutter 事件、Riverpod/ChangeNotifier、异步请求、UI 重建或前端类比时，读取其入口及当前问题所需的 reference；跨文件链优先读 [完整业务链追踪](../flutter-to-web/references/full-flow-tracing.md)，涉及状态身份/生命周期时再读 [状态与 Riverpod / ChangeNotifier](../flutter-to-web/references/state-and-riverpod.md)；
-- [tuqiang-dev](../tuqiang-dev/SKILL.md)：只有解释“为什么沿用该实现方式、验证范围或项目约束”时才读取；局部风格或复用取舍读 [局部风格与复用](../tuqiang-dev/references/local-style-and-reuse.md)，不要为普通复盘加载整套开发规范。
+- blame 只证明某行最后修改；只有 diff、真实传播链和复现/测试闭环才能确认因果。
+- 未提交改动写“当前工作区改动，尚无对应提交”；用户确认修好不自动证明历史引入提交。
+- 无法访问父版本、后端、SDK 或运行环境时写明证据停止点。
+- 只摘录最小源码，使用仓库相对路径和 1-based 行号，不输出 endpoint、Token、Key、证书或生产配置。
+- 默认文件名为 YYYY-MM-DD-{bug|feature|hybrid}-<slug>.md；最终回复给出绝对可点击路径及范围、accountMode、置信度和未验证项。
 
-当前源码、当前 Git 历史、测试和目标仓库规则始终高于 reference。Vue3/React 代码是心智映射，不是项目事实，也不能替代 Dart 证据。
-
-## 4. 标准工作流
-
-1. **锁定范围**：记录用户给出的标题、产品线/target、问题/需求、提交范围、文件、符号、验收结果和输出路径；未给出时从当前对话与目标相关 diff 推导。存在会改变结论的多解时先询问，其他不确定项标未知。
-2. **记录基线**：读取当前分支、`HEAD`、工作区状态、未暂存/已暂存改动和相关提交；区分用户确认、实际测试通过与未执行验证。
-3. **建立证据账本**：所有关键结论标为“已证实事实”“高可信推断”或“未知边界”，不从源码反推不存在的产品意图。
-4. **还原业务闭环**：从用户操作或生命周期入口，分别追同步事件链、异步数据链、状态依赖/UI 重建链；按产品使用 Riverpod/Manager 或 ChangeNotifier/InheritedNotifier 的真实术语，异步和响应式通知不能伪装成一条连续调用栈。
-5. **执行模式分析**：Bug 读取 [Bug 复盘剧本](references/bug-retrospective.md)；需求读取 [需求复盘剧本](references/feature-retrospective.md)；混合模式两者都读。
-6. **调查 Git 因果**：需要回答“哪次提交或改动造成”时读取 [Git 因果取证](references/git-causality.md)，区分缺陷引入、问题暴露、修复改动和防线缺失。
-7. **生成教学对照**：Flutter 状态/业务链适合前端迁移学习，或用户明确要求时，摘录修复前/后或关键需求 Dart 源码，用相同字段和步骤给出 Vue3、React 对照并明确非等价处；原生插件、资源、构建或 manifest 改动优先展示真实 Dart/Java/Swift/ETS/资源证据，不为凑模板强加 Web 代码。
-8. **写入并自检**：按 [Markdown 输出契约](references/report-contract.md) 生成一份完整文档，检查产品线/target、路径、行号、提交号、敏感信息、链接和 UTF-8 无 BOM。
-
-## 5. 金字塔、栈与时间流的正确用法
-
-文档至少保留一份纯文本图，保证离线 Markdown 也能阅读：
-
-```text
-金字塔：结论/用户价值
-        ↓
-      行为与规则
-        ↓
-    模块、状态与数据
-        ↓
-  源码、提交、测试证据
-```
-
-- **金字塔**用于从“为什么”逐层下钻到证据；
-- **因果栈**用于 Bug 的“根因 → 错误状态 → 用户症状”和反向修复过程；
-- **调用栈**只描述同一时刻的同步函数调用；
-- **三泳道时间流**分别描述事件/同步调用、异步数据、状态通知/UI 重建。
-
-不因用户说“用栈讲解”就把 `await` 返回、Provider/ChangeNotifier 通知和 Widget 重建画成一条同步栈。
-
-## 6. 证据与归因底线
-
-- `git blame` 只能证明某行最后由哪个提交修改，不能单独证明根因；
-- 必须区分“引入缺陷的改动”“让潜伏缺陷可达的暴露改动”“恢复不变量的修复改动”；
-- 当前未提交改动写作“当前工作区改动，尚无对应提交”，不得虚构 commit；
-- 若只有 blame/搜索线索，写“候选提交”；若 diff、调用链与复现/测试闭环，才写“已确认”；
-- 无法访问完整历史、父版本、后端、原生 SDK 或运行环境时，明确说明证据停止点；
-- 不输出 endpoint、Token、Key、证书、签名或生产配置值。
-
-## 7. Markdown 落盘规则
-
-路径优先级：
-
-1. 用户明确指定的文件或目录；
-2. 目标仓库 `AGENTS.md` 或现有文档约定；
-3. `<TUQIANG_ROOT>/docs/learning/`。
-
-默认文件名：
-
-```text
-YYYY-MM-DD-bug-<slug>.md
-YYYY-MM-DD-feature-<slug>.md
-YYYY-MM-DD-hybrid-<slug>.md
-```
-
-- 不覆盖同名文件；新建时追加 `-2`、`-3`、……直到找到首个不存在的名称，并在写入前再次检查；只有用户明确要求更新已有复盘时才编辑原文件；
-- 文档内部使用仓库相对路径与 1-based 行号，便于换电脑继续阅读；元信息必须记录产品线和实际涉及的 target/平台；
-- 历史代码标记 commit，当前代码标记当前分支/`HEAD` 或工作区；
-- 源码只摘录证明入口、错误、修复、写入和消费的最小片段；
-- “完整”指证据链闭环，不指篇幅最大化；同一事实和代码只在一个主章节完整解释，其他章节用步骤号或小节链接引用；
-- 最终回复给出生成文件的绝对可点击路径，并简述模式、范围、引入/暴露/修复各角色的置信度摘要和未验证边界；不得用修复角色的高置信度掩盖历史归因仍属候选或未知。
-
-## 8. Reference 路由
-
-| 文件 | 什么时候读 |
-|---|---|
-| [references/git-causality.md](references/git-causality.md) | 追溯引入/暴露/修复提交，或解释当前未提交改动 |
-| [references/bug-retrospective.md](references/bug-retrospective.md) | Bug 模式；混合模式中的 Bug 卡 |
-| [references/feature-retrospective.md](references/feature-retrospective.md) | 需求模式；混合模式中的需求主线 |
-| [references/report-contract.md](references/report-contract.md) | 每次生成最终 Markdown 时 |
-
-## 9. 完成条件
-
-- [ ] 目标仓库、产品线/target、复盘范围、模式和输出路径已确定；
-- [ ] 会改变结论的范围或产品意图多解已先询问；其余事实、推断与未知边界已分开；
-- [ ] Git 归因没有把 blame、提交时间或作者等同于根因；
-- [ ] 已分别展示同步事件、异步数据、状态/UI 重建；
-- [ ] Bug 包含原因、引入/暴露/修复证据、排查、解决和预防；需求包含动机、实现、输入输出与事件流；
-- [ ] 需要前端对照时 Dart、Vue3、React 使用同一业务链；不适用时已改用真实原生/资源/构建证据；
-- [ ] 已生成完整 Markdown，未覆盖已有文件，文本为 UTF-8 无 BOM；
-- [ ] 没有修改业务源码、Git 历史或泄露敏感信息。
+完成时，范围卡、三条流、账号/i18n/异步结论、Git 四类角色、事实等级和实际验证状态必须齐全；文档未覆盖旧文件，除该 Markdown 外无任何写入。

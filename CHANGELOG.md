@@ -5,6 +5,46 @@
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-09-14
+
+### Added
+- 为复盘入口补充“可见文本或语言切换 → 国际化事实源”的直接路由，并把讲解、项目地图和复盘 supporting reference 中的账号、Riverpod、i18n 与异步事实源改为可打开的相对链接。
+
+### Changed
+- 四个 Skill 与根包统一升级至 2.0.1；继续压缩默认上下文和维护面：四个 `SKILL.md` 由首轮 541 行降至 268 行，Skill 内 Markdown 由 3,806 行降至 1,754 行，根/Skill README 仅保留用途、安装和事实源入口。
+- 删除已被账号事实源和当前依赖官方文档规则覆盖的 `flutter-to-web/references/product-context.md`、`official-sources.md`；压缩通用 Flutter/Web 教程、重复任务卡与检索命令，并把网络、状态、三端兼容、启动、设备定位、地图变体、覆盖和测试中的跨域清单改为链接唯一事实源。
+- `validate_tuqiang_i18n.py` 在保留严格 JSON、Git 变更发现、Dart literal 扫描、删除 key、占位符与 `multiKeyTr` fail-closed 行为的前提下，由 512 行重构为 380 行。
+
+### Fixed
+- 恢复账号模式事实源中的完整仓库相对路径与 symbol，避免省略路径降低当前 checkout 的可核验性；精确替换全局安装时同步移除已经删除的旧 reference。
+- 修正精简过程中过度概括的 OHOS/APM 启动顺序、设备变化时才清理旧 family 的条件、`LocationContainerHost` 两阶段校验，以及 `TQMapUseSceneType` 的精确 trace 枚举名。
+
+## [2.0.0] - 2026-09-14
+
+### Added
+- `tuqiang-project-map` 新增 `references/account-mode.md`，把 `personal | enterprise | both | unknown` 定义为 Tuqiang 的运行时账号维度；收录 `TQUserModel.isEnterprise → TQGlobalModel.isEnterprise → AppRuntimeState.isEnterprise` 传播链，以及登录/session、token/header、endpoint/DTO、缓存 scope、首页/消息/Mine UI、reset 与测试的调查清单。
+- `tuqiang-dev` 新增 `references/async-lifecycle.md`，把异步正确性拆为 owner 存活、operation 新鲜度、device/key/session/accountMode 身份和资源释放四道独立防线；补充 StatefulWidget、StateNotifier、Riverpod 2.6.1 Notifier/AutoDisposeNotifier、FutureProvider、Controller 与 Timer/Stream/plugin 的 owner 决策表。
+- `tuqiang-dev` 新增 `scripts/validate_tuqiang_i18n.py`：全量拒绝 locale JSON 重复 key、空 key、非字符串与空值，并对工作区变更或显式 source key 检查当前 manifest 全部 locale、占位符集合及变更调用参数；支持全 locale 删除废弃 key，同时拒绝仍有 Dart literal 调用的删除。
+- 开发、教学、项目地图与复盘入口统一增加账号模式上下文卡；命中登录、账号、HTTP、缓存、设备、消息、首页/Mine 或 session 时，强制从当前源码核验 `isEnterprise`，禁止使用 `accountType`、target 或 flavor 推断。
+- 国际化流程增加 source-key、可见 literal、占位符、非空值、动态求值与 Arabic RTL 检查；补充 `apps/tuqiang_app` 与 `packages/core/core_i18n` 的准确测试入口，以及登录前 Auth、登录后 Mine 两处语言切换链。
+- 复盘契约增加账号模式、国际化与异步四防线的独立证据章节，避免把一次 `mounted`、一次 `.tr` 或默认个人分支写成完整防线。
+
+### Changed
+- 四个 Skill 的业务范围收敛为 Tuqiang-only，不再搜索、比较或交付其他产品线的业务规则及“是否受影响”；`tuqiang-project-map`、`flutter-to-web`、`tuqiang-dev`、`tuqiang-change-retrospective` 与根包统一升级至 2.0.0。修改 `core/shared/plugin` 公开 API 时仍做现有调用方技术契约兼容检查，但不扩大业务实现范围。
+- 四个入口文件按渐进披露重写：高频任务卡与强制门保留在 `SKILL.md`，地图、设备、i18n、异步、Git 等专题只在命中时读取，减少无关上下文和相互重复。
+- `flutter-to-web` 改为按用户选择输出 Web 对照：指定 Vue3 或 React 时只给对应框架，未指定时默认给简洁心智模型，只有明确要求端到端迁移或双框架比较才展开完整实现。
+- `tuqiang-dev` 的覆盖台账增加账号模式列，并保留 Android/iOS/HarmonyOS、Tuqiang 地图 7 行与设备 route leaf 作为条件矩阵；禁止机械生成平台 × 账号 × 地图 × 设备笛卡尔积。
+- owner、根目录与架构事实统一复用 `tuqiang-project-map`；删除 `flutter-to-web/references/project-root-resolution.md`、`tuqiang-dev/references/project-structure.md` 和 `tuqiang-dev/references/new-feature-walkthrough.md` 三份重复规范。
+- 安装说明改为逐个精确替换四个 Skill 目录，避免合并复制后残留本版已删除的旧 reference；任务卡的平台字段补齐 `multiple | unknown`，不强迫未定位或跨端任务硬选单一 target。
+- 同步重写根 README、四个 Skill README、根 `package.json` 描述/关键词和复盘 `agents/openai.yaml`；复盘继续保持仅显式调用。
+
+### Fixed
+- 修复模型把同一 Tuqiang App 的个人/企业账号误当成产品、target、flavor 或无需区分的公共逻辑，导致遗漏企业 token/header、请求 DTO、缓存身份、页面分支和 session 清理的问题。
+- 修复“调用 `.tr` 就算完成国际化”的错误：Tuqiang 查找缺 key 时会回显原始字符串，因此必须确认代码 key 在当前 manifest 全部 locale 中存在，并禁止在 top-level、static、singleton 或长生命周期 owner 缓存翻译结果。
+- 修复所有异步操作都机械加 `mounted`，或只在 success 分支检查一次的误导；现在按 owner 判断是否需要存活门，并同时覆盖乱序响应、身份切换、catch/finally/whenComplete 与资源解绑。Riverpod 2.6.1 进一步处理 Notifier 重算复用、ConsumerState/WidgetRef、StateNotifier `super.dispose()`、命令型 autoDispose 保活、Widget 生命周期写 Provider、三类 listen owner，以及 `ref.onDispose` 非异步完成屏障。
+- 修复 i18n 验收项大于实际命令覆盖的问题：现有 loader/boundary 不再被描述为可单独发现全部重复 key、空值、source key 与可见硬编码；结构和变更 key 由确定性脚本验证，语义/RTL/布局保留人工与运行验收。
+- 修复入口文档过长、同一目录/根发现/开发流程在多个 Skill 重复维护，以及完整讲解被强制扩张为 Vue3 与 React 双份代码的问题。
+
 ## [1.14.0] - 2026-09-02
 
 ### Added

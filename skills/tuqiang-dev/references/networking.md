@@ -1,42 +1,23 @@
-# 网络请求规范（双产品）
+# Tuqiang 网络请求
 
-先确认产品和真实 API 契约。不得把途强的 endpoint、token/header、运行时配置或错误语义直接复制到老鹰在线，也不得凭需求描述编造 URL、字段、成功响应或生产假数据。
+先确认真实 API 契约和 `accountMode`。不得凭需求描述编造 URL、字段、成功响应、null 语义或生产假数据，也不得输出 endpoint、Token、header 密钥、签名或完整个人信息。
 
-## 1. 途强智能：`TQHttp` / `ResultModel`
+## TQHttp 与数据边界
 
-途强业务沿用 `core_http` 的 `TQHttp` 和同 owner 已有的 loading/错误/超时方法，不在 Feature 内自行创建 Dio。`ResultModel` 以 `result.success` 判断成功，错误文案按现有约定使用 `result.desc`；`result.data` 在 Repository/parser 边界用 `TCheck<T>` 或明确 parser 收窄。
+- 沿用 `core_http` 的 `TQHttp` 和当前 owner 的 loading/error/timeout 处理，不在 Feature 内另建 Dio。
+- `ResultModel` 以 `result.success` 判断成功，错误文案沿当前约定使用 `result.desc`；`result.data` 在 Repository/parser 边界通过 `TCheck<T>` 或明确 parser 收窄。
+- 请求 DTO 与响应 Model 分开；required、nullable、默认值、兼容字段和“省略/显式清空”来自接口契约。
+- 不把 `List<dynamic>` 或未校验 JSON 扩散到业务层；Model 不承载页面标题、按钮等 UI 文案。
+- endpoint、DTO/Model 和 Repository 放真实 Feature 或职责匹配的 `shared_*` owner。是否抽 Repository 接口取决于已有边界、注入和测试需求，不堆单点空壳。
 
-Model 规则：
+## 账号、异步与安全
 
-- 请求 DTO 与响应 Model 分开；required、nullable、默认值来自接口契约；
-- `fromJson` 处理缺失、类型变化和兼容字段，不把 `List<dynamic>` 扩散到业务层；
-- `toJson` 是否过滤 null 取决于“省略”与“显式清空”的后端语义；
-- Model 不承载页面标题、按钮等 UI 文案；
-- endpoint、Model、Repository 留在真实 Feature 或职责匹配的拆分 `shared_*` owner。
+账号、设备、消息、首页/Mine、session 或缓存请求必须读取 [账号模式事实](../../tuqiang-project-map/references/account-mode.md)。不能把不同 endpoint/DTO 压成无模式公共实现，也不能在长生命周期 owner 构造时固化 `isEnterprise`；沿现有 closure/provider/session snapshot 保持动态身份。
 
-是否额外建立 Repository 抽象取决于已有边界、注入和测试需求，不为单个简单调用堆空壳。
+请求返回后发布 Widget/Notifier/Controller 时读取 [异步生命周期](async-lifecycle.md)。真实写操作授权、权限或平台降级不明确时进入 [需求决策门](requirement-clarification.md)。
 
-## 2. 老鹰在线：`LYBackendHttpClient`
+日志必须脱敏，不记录密码、Token、完整手机号、签名材料或生产配置。异常不能静默吞掉；按当前 owner 将 failure 映射为可观察的 error/empty/提示。
 
-老鹰使用 app-local `LYBackendHttpClient`、`LYBackendConfig` 和各业务 `LY*Repository`/adapter。运行时 base URL、签名、凭据和产品 header 由老鹰宿主独立注入；不得复用途强 app 的运行时配置或业务 Repository。
+## 验证
 
-- API 范围与字段先看 `docs/laoying/api_contract.md` 和当前 Product Scope；
-- 只有 contract 明确允许时，才从个人端现有实现提取准确接口契约；这不授权复制 Feature、配置、凭据或副作用；
-- API 未就绪时使用可注入 fake 或 unavailable/fail-closed 实现，不能默认“成功”或把 placeholder 带入生产；
-- 业务 Repository 留在 `apps/laoying_app/lib/app/<owner>/`，跨 owner 通过应用 contract/coordinator，不互相 import 私有实现；
-- 未配置或未批准的真实写操作必须失败可见，不能静默降级为成功。
-
-## 3. 生命周期与安全
-
-- 连续请求用 generation/request id/取消机制防旧响应覆盖；
-- 页面/Controller 销毁后不发布状态；
-- 401、token、header、日志和重试沿目标产品现有 client；
-- 日志脱敏，不记录密码、Token、完整手机号、endpoint 密钥或生产配置；
-- 真实写操作、权限和平台差异不明确时进入 [requirement-clarification.md](requirement-clarification.md)。
-
-## 4. 验证
-
-- 途强 Feature/shared：Model/Repository 测试、受影响 package analyze、`-ProductScope tuqiang`；
-- 老鹰：业务 Repository/fake/failure 测试、`apps/laoying_app` analyze/test、聚焦 architecture tests、`-ProductScope laoying`；app boundary 已知基线按 [testing.md](testing.md) 处理；
-- 修改 core/shared HTTP/parser：先枚举两产品消费者；同时影响两产品调用或公共 contract 时做四 target analyze、`-ProductScope all` 与两产品测试，否则验证已确认产品并记录另一产品不受影响证据；
-- 联调未执行或环境未配置时明确记录，不能用 fake 测试声称真实接口通过。
+覆盖 DTO/parser 边界、personal/enterprise 契约、成功/失败/超时及相关并发；命令和证据等级统一见 [测试规范](testing.md)。fake 通过不等于后端联调通过。

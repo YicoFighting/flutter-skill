@@ -1,151 +1,39 @@
 # Bug 复盘剧本
 
-用于已完成 Bug 修复，以及混合模式中的 Bug 卡。先讲清“哪个不变量被破坏”，再解释语法和修复技巧。
+用于已完成的 Tuqiang Bug 或 hybrid 中的 Bug 卡。先确定被破坏的不变量，再追传播链、Git 角色和缺失防线。
 
-## 1. 建立最小问题定义
+## 问题卡
 
-从用户说明、任务上下文、测试和 diff 中整理：
-
-| 项目 | 要回答什么 |
+| 字段 | 内容 |
 |---|---|
-| 产品线/target | Tuqiang / Laoying / 共享，以及实际涉及的 shell/平台 |
-| 用户症状 | 用户实际看见或操作到什么 |
-| 触发条件 | 哪个入口、参数、时序、设备、生命周期或并发条件触发 |
-| 期望行为 | 正确业务规则是什么 |
-| 实际行为 | 哪个值、状态、页面或副作用偏离 |
-| 业务不变量 | 无论如何都应成立的约束 |
-| 修复验证 | 用户确认、自动测试、静态检查、真机/集成验证分别是什么状态 |
+| accountMode / target | personal/enterprise/both/unknown；standard/ohos/both/unknown；附依据 |
+| 症状与触发 | 用户所见；入口、参数、时序、设备、账号或生命周期条件 |
+| 期望 / 实际 / 不变量 | 正确规则、偏离结果、任何时序和模式都必须成立的约束 |
+| 验证 | 用户确认、测试、静态、真机/集成分别记录 |
 
-需求或期望若只来自推测，必须标为推断。
+期望若来自推测就标推断。账号相关结论读 [账号模式事实](../../tuqiang-project-map/references/account-mode.md)，不从 accountType 或目录猜。
 
-## 2. 因果栈
+## 因果与三条流
 
-从底层根因向上解释症状，再反向展示修复：
+    根因/防线缺失 → 错误身份/参数/时序/资源
+    → Repository/Provider/Manager 错误写入 → UI/副作用 → 症状
 
-```text
-【症状】用户看到错误数据、旧状态或无响应
-   ↑
-【UI 层】Widget 消费了错误/过期/未隔离的状态
-   ↑
-【状态层】写入、key、缓存、清理或通知时序错误
-   ↑
-【数据层】参数、响应、并发结果或 Model 转换错误
-   ↑
-【触发层】某个用户事件/生命周期让错误路径可达
-   ↑
-【根因】业务不变量被某次改动破坏，且防线缺失
-```
+再拆成同步事件、异步数据、状态/UI 三条泳道，标出 await、loading/error/empty、重复操作、旧响应和身份切换；不得画成同步栈。
 
-修复过程按真实顺序写：
+针对范围判断：账号来源、请求/DTO、缓存/Provider identity、UI 与 reset；可见文本的硬编码、缺 key、占位符和翻译缓存；异步的 owner、新鲜度、account/device/key/session 身份和资源释放。详细定义回到 [账号模式](../../tuqiang-project-map/references/account-mode.md)、[国际化](../../tuqiang-dev/references/i18n.md) 与 [异步生命周期](../../tuqiang-dev/references/async-lifecycle.md)，纯 Repository 不机械要求 mounted。
 
-```text
-恢复约束/增加隔离或取消旧任务
-→ 修正真实数据或状态写入点
-→ Provider/监听者发布正确状态
-→ Widget 使用正确字段重建
-→ 用户可见行为恢复
-```
+## 修复证据
 
-不能把“加了空判断”“调用了 invalidate”本身当根因；要说明它恢复了哪个业务不变量。
-
-## 3. 三条流分开追
-
-### 事件/同步调用链
-
-只列同一同步阶段真实发生的调用：
-
-```text
-用户操作 → Widget callback → Controller/Notifier command → Repository 方法被调用
-```
-
-### 异步数据链
-
-```text
-请求参数形成 → 请求/缓存/插件开始 → await 暂停
-→ 返回/异常 → DTO/Model 转换 → 状态写入或丢弃旧结果
-```
-
-标出 loading、error、empty、取消、generation/operation token 与旧响应覆盖。
-
-### 状态依赖/UI 重建链
-
-```text
-State/Manager/cache/ChangeNotifier 字段改变
-→ Provider/selector/listener 或 ListenableBuilder 收到变化
-→ 派生状态重算或副作用触发
-→ Widget build
-→ 最终字段展示
-```
-
-分别说明当前产品真实采用的 `read/watch/listen/select`、family key、override、`autoDispose/keepAlive`，或 `LYAppScope`、ChangeNotifier Controller、`notifyListeners`、listener/dispose，以及其他旁路实际承担什么。
-
-## 4. 修复前后源码/资源
-
-至少选择能证明下面四件事的最小真实源码或资源证据；Flutter 链路使用 Dart，原生插件可同时使用 Java/Swift/ETS，资源改动补注册、加载与必要文件证据：
-
-1. 真实触发入口；
-2. 错误条件或错误写入；
-3. 修复后的约束；
-4. 最终消费者或验证。
-
-按同一业务概念对齐：
-
-| 步骤 | 修复前 | 修复后 | 为什么有效 |
+| 步骤 | 修复前 | 修复后 | 恢复的不变量 |
 |---|---|---|---|
-| 参数/身份 |  |  |  |
+| 模式/参数 |  |  |  |
 | 异步/数据 |  |  |  |
-| 状态写入 |  |  |  |
-| UI 消费/清理 |  |  |  |
+| 状态/UI/清理 |  |  |  |
 
-历史代码标 `path@<sha>`，当前代码标 `path:line`。重构导致行号变化时，以 symbol 和 commit 为主。
+最小证据覆盖入口、错误条件、修复点、最终消费者和回归测试。历史代码写 path@sha，当前代码写 path:line；不伪造旧行号。
 
-## 5. 按需 Vue3 / React 对照
+## Git 与预防
 
-涉及适合前端迁移学习的 Flutter 状态链，或用户明确要求时，读取兄弟 `flutter-to-web` 的完整链路与相关 reference。三套代码必须：
+按 [Git 因果](git-causality.md) 分开缺陷引入、问题暴露、修复与防线缺失，每个角色独立给证据和置信度。本次实际排查只写发生过的步骤，推荐流程另列。
 
-- 使用同一入口、参数、状态名、请求结果和 UI 字段；
-- 覆盖错误版本与修复约束，而不是只翻译一行语法；
-- Vue3 可用 keyed composable/Pinia、`computed/watch` 与卸载清理；
-- React 可用 keyed store/query、selector/effect 与 cleanup/取消；
-- 明确 Riverpod family、ProviderScope、autoDispose 与 Web 方案的非等价处。
-
-如果 Bug 是 Flutter 独有生命周期或布局约束，Web 代码仅在确有帮助时说明相近心智，并明确“不是一比一等价”。原生插件、资源、manifest 或构建问题优先展示 Dart/Java/Swift/ETS/资源与 target 测试，不强制生成 Web 代码。
-
-## 6. 排查过程
-
-把实际发生的排查和推荐的下次流程分开：
-
-### 本次实际排查
-
-按证据记录：从哪个症状/日志开始，检查了哪些文件和状态，哪些假设被排除，哪个证据定位到真实写入点。没有证据的“可能试过”不要补写。
-
-### 下次快速排查
-
-形成可复用的决策路径：
-
-1. 固定最小复现条件和期望/实际；
-2. 从最终 Widget 反查消费状态；
-3. 列出全部写入源、family key 与生命周期；
-4. 分开检查同步入口、await 前后、响应式重建；
-5. 查当前 diff，再从修复前错误行追 Git 历史；
-6. 用最小测试或日志验证根因，而不是只验证症状消失。
-
-## 7. 如何避免
-
-必须落到本问题，不输出通用口号：
-
-- **代码约束**：参数类型、key 身份、竞态 token、取消、清理或 owner 边界；
-- **测试防线**：最小能在修复前失败、修复后通过的行为；
-- **评审问题**：评审者下次应追问的 2–4 个具体问题；
-- **可观测性**：必要且脱敏的状态转换、请求 generation 或错误日志；
-- **回归范围**：同类调用方、平台、切 key/session/语言或前后台边界。
-
-## 8. 完成检查
-
-- [ ] 症状、触发、期望、实际和不变量明确；
-- [ ] 引入、暴露、修复、防线缺失已区分；
-- [ ] 因果栈能从根因走到症状，也能从修复走回正确 UI；
-- [ ] 三条流没有被混成伪同步调用栈；
-- [ ] 修复前后真实证据已闭环；需要前端对照时 Dart 与 Vue3/React 使用同一业务链；
-- [ ] 本次实际排查与下次建议没有混写；
-- [ ] 预防措施能对应本次根因并可验证。
+预防措施必须对应本根因：代码门禁、修复前失败/修复后通过的测试、2–4 个评审问题、脱敏可观测字段，以及相关账号/target/语言/key/前后台回归。最终结构与检查统一按 [输出契约](report-contract.md)。

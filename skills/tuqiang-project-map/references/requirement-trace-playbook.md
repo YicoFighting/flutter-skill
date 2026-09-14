@@ -1,171 +1,51 @@
-# 完整需求追踪 Playbook
+# Tuqiang 完整需求追踪
 
-目标：从可观察操作恢复当前产品的同步调用、异步数据流、状态拓扑与 UI/插件消费，并用实时路径、行号和最小源码证据回答。用户选中代码只是锚点。
+从可观察操作恢复事件、异步数据、状态拓扑与 UI/插件消费。上下文卡沿用 SKILL.md；账号证据读 [account-mode.md](account-mode.md)，平台/地图/设备读 [variant-surface.md](variant-surface.md)。
 
-## 1. 产品与问题前置
+把问题写成：“当某 accountMode 用户触发事件时，输入如何经过路由、状态和数据层到达可观察终点；失败、切换、退出或旧结果返回时怎样处理？”
 
-先填：
+## 七段链
 
-```text
-项目根：<已校验 Git root>
-产品：tuqiang | laoying | cross-product
-平台：Android | iOS | HarmonyOS | 多平台（逐项列出，禁止写 Android/iOS 合并项）
-宿主 target：standard | ohos | laoying_standard | laoying_ohos
-设备范围：不涉及 | 全部 | deviceType/scene/cameraScene | 待确认
-地图 scene：不涉及 | 当前 TQMapUseSceneType enum symbol 集合
-地图实现：不涉及 | 百度/高德/Google | HarmonyOS 华为 Map Kit（对应用户所称“花瓣地图”，不是源码 SDK 名）
-事件：<启动/进入/点击/刷新/推送/native callback/session>
-终点：<具体 Page/Widget/route/资源/插件/本地写入>
-```
+| 段 | 必查事实 |
+|---|---|
+| 入口 | onTap/onPressed/onRefresh、initState/build gate、route/native handler、observer、Timer 或 session 事件；记录账号、用户/device、平台和参数 |
+| 页面装配 | route 常量、arguments 来源/fallback、Navigator、bootstrap override、feature router、最终 builder 与 effect |
+| 状态身份 | Provider/Manager/Controller/setState 的定义、family key/account scope、写入者、订阅者、生命周期/reset |
+| 数据/资源 | Repository/HTTP/cache/plugin、请求 DTO、模式选择、响应映射；asset 文件 → pubspec → 常量 → 消费端 |
+| 异步发布 | loading/success/empty/error、await、generation、owner、account/device 身份、pending 去重和缓存回写 |
+| UI/插件 | 状态字段到 Text/Image/可见性/按钮/marker/相机/原生参数的最终消费及中间 mapper/gate |
+| 失效恢复 | 页面离开、切 key、dispose、autoDispose/keepAlive、invalidate、语言/账号切换与 logout；下次复用、恢复或重请求 |
 
-产品证据优先取 app 路径、入口调用方和路由 owner。仅凭需求中的业务名不能区分产品。产品、平台、账号/设备类型、目标资源或验收结果缺失，且会改变 owner/实现链时，停止并向用户提一个最小决策问题。特别是设备列表 → 详情/首页 → “更多详情/更多设置”存在多个 route leaf 时，先按 [variant-surface.md](variant-surface.md) 枚举当前候选；用户未明确范围就必须问“全部设备类型还是指定类型”。
+设备入口还要枚举 deviceType、scene/category、cameraScene、服务/激活/分享状态，并追到“更多详情/设置”后的最终 Page。资源不存在就报告缺失，不能造替代品。
 
-将问题改写为：
+## 时间与变体
 
-```text
-当 <事件> 发生时，<输入> 如何经过 <当前产品的路由/状态/数据层>，
-最终让 <可观察终点> 呈现 <结果>；失败、切换或退出时怎样处理？
-```
+分开四条时间线：
 
-## 2. 七段追踪
+    同步事件：用户操作 → 方法 → 命令/状态入口
+    调度：状态发布 → listener → post-frame/刷新
+    异步数据：Repository → HTTP/plugin → 映射 → 新状态
+    响应式消费：watch/select/listener → rebuild → UI/插件
 
-### A. 入口
+不要压成“onTap → network → UI”。mounted 不证明结果仍属于当前账号或设备。
 
-找 `onTap/onPressed/onRefresh`、`initState`、首次 build gate、route/native handler、observer、Timer 或 session 事件，记录当时的 route、设备、账号、平台和资源参数。
+- 账号相关：personal/enterprise 分别核验，或给出单侧不涉及证据。
+- 设备相关：列当前可达 route leaf，不用第一个页面代表全部。
+- 主地图相关：标注 TQMapUseSceneType，并保留 Android/iOS 各三源与 HarmonyOS Map Kit 七个候选。
+- 普通局部业务不展开无关矩阵。
 
-### B. 页面与路由装配
+## 搜索与证据
 
-- Tuqiang：Navigator/contract → `bootstrap.dart::getApp` override（若有）→ `AppRouters`/feature router → `AppRouters.generateRoute`/Page。
-- Laoying：Navigator/LY contract → `LYAppRouter.onGenerateRoute` → `LYAppRouteRegistry`/app-local business router → Page。
+优先在 apps/tuqiang_app 与 packages 用 rg -n 组合搜索入口 symbol、route/Page、Provider/Controller、isEnterprise/identity、Repository/TQHttp/DTO、状态字段、dispose/invalidate 和资源名；常见 symbol 加目录与类型约束，避免无界宽搜。
 
-查 route 常量、arguments 产生/转换/fallback、导航类型、observer/effect/security 与最终 builder。
+每个关键阶段引用“相对路径:当前 1-based 行号 + symbol + 最小连续源码”，并解释它证明的输入、输出与下一跳。API 只写常量名和语义，不展示 endpoint、Token、Key、证书或签名。
 
-设备入口不能只追一条示例链：同时枚举 `deviceType`、scene/category、cameraScene、服务/激活/分享状态；从每个可达 route 追到最终 Page，并对“更多详情/设备详情/更多设置”再追一层。
+## 输出
 
-### C. 状态拓扑
+1. 一句话说明 accountMode、入口、owner、状态和终点。
+2. 四条时间线与状态身份表。
+3. 请求/资源、生命周期和按顺序排列的源码证据。
+4. 实际涉及的账号、平台、设备与 loading/error 分支。
+5. 未核验项；需用户决策时只提一个最小问题。
 
-| 状态/对象实例 | 声明与类型 | key/实例来源 | 谁写 | 谁订阅/读取 | 生命周期/reset |
-|---|---|---|---|---|---|
-
-Tuqiang 分开普通 Provider、全局选择、family state、presentation、Manager/setState。Laoying分开 `LYAppProvider`、domain controller、Widget state 与 repository，不把 `notifyListeners` 写成 Riverpod rebuild。
-
-### D. 数据与资源边界
-
-状态/Controller → Repository/Manager/plugin/直接 HTTP；写清 UI/route/key 到请求 DTO、响应到 model/state 的转换。
-
-资源需求还要追：实际文件 → pubspec 声明 → asset 常量/参数 → Flutter Widget 或原生插件消费。目标资源不存在时标记缺失并询问来源，不发明 Canvas、临时文件或默认替代。
-
-只引用 API 常量名，不展示 endpoint、Token、Key、证书、签名或生产配置。
-
-地图需求还要标注 `TQMapUseSceneType`，区分标准端百度/高德/Google 分派与 HarmonyOS 的 Map Kit 平台后端。OHOS 的 BMap/AMap factory id 兼容映射不能被误写成实际运行两套供应商，也不能虚构 `TQMapSourceType.petal`。
-
-### E. 异步发布
-
-标出 loading/success/empty/error，以及 `await/unawaited`、requestVersion/generation/mounted、pending 去重、post-frame/listener、`state =`、seed/apply/update、`notifyListeners`、Manager setter 与缓存回写。
-
-触发 refresh 的入口与最终写状态的方法必须分开。
-
-### F. UI/插件消费
-
-从字段反向搜到实际 Text/Image/颜色/可见性/按钮、地图 marker、相机画面、原生参数或 loading/error/empty 分支。中间有 presentation mapper/asset selector 时一并列出。
-
-### G. 失效与恢复
-
-查页面离开、切 family key、controller dispose、autoDispose/keepAlive/onDispose、invalidate、语言切换与 logout/session reset。说明下次进入是复用、重建、磁盘恢复还是重请求。
-
-## 3. 时间阶段分开
-
-```text
-同步调用：用户事件 -> 方法 -> 状态/命令入口
-
-状态/调度：状态发布 -> listener/notifyListeners -> post-frame/刷新事件
-
-异步数据：repository -> await HTTP/plugin -> 映射 -> 新状态
-
-响应式消费：watch/select/ChangeNotifier/controller listener -> rebuild -> UI/插件变化
-```
-
-这些阶段不能压成“onTap -> network -> UI”的虚假同步栈。
-
-## 4. Tuqiang family 专项
-
-遇到 `someProvider(arg)` 必须回答：
-
-1. provider 类型和声明；
-2. arg 类型与业务来源；
-3. value object 的 `==/hashCode`；
-4. 同 Container 相同/不同 key 的实例隔离；
-5. autoDispose、根 Host watch、keepAlive；
-6. Notifier/state 的写入者与同 key 消费者；
-7. invalidate 指定 key 还是整个 family；
-8. 跨 shared runtime callback 是否参与。
-
-Laoying 目标未实际使用 Riverpod 时跳过本节，改查 controller/ChangeNotifier 实例的创建、注入、监听与 dispose。
-
-## 5. 搜索协议
-
-```powershell
-Set-Location -LiteralPath $tuqiangRoot
-
-# 产品入口与锚点
-rg -n "<方法>|<类>|<字段>|<资源常量>" <已确认产品目录> packages --glob '*.dart'
-
-# 路由和最终 builder
-rg -n "<route>|<Page>|generateRoute|onGenerateRoute|routes\(" <已确认产品目录> packages --glob '*.dart'
-
-# Tuqiang Provider/State 或 Laoying provider/controller
-rg -n "final <Provider>|<Provider>\(|<Provider>\.notifier|invalidate\(<Provider>|class LYAppProvider|class .*Controller|notifyListeners" <相关目录> --glob '*.dart'
-
-# 数据、资源与消费
-rg -n "<Repository>|TQHttp\.|ResultModel|TCheck|fromJson|<状态字段>|<资源文件名>" <相关目录> --glob '*.dart' --glob 'pubspec.yaml'
-
-# 生命周期
-rg -n "autoDispose|keepAlive|onDispose|dispose\(|invalidate\(|SessionReset|resetSession|clearForLogout" <相关目录> --glob '*.dart'
-```
-
-symbol 常见时组合目录、类型与方法，不用一次全仓宽搜替代证据链。
-
-## 6. 证据规则
-
-最终引用格式：
-
-```text
-<TUQIANG_ROOT>/<相对路径>:<当前行>  <symbol>
-```
-
-每个关键阶段给足以证明结论的 3–20 行片段。行号来自本次 `rg -n`/当前文件；跨文件逐个引用；不能拼接不连续代码制造调用。命名推断必须标为推断并说明缺失证据。缩小上下文以避开敏感值。
-
-## 7. 输出结构
-
-1. 一句话结论：产品、触发者、状态/owner、可观察终点。
-2. 操作时间线：标注同步、listener/post-frame、await、rebuild。
-3. 状态/对象拓扑表：定义、实例/key、写入、消费、清理。
-4. 参数/资源与生命周期：family 或 controller 实例、资源来源、跨层 callback。
-5. 按调用顺序的源码证据。
-6. 实际涉及的产品/平台/设备/账号/loading/error 分支。
-7. 变更任务附候选矩阵：平台/target、设备 route leaf、地图 scene/后端；不可达或不受影响时使用“无需修改”并给出证据。
-8. 已核验边界与需要用户决策/运行时/后端/原生证据的部分。
-
-## 8. 歧义停止
-
-出现以下情况不继续替用户推断：
-
-- Tuqiang/Laoying 或平台选择会改变链路；
-- 设备详情族存在多个 `deviceType`/scene/cameraScene 页面，而用户没有确认全部或指定类型；
-- route/owner/资源有多个合理候选；
-- 验收描述与仓库现有资产/contract 不一致；
-- 持续搜索仍没有唯一入口或终点，缺的是业务场景而不是 symbol。
-
-先报告已核验事实和候选差异，再问能排除分支的最小问题。不要以“先做一个能跑的版本”为理由修改事实或默认用户选择。
-
-## 9. 完成条件
-
-- 根、产品、平台与可观察起终点明确；
-- 关键状态/对象有定义、写入、读取、实例/key 与生命周期；
-- 数据有参数来源、Repository/网络/插件边界和响应映射；
-- 资源有实际文件、声明、常量与消费端，或明确标为缺失；
-- 异步边界没有被压成同步栈；
-- 非 Riverpod 状态按实际链路列出；
-- 关键结论有当前路径、行号和源码；
-- 变更调查已覆盖当前可达的平台、地图后端和设备页面叶子，或明确列出待用户决定的范围；
-- 未决策项与敏感信息边界明确。
+完成时，根目录和起终点明确；状态定义/key/写入/消费/reset、数据参数/边界/映射、资源声明/消费、旧结果处理和相关变体都有实时证据。

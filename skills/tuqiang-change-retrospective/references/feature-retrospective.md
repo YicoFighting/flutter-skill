@@ -1,141 +1,36 @@
 # 需求复盘剧本
 
-用于已完成需求，以及混合模式中的需求主线。目标是从业务价值逐层落到真实代码、数据和验证，而不是按修改文件顺序罗列。
+用于已完成的 Tuqiang 需求或 hybrid 的需求主线。按“用户价值 → 可验收行为 → 规则 → 数据/状态 → 实现 → 证据”下钻，不按文件清单叙述。产品理由只有用户、工单或明确说明可证明时才写事实。
 
-## 1. 需求金字塔
+## 范围与取舍
 
-```text
-【用户价值】解决谁的什么问题
-      ↓
-【可验收行为】用户做什么，系统应表现什么
-      ↓
-【业务规则】条件、权限、状态、异常和边界
-      ↓
-【功能编排】路由、事件、Controller/Notifier、Repository
-      ↓
-【数据与状态】输入来源、转换、缓存/Provider、输出消费者
-      ↓
-【实现证据】Widget、Model、方法、测试、commit/diff
-```
-
-每一层回答“为什么需要下一层”。产品理由只有用户、工单或明确说明能证明时才写事实；从代码结构推导的理由标为“实现层推断”。
-
-## 2. 范围与验收
-
-记录：
-
-- 产品线与实际 target：Tuqiang `standard/ohos`、Laoying `laoying_standard/laoying_ohos`，或共享/双产品；
-- 原始需求或当前对话中可证实的目标；
-- 用户入口、主流程和完成结果；
-- 正常、loading、empty、error、权限和取消分支；
-- 明确不在范围内的内容；
-- 已执行与未执行的验证。
-
-代码存在不代表需求已经验收。分别标记“已实现”“测试通过”“用户确认”“真机/集成未验证”。
-
-## 3. owner 与实现取舍
-
-从项目地图与当前源码确认：
+记录 accountMode、target、用户入口、正常/loading/empty/error/权限/取消分支、不在范围内行为，以及代码存在、测试通过、用户确认、真机未验证等不同状态。both 必须有两侧证据。
 
 | 决策 | 证据 |
 |---|---|
-| 功能 owner/package | 路由、barrel、调用方、测试、pubspec 依赖 |
-| 复用入口 | 已有 Provider/Repository/组件/工具及真实调用 |
-| 状态载体 | Tuqiang 的局部状态/family/Provider/Manager/cache，或 Laoying 的 LYAppProvider/ChangeNotifier Controller |
-| 数据边界 | Tuqiang TQHttp/shared-feature Repository，或 Laoying LYBackendHttpClient/owner Repository，以及插件、本地存储或外部回调 |
-| 平台边界 | `standard` / `ohos` / `laoying_standard` / `laoying_ohos`、adapter/override/构造注入 |
+| owner 与复用 | route、barrel、调用方、测试、pubspec；复用的现有 symbol/contract |
+| 状态与数据 | Widget State、Provider family/Notifier、Manager/cache；Repository/HTTP/plugin/storage |
+| 平台与账号 | standard/ohos adapter/override；模式来源、请求/DTO、cache、UI、reset |
 
-“为了可维护性”过于空泛。应写成可核验的局部理由，例如“复用已有保存方法，保持提交语义和所有调用方一致”。
+“为了可维护性”不是证据；说明为何选择现有 owner 和契约。
 
-## 4. 输入、转换与输出
+## 输入输出与三条流
 
-每个影响结果的输入都进入血缘表：
+| 输入/来源 | accountMode/身份 | 转换/校验 | 状态写入 | 输出/消费者 | 证据 |
+|---|---|---|---|---|---|
 
-| 步骤 | 输入 | 来源 | 类型/身份 | 转换或校验 | 状态写入 | 输出 | 消费者 | 证据 |
-|---|---|---|---|---|---|---|---|---|
+输入可来自操作、route/deep link/push/native callback、family key、session、API/cache/plugin 或 bootstrap。若个人/企业任一列不同，分两行。
 
-常见输入来源：
+    同步事件：操作 → Widget callback → command → 发起数据操作
+    异步数据：输入/身份 → await → Model/错误 → 接受或丢弃
+    状态/UI：状态写入 → 派生/通知 → Widget 或副作用
 
-- 用户点击、文本输入、选项与页面局部状态；
-- route arguments、deep link、push 或 native callback；
-- Provider family key、Laoying Controller 构造参数、上游选择状态或 session；
-- Repository/API、缓存、数据库或插件；
-- 配置、平台注入、ProviderScope override、`*Runtime.configure` 或 bootstrap 构造注入。
+说明 accountMode 和参数如何产生、数据在哪转换、State 按何种 key/session 隔离、谁消费，以及离开页面、切账号/设备、重复操作和旧响应如何处理。
 
-输出不只指返回值，还包括 State、缓存、导航结果、toast/dialog、Widget 字段和外部副作用。
+## 防线与证据
 
-## 5. 事件与数据流
+只对相关项记录账号入口/请求/cache/UI/reset，i18n 的复用 key/全 locale/占位符/动态翻译，以及异步 owner/新鲜度/身份/释放。详细规则回到 [账号模式](../../tuqiang-project-map/references/account-mode.md)、[国际化](../../tuqiang-dev/references/i18n.md) 和 [异步生命周期](../../tuqiang-dev/references/async-lifecycle.md) 事实源。
 
-分别画三条泳道，再用编号关联：
+最小源码覆盖入口、状态 owner、数据边界、账号分支、写入、最终 UI/副作用和测试。按解决问题的逻辑顺序讲实现；Git 无法证明实际开发顺序时标“按最终 diff 教学重组”。
 
-```text
-事件/同步：用户操作 ─→ Widget 回调 ─→ Command ─→ 发起 Repository 调用
-异步数据：                            请求 ─→ await ─→ Model/错误
-状态/UI：                                              写入 State ─→ 重建/副作用
-```
-
-逐步说明：
-
-1. 参数怎样产生；
-2. 何时离开同步栈；
-3. 数据在哪个边界转换；
-4. 状态保存在哪里、以什么 key 隔离；
-5. 哪些消费者会重建或产生副作用；
-6. 离开页面、切 key、重复点击或旧响应返回时怎样处理。
-
-## 6. 关键源码、资源与按需前端对照
-
-真实项目证据至少覆盖适用项：
-
-- 页面/路由入口；
-- 操作回调；
-- Controller/Notifier/Provider/ChangeNotifier；
-- Repository/数据边界；
-- 状态写入；
-- 最终 Widget/副作用；
-- 与验收直接相关的测试或验证入口。
-
-Flutter 状态/业务链适合前端迁移学习或用户明确要求时，Vue3 与 React 对照复用 `flutter-to-web` 的讲解契约：
-
-- 三套代码保持同一业务步骤编号、字段和分支；
-- 从入口写到输出，不只做语法替换；
-- Dart 是真实项目证据，Web 是教学实现；
-- 明确 Riverpod family、ProviderScope、`watch/listen`、autoDispose 与 Pinia/React Query/Zustand/Context 的差异。
-
-若需求核心是图片/字体、i18n manifest、原生插件或构建配置，改为展示真实资源注册、Dart 调用、Java/Swift/ETS 加载和 target 测试；不要为了凑三套代码省略平台证据，也不要从二进制资源本身推断需求意图。
-
-Laoying 资源与验证还要检查 `apps/laoying_app/lib/app/assets/ly_app_assets.dart`、`apps/laoying_app/pubspec.yaml`、`assets/i18n/manifest.json` 及相关 architecture/i18n/asset independence 测试。shell 的 `tool/project.dart test <target>` 不自动证明 `apps/laoying_app/test` 全部通过，必须记录实际命令和工作目录。
-
-## 7. 实现过程
-
-按“问题解决顺序”而非文件名顺序讲解：
-
-1. 先确定业务行为和 owner；
-2. 找到输入与现有保存/请求/状态链；
-3. 建立或调整最小状态与数据路径；
-4. 接入 UI 与异常/生命周期分支；
-5. 验证验收标准和受影响范围。
-
-如果 Git 历史能证明分阶段提交，可加入提交时间线；否则根据最终 diff 还原的顺序必须标“教学重组”，不要伪装成真实开发时间线。
-
-## 8. 混合模式中的 Bug
-
-每个 Bug 卡回答：
-
-- 它是需求新引入、需求暴露的旧问题，还是顺带修复的独立问题；
-- 它影响需求主链的哪一步；
-- 是否有独立引入/暴露/修复证据；
-- 如何避免需求复盘把 Bug 原因错误归到当前需求。
-
-Bug 复杂到需要完整 Git 因果、排查和预防时，读取 Bug 复盘剧本并在同一文档增加完整章节。
-
-## 9. 完成检查
-
-- [ ] 用户价值、可验收行为和实现证据形成金字塔；
-- [ ] owner、复用、状态与平台取舍都有局部证据；
-- [ ] 每个关键输入说明来源、转换、状态写入、输出和消费者；
-- [ ] 同步事件、异步数据、状态/UI 更新已分开；
-- [ ] 需要前端对照时 Dart、Vue3、React 覆盖同一条完整链路；不适用时真实平台/资源证据已闭环；
-- [ ] 实际开发时间线与教学重组已区分；
-- [ ] 混合模式没有把“暴露旧 Bug”误写成“需求引入 Bug”；
-- [ ] 验证结果与未验证项表述准确。
+hybrid 中每个 Bug 卡说明它是新引入、暴露旧问题还是独立修复，影响主链哪一步和哪种 accountMode，并给 Git 四类角色与回归；复杂项读取 [Bug 剧本](bug-retrospective.md)。最终结构按 [输出契约](report-contract.md)。

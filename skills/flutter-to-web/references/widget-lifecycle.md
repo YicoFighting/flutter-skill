@@ -1,67 +1,24 @@
-# 组件生命周期与状态 · 前端深度对照表
+# Widget 生命周期与异步完成
 
-> 主文档见 [../SKILL.md](../SKILL.md)。本文件展开「StatefulWidget 生命周期」部分。
+生命周期解释围绕当前 owner，不机械套 Web hook。
 
-## 1. 生命周期对照表
+| Flutter | Web 近似 |
+|---|---|
+| initState | 首次挂载初始化 |
+| didChangeDependencies | inherited/provider 依赖变化 |
+| didUpdateWidget | 父级配置或外部 owner 替换 |
+| build | 纯渲染求值，可多次运行 |
+| dispose | 清 Timer、Controller、subscription、listener |
 
-| Vue3 | React Hooks | Flutter (StatefulWidget) | 干什么用 |
-|---|---|---|---|
-| `setup()` | 函数体 / render | `createState()` → `initState()` | 初始化：创建 TextEditingController、挂监听 |
-| `onMounted` | `useEffect(fn, [])` | `initState()` | 只跑一次的初始化 |
-| `watch` 首次触发 | `useEffect(fn, [dep])` | `didChangeDependencies()` | 依赖的上游配置变了 |
-| props 变化 | — | `didUpdateWidget(old)` | 父组件传了新参数 |
-| `onUnmounted` | useEffect 的清理函数 | `dispose()` | **必须**释放 controller / focusNode / 订阅 |
-| template + setup | render | `build()` | 描述 UI，状态一变就重跑 |
+## Widget 专属规则
 
-```dart
-class SearchBox extends StatefulWidget { const SearchBox({super.key}); }
+- await 后使用 setState、context、Navigator、Toast/Dialog 或 WidgetRef 前，每个 async gap 都重新检查 mounted/context.mounted。
+- mounted 只证明 Widget 还在树中；乱序结果用 generation，device/key/session/accountMode 切换用身份快照。
+- build/initState/dispose/didUpdateWidget/didChangeDependencies 不得同步写 Provider。确需 Widget 首次发命令时放到首帧后，并再次检查 mounted。
+- Widget ref.listen 只在 build；其他生命周期用 listenManual。ProviderContainer.listen 属于外部 owner，subscription 必须显式 close。
+- didUpdateWidget 比较旧/新外部 Controller 或 key，先解绑旧 listener 再绑定新值。
+- dispose 成对释放本 owner 创建的 Controller、FocusNode、Timer、StreamSubscription、observer 和 plugin handler；不要销毁外部传入对象。
 
-class _SearchBoxState extends State<SearchBox> {
-  final controller = TextEditingController();      // ≈ useState('')
+## 解释顺序
 
-  @override
-  void initState() {                               // ≈ onMounted
-    super.initState();
-    controller.addListener(() => setState(() {})); // 挂监听
-  }
-
-  @override
-  void dispose() {                                 // ≈ onUnmounted，有借有还
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {             // ≈ render/template
-    return TextField(controller: controller);      // v-model 的本体
-  }
-}
-```
-
-一句话总结：**「一个带状态的组件 = useState(initState 里建) + onMounted(挂监听) +
-onUnmounted(dispose 释放) + render(build)。生命周期心智完全平移。」**
-
-## 2. setState：最朴素的刷新
-
-- `setState(() { count++ })` ≈ 触发 re-render。回调里只写"改数据"，别写耗时逻辑。
-- 忘了包 `setState` 直接改字段 → 数据改了但页面不刷，≈ 改了个非响应式变量。
-- 跨页面或业务状态交给当前产品已采用的状态 owner：Tuqiang 常见 Riverpod，Laoying 常见 ChangeNotifier Controller（见 [state-and-riverpod.md](state-and-riverpod.md)）；不要仅为套教程引入另一套状态框架。
-
-## 3. Key 是什么
-
-`ValueKey(item.id)` ≈ React/Vue 列表的 `:key`——告诉框架"这是同一个元素，
-别整个销毁重建"。列表顺序会变、会增删时一定要给稳定 key。
-
-## 4. context："往上找爹"的身份证
-
-- `BuildContext` = 组件在树里的位置句柄。
-- `Theme.of(context)` / `MediaQuery.of(context)` / `ModalRoute.of(context)` 全是
-  "顺着组件树往上找最近的祖先拿配置" ≈ `useContext()` / inject。
-- 坑：异步回调里缓存了旧 context 再用会炸；跨层级取东西优先用 provider，少靠爬树。
-
-## 5. 自检清单（写完组件过一遍）
-
-- [ ] 每个 `TextEditingController` / `FocusNode` / 订阅是否都在 `dispose` 成对释放？
-- [ ] 异步回调回来是否判了 `mounted` 再 `setState`？
-- [ ] 列表是否给了稳定的 `key`？
-- [ ] build 里是否只做"数据 → UI"映射、没有副作用？
+指出资源由谁创建、何时绑定、什么变化触发重绑、异步完成在哪个 owner 发布、dispose 如何清理。随后分开说明 owner 存活、结果新鲜、身份和资源；完整实现门禁读 tuqiang-dev 的 [异步生命周期](../../tuqiang-dev/references/async-lifecycle.md)。

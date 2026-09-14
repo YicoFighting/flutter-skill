@@ -1,72 +1,38 @@
-# 架构总览
+# Tuqiang 架构总览
 
-## 1. 先选择产品线
-
-当前 monorepo 同时承载 Tuqiang 与 Laoying。两者共享部分 core/plugin 与仓库工具，但 App、状态与路由组合不同：
+## 分层与依赖方向
 
 ```text
-Tuqiang
 apps/standard ─┐
-               ├─> apps/tuqiang_app ─> feature_* ─┐
-apps/ohos ─────┘                    └> shared_* ──> core_* / plugins / adapter / assets_common
-
-Laoying
-apps/laoying_standard ─┐
-                       ├─> apps/laoying_app ─> app-local auth/gps/pet/mine/... ─> core_* / tq_map_plugin
-apps/laoying_ohos ─────┘
+               ├─> apps/tuqiang_app ─> packages/feature/* ─┐
+apps/ohos ─────┘                    └> packages/shared/* ──┼─> packages/core/*
+                                                         └─> packages/plugins/* / adapter / assets_common
 ```
 
-图表示组合与依赖方向，不是运行时调用顺序。具体问题仍要读取目标 `pubspec.yaml`、import 与调用方。
-
-| 识别结果 | 应使用的根事实 | 不得默认套用 |
-|---|---|---|
-| Tuqiang | `StrongApp`、根 `ProviderScope`、`AppRouters`、`FeatureRouterRegistry`、`feature_*` 与 8 个 `shared_*` | Laoying 的 `LYAppProvider`、LY 路由与 app-local owner |
-| Laoying | `LYApp`、`LYAppProvider`、`LYAppRouter`、`LYAppRouteRegistry`、`apps/laoying_app/lib/app/<domain>` | Tuqiang 的 Riverpod family、AppRouters、feature package owner |
-| Cross-product | 分别追两条链，再在 core/plugin/adapter 交点比较 | 用一条产品链替代另一条 |
-
-锚点不足且产品选择会改变结论时，必须先问用户。
-
-## 2. Tuqiang 分层
+图表示组合与依赖方向，不是运行时调用顺序。具体结论仍需读取相关 `pubspec.yaml`、import、barrel、composition override 和调用者。
 
 | 层 | 当前职责 | 关键入口 |
 |---|---|---|
-| 宿主 | 标准端与 OHOS 平台初始化 | `apps/standard/lib/main.dart::main`、`apps/ohos/lib/main.dart::main` |
+| 宿主 | 标准端与 HarmonyOS 平台初始化 | `apps/standard/lib/main.dart::main`、`apps/ohos/lib/main.dart::main` |
 | 启动协调 | 首屏前环境/用户/i18n/HTTP/缓存任务与首帧后任务 | `apps/tuqiang_app/lib/app/coordinators/app_startup_data_coordinator.dart::AppStartupDataCoordinator` |
 | Composition root | 根 `ProviderScope` overrides、跨 feature/runtime callback、平台能力注入 | `apps/tuqiang_app/lib/bootstrap.dart::getApp` |
 | App 壳 | 首屏、生命周期、尺寸、locale、`MaterialApp` | `apps/tuqiang_app/lib/app.dart::StrongApp` |
-| Dart 路由 | app alias、自有页面、checked 合并 feature routes、动态参数 | `apps/tuqiang_app/lib/app/router/app_router.dart::AppRouters` |
+| Dart 路由 | app alias、自有页面、checked feature routes、动态参数 | `apps/tuqiang_app/lib/app/router/app_router.dart::AppRouters` |
 | 路由元数据 | native routes、screen secure、route effects、刷新分类 | `apps/tuqiang_app/lib/app/router/feature_router_registry.dart::FeatureRouterRegistry` |
 | 业务 owner | 独立用户流程与跨 feature 领域状态 | `packages/feature/*`、`packages/shared/shared_*` |
-| App 遗留边界 | 尚未下沉或产品专属的历史 manager/model/viewmodel/tools | `apps/tuqiang_app/lib/app/legacy_shared` |
+| App-local 边界 | 尚未下沉或只由 App 组合的 manager/model/viewmodel/tools | `apps/tuqiang_app/lib/app` |
 
-Tuqiang 当前 8 个正式 shared 领域包是 `shared_account`、`shared_activity`、`shared_advertising`、`shared_command`、`shared_device`、`shared_location`、`shared_media`、`shared_message`。`shared_business` 已从 tracked package 拆除，不应出现在当前 owner 或根校验结论中。
+当前正式 shared 领域包为 `shared_account`、`shared_activity`、`shared_advertising`、`shared_command`、`shared_device`、`shared_location`、`shared_media`、`shared_message`。回答前仍应以 tracked pubspec 为准。
 
-## 3. Laoying 分层
+## 关键组合事实
 
-| 层 | 当前职责 | 关键入口 |
-|---|---|---|
-| 宿主 | 标准端/OHOS 平台 adapter 与运行入口 | `apps/laoying_standard/lib/main.dart`、`apps/laoying_ohos/lib/main.dart` |
-| Bootstrap | i18n、skin、平台能力、repository/controller 组合与 App provider 创建 | `apps/laoying_app/lib/bootstrap.dart` |
-| App 壳 | `LYAppScope`、`MaterialApp`、locale/theme/route | `apps/laoying_app/lib/app.dart::LYApp` |
-| 根状态 | session、reset participant、refresh bus 与 `notifyListeners` | `apps/laoying_app/lib/app/session/ly_app_provider.dart::LYAppProvider` |
-| 路由 | 解析 route/arguments 与 checked 合并 app-local business routers | `ly_app_router.dart::LYAppRouter`、`ly_route_registry.dart::LYAppRouteRegistry` |
-| 业务 owner | auth、gps、pet、mine、overview、message、device_share、device_management 等 app-local 目录 | `apps/laoying_app/lib/app/<domain>` |
-| 资源 | 产品级 i18n/images 与各领域 asset 常量 | `apps/laoying_app/assets`、`apps/laoying_app/lib/app/**/ly_*_assets.dart` |
+- `bootstrap.dart::getApp` 是跨包注入证据。feature/shared 只看到 contract provider 或 runtime callback 时，继续追根 override 到最终 Page、Manager、Repository 或 plugin。
+- `AppRouters.getRouters` 负责 Dart route map 与 checked feature route 合并；`FeatureRouterRegistry` 负责 native route 和 effect/security/refresh 元数据。
+- `shared_device::DeviceCoreRuntime` 通过 app composition 注入定位/消息外部上下文，避免 shared 包反向依赖。
+- `core_ui` 除 Widget 外还导出 navigation contracts、checked registry、route effect 和 `SessionResetParticipant`；owner 不能仅由包名推断。
+- `core_*` 不应依赖 shared、feature 或 app。修改公共 API 时反查当前仓库全部调用者。
 
-Laoying 当前不是 Tuqiang feature/shared 拆包的镜像。看到相同业务名也要追 Laoying 自己的 router/controller/repository，而不是跳到 `packages/feature`。
-
-## 4. 组合与依赖的关键事实
-
-- Tuqiang 的 `bootstrap.dart::getApp` 是跨包依赖注入证据；feature 只调用 contract 时，要追根 `ProviderScope` override 或 runtime callback 到最终实现。
-- `AppRouters.getRouters` 负责 Tuqiang Dart route map 与 checked feature route 合并；`FeatureRouterRegistry` 不再承担 Dart map 合并，它负责 native route 与 route effect/security/refresh 元数据。
-- 设备与定位跨 shared 包不应相互反向 import。`shared_device::DeviceCoreRuntime` 暴露外部上下文 callback，由 app composition 注入定位/消息失效和请求。
-- `core_ui` 除 UI 组件外还导出 navigation contracts、checked registry、route effect 与 `SessionResetParticipant`；owner 判断要读取其 barrel，不可仅凭包名断言“纯 Widget”。
-- `core_color` 提供中性色彩原语，`core_log` 提供统一日志能力；core 不应依赖 shared/feature/app。
-- Laoying 的业务 owner 当前主要在 `apps/laoying_app/lib/app`。是否下沉为公共包属于设计决策，项目地图只能报告现状和依赖证据。
-
-## 5. 状态体系不是一套
-
-Tuqiang：
+## 混合状态体系
 
 ```text
 Widget setState / Controller
@@ -76,40 +42,14 @@ Widget setState / Controller
         └─ SharedPreferences / 文件 / 数据库
 ```
 
-Laoying：
+具体页面可能同时经过多种机制。只有实际经过 Provider 的链路才能称为 Riverpod；`read`、`watch`、`listen`、`select` 和 Manager setter 要分别说明。
 
-```text
-LYAppProvider(ChangeNotifier) / LYAppScope
-        ├─ app-local controller + repository
-        ├─ session reset participants + refresh bus
-        └─ infrastructure adapter / preferences / HTTP / plugin
-```
+个人/企业是运行时账号模式，不属于上述层级或宿主 target。涉及 session、请求、缓存或可见性时读取 [account-mode.md](account-mode.md)。
 
-具体页面仍可能有 `StatefulWidget`、controller 或其他监听机制。只描述本次源码实际经过的状态，不把产品级模式扩张为“全部状态”。
+## 当前事实与迁移资料
 
-## 6. 当前事实与迁移资料
+优先核验 `AGENTS.md`、当前源码、各 `pubspec.yaml`/lockfile、`tool/project.dart`、门禁脚本和相关测试。`docs/` 中的迁移方案只能解释背景；目标结构不等于当前运行结构，大型方案中的历史基线也不能覆盖源码。
 
-优先核验：`AGENTS.md`、当前源码、各 `pubspec.yaml`/lockfile、`tool/project.dart`、`tool/check_dependency_architecture.ps1`、`tool/check_migration_boundaries.ps1`、相关测试。
+## 实时核验
 
-用于理解迁移背景但不能替代源码：
-
-- `docs/shared_business_domain_split_migration_plan.md`
-- `docs/feature_business_package_split_plan.md`
-- `docs/laoying_app_implementation_plan.md`
-- `docs/三端分支统一合并实施方案.md`
-- `docs/ohos_migration_inventory.md`
-
-大型迁移文档可能同时保留历史基线与最新验收段落；必须依据段落状态与当前源码交叉核验。
-
-## 7. 实时核验命令
-
-```powershell
-Set-Location -LiteralPath $tuqiangRoot
-rg -n "enum AppTarget|laoyingStandard|laoyingOhos" tool/project.dart
-rg -n "runStandardApp|runOhosApp|AppStartupDataCoordinator|ProviderScope|class StrongApp" apps/standard apps/ohos apps/tuqiang_app --glob '*.dart'
-rg -n "runLaoyingStandardApp|runLaoyingOhosApp|class LYApp|class LYAppProvider|class LYAppRouter|class LYAppRouteRegistry" apps/laoying_* --glob '*.dart'
-rg -n "class AppRouters|class FeatureRouterRegistry|nativeRouters|routeEffects|generateRoute" apps/tuqiang_app packages/feature --glob '*.dart'
-rg -n "package:feature_|package:shared_|package:core_" <已确认的产品目录> --glob '*.dart'
-```
-
-每次只报告本次命中；不要把 reference 中的路径当作无需验证的永久事实。
+用 tool/project.dart、宿主入口、startup/ProviderScope/StrongApp、AppRouters/FeatureRouterRegistry 和目标 import 重查当前分层；reference 路径不能替代实时证据。

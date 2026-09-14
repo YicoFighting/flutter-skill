@@ -1,232 +1,50 @@
-# 完整业务链追踪与讲解模板
+# 完整业务链追踪
 
-> 主入口见 [../SKILL.md](../SKILL.md)。先按 [动态项目根目录协议](project-root-resolution.md) 解析 `<TUQIANG_ROOT>`，再按 [双产品上下文](product-context.md) 判定产品与 target。本文件把“选中代码”扩展成可核验的端到端业务链，适合完整需求、状态来源/去向、页面进入或点击事件分析。
+从用户可感知入口解释 Tuqiang 事件、数据、状态和 UI。上下文卡沿用 SKILL.md；账号敏感链先读项目地图的 [账号模式事实](../../tuqiang-project-map/references/account-mode.md)。
 
-## 0. 先锁定追踪问题
+## 三条链
 
-开始大范围搜索前，明确三件事：
+    事件：操作/生命周期 → Widget → Command/Notifier/Controller → Repository
+    数据：route/key/input → HTTP/cache/plugin → DTO/Model → State
+    更新：state/Manager/cache → notify/derive → build/listener → UI/副作用
 
-1. 用户从哪个可感知操作或生命周期入口开始；
-2. 要解释哪个目标页面、功能或状态；
-3. 终点是 Repository/HTTP、缓存/插件/原生边界，还是还要反向追到某个最终 UI。
+按时间拼合，但不要伪装成同步栈。每个 await、listener、post-frame 和 rebuild 都标出触发者。
 
-能由目标路径、route、调用方唯一确定时直接继续。若任一项有两个以上合理解释且会改变业务链，先问一个最小选择题；不要在多条链之间长时间猜测后自行选一条。外部系统不可见但仓库内链路唯一时，追到边界并标未知即可。
+## 从锚点向外追
 
-## 1. 先画三条链，不要伪造一条连续调用栈
-
-Flutter 的异步与响应式流程通常分为：
-
-```text
-事件/同步调用链
-用户操作 → Widget 回调 → Command/Notifier → Repository/Plugin 调用
-
-异步数据链
-请求发出 → await 返回 → DTO/Model 转换 → State/缓存写入
-
-状态依赖/重建链
-Provider/ChangeNotifier 通知 → derived state 重算 → Widget/listener → 重建或副作用 → 字段展示
-```
-
-`await` 之后以及 Provider 通知阶段不等于仍处于最初点击回调的同步栈帧。回答中分别列出三条链，再用时间顺序把它们拼成业务闭环。术语第一次出现时立即补上 Vue3/React 心智，例如把 `ref.listen` 先解释为类似 `watch`/effect 的副作用订阅，再说明 Riverpod 的真实语义。
-
-## 2. 从锚点向四个方向搜索
-
-### 向上：谁让这段代码运行
-
-- 路由常量、builder owner、`Navigator.pushNamed`；
-- `onTap/onPressed/onChanged`；
-- `initState/didChangeDependencies/didPush/didPopNext`；
-- `ProviderScope` override、`LYAppScope`、构造注入、`*Runtime.configure` / `*ApiPaths.configure` 与 app composition callback；
-- Timer、推送、原生/插件回调。
-
-### 向下：数据最终来自哪里
-
-- Provider 的 builder/build；
-- Notifier/Command/ChangeNotifier Controller 方法；
-- Repository/Service；
-- 当前产品的 `TQHttp` 或 `LYBackendHttpClient`、数据库、缓存、Manager 或插件边界；
-- Model/DTO 的解析和字段映射。
-
-### 向旁：还有谁写同一份数据
-
-全仓搜索 Provider 名、Notifier 类型、State 字段和更新方法，重点看：
-
-```text
-state =
-copyWith(
-.notifier).
-seed / apply / update / refresh
-notifyListeners
-ref.invalidate
-setState / ValueNotifier
-Manager / cache 写入
-```
-
-先区分两类命中：
-
-- **直接写入者**：真正执行 `state =`、`apply/seed/update`、Manager/cache setter 或局部状态赋值；
-- **触发入口**：页面、Timer、listener、RouteObserver 等只调用 `refresh/load/request`，最终仍汇合到直接写入者。
-
-同一状态可能同时由页面首次加载、手动刷新、轮询、推送或其他命令回填；只讲一条会让因果关系失真。触发入口只展开与当前用户操作相关的部分，其余按来源分类列索引，避免把几十个重复 `.refresh()` 调用混成几十个状态 owner。设备/GPS 是这种多写入源的一个领域案例，不是默认讲解对象。
-
-### 向外：谁消费并展示
-
-分类记录：
-
-- `ref.watch`：Tuqiang Riverpod 响应式订阅；
-- `ref.watch(provider.select(...))`：字段级订阅；
-- `ref.listen` / `ProviderContainer.listen`：副作用；
-- `ref.read` / `ProviderContainer.read`：一次性快照或命令；
-- `LYAppScope.of`、`ListenableBuilder/AnimatedBuilder`、`addListener`：Laoying app 状态或 owner Controller 的订阅；
-- Manager/cache getter：非 Riverpod 真正数据源；
-- `Text/Image/Switch/Map` 等最终 Widget。
-
-## 3. 检索顺序
-
-默认用 `rg`，先符号后路径：
-
-```powershell
-rg -n "目标Widget|目标方法|目标Provider" "<TUQIANG_ROOT>"
-rg -n "目标Provider\(" "<TUQIANG_ROOT>/apps" "<TUQIANG_ROOT>/packages"
-rg -n "state\s*=|copyWith\(|seed\(|apply[A-Z]|invalidate\(" <相关目录>
-rg -n "watch\(|read\(|listen\(|select\(|notifyListeners\(|ListenableBuilder|AnimatedBuilder" <相关目录>
-```
-
-随后逐行读取命中位置上下文。不要用静态 reference 的旧行号直接回答；不要优先展开生成文件。本项目当前未使用 Riverpod codegen，若未来出现 `.g.dart`，先展示手写声明或注解，只有生成层本身影响问题时才下钻。
-
-## 4. Provider / Controller 身份卡
-
-每个关键 Provider 或 ChangeNotifier Controller 至少输出适用字段：
-
-| 项目 | 必答问题 |
+| 方向 | 问题 |
 |---|---|
-| 声明 | 绝对路径、实时行号、完整泛型 |
-| 实例身份 | 普通 Provider/family 及 key；或 Controller 由谁以哪些 route/构造参数创建和持有 |
-| 相等性 | 对象 key 是否不可变，`==/hashCode` 是否按业务值实现 |
-| State | 初始值、关键字段、loading/error/data 表达 |
-| 写入者 | Notifier/Command/回调/其他旁路 |
-| 依赖 | builder 中 watch/read 哪些 Provider/Repository；或构造注入哪些 Repository/adapter/app provider |
-| 消费者 | watch/select/listen/read；或 LYAppScope/ListenableBuilder/addListener 各自在哪 |
-| 生命周期 | autoDispose/keepAlive/onDispose；或页面 ownership、removeListener/dispose |
-| 清理 | 切 key、invalidate、切语言、登出 reset；或 session reset participant |
+| 向上 | 谁创建 Widget/Provider/Controller；哪个 route、builder、override、用户事件或 callback 让代码运行 |
+| 向下 | 参数如何进入 Repository/HTTP/cache/plugin；DTO 如何映射；loading/error/empty 在哪发布 |
+| 向旁 | 谁还写同一 State/Manager/cache；refresh、push、Timer、session reset 是否竞争 |
+| 向外 | 哪个 watch/select/listener/mapper 消费哪个字段，最终哪个 Widget 或插件变化 |
 
-必须区分：
+遇到 contract provider、runtime callback、route registry 或 barrel 继续追到实际实现，不能停在接口。账号模式逐段记录分流、共享与汇合；both 必须有个人和企业两条证据。
 
-```text
-路由参数       只传导航上下文
-family 参数    决定 Provider 实例/缓存身份
-方法参数       控制某一次 action
-State 字段     请求后留存并供消费者读取的数据
-```
+## 状态与字段
 
-## 5. 字段血缘表
+对关键状态记录：
 
-不要只说“接口数据进了 Provider”。对用户关心的 UI 字段逐列追踪：
+| 定义/类型 | family key 与 account scope | 依赖 | 写入 | 消费 | dispose/reset |
+|---|---|---|---|---|---|
 
-| 最终 UI | Presentation/getter | State/缓存字段 | Model/DTO | Repository/外部来源 |
-|---|---|---|---|---|
-| 例：列表数量 | `visibleCount` | `catalog.items` | 列表响应 | Repository/缓存回填 |
+路由参数、family key、单次 action 参数、State 字段和 accountMode 分开解释。字段血缘写成“外部字段 → DTO/Model → State/mapper → Widget 字段”，并覆盖 null/default、错误和空态。
 
-若 Presentation State 只存 revision、真实值在 Manager/cache，必须在表里写出这条旁路，不得误称数据存于 Provider。
+## 检索顺序
 
-## 6. 源码证据规格
+1. 精确 symbol 与引用；
+2. route 常量、arguments 和最终 builder；
+3. Provider/Notifier/Manager/Controller 声明与读写；
+4. Repository/TQHttp/cache/plugin 与 DTO；
+5. Widget 字段、visibility、loading/error/empty；
+6. dispose/invalidate/reset、账号或 key 切换。
 
-完整链路至少给出六类证据，并让每个关键跳都能由相邻证据连接：
+优先在相关 owner 目录用 rg -n，常见名加类型和路径约束。只引用当前行号和最小连续源码，不复制旧 reference 行号或敏感配置。
 
-1. 页面/路由/事件入口；
-2. Provider 声明与 family key；
-3. Notifier/Command 的核心写入；
-4. Repository、缓存或插件边界；
-5. derived/presentation Provider；
-6. 最终 UI 消费。
+## Web 对照
 
-格式示例：
+先说明 Flutter/Riverpod 事实，再映射用户指定框架。完整实现必须逐段对应 operation、route/props、accountMode、keyed store/query、异步请求、状态写入、selector/effect、UI 和 cleanup；未要求时不展开两套代码。
 
-```text
-<TUQIANG_ROOT>/packages/.../some_provider.dart:42
-```
+## 完成
 
-```dart
-// 只摘录能证明本次跳转或写入的必要上下文
-```
-
-单段源码保持短小，但不能用一个总行数上限删掉关键阶段。长方法可拆成多个命名片段，中间用文字说明未展示的低价值分支。路径与行号来自本次检索；最终回答应使用解析后的绝对路径，也可在统一声明 `<TUQIANG_ROOT>` 后用该占位符缩写。
-
-## 7. Vue3 对照必须覆盖整条链
-
-```ts
-// keyed Map ≈ family：每个 entityId 一份状态
-const details = reactive(new Map<string, DetailState>())
-
-async function refresh(entityId: string) {
-  const previous = details.get(entityId)
-  details.set(entityId, { ...previous, refreshing: true })
-  const result = await repository.fetchDetail(entityId)
-  details.set(entityId, { result, refreshing: false })
-}
-
-const active = computed(() =>
-  selectedId.value ? details.get(selectedId.value) : undefined,
-)
-```
-
-要继续补上真实事件入口、route/props 参数来源、`watch` 副作用、模板消费和卸载/切 key 清理；名称、字段及 loading/error/empty 分支与本次 Dart 源码对应，不能只写一个 `computed` 就结束。
-
-## 8. React 对照必须覆盖整条链
-
-```tsx
-function DetailPanel({ entityId }: { entityId: string }) {
-  const detail = useEntityStore(s => s.byId[entityId])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    void refreshEntity(entityId, controller.signal)
-    return () => controller.abort()
-  }, [entityId])
-
-  return <span>{detail?.title}</span>
-}
-```
-
-要补上真实事件入口、route/props 参数来源、状态写入、selector/effect 和最终组件消费。说明 query key/store key 与 Riverpod family key 的近似关系，以及 React cleanup、AbortController 与 Riverpod `autoDispose/onDispose/generation` 的差异。
-
-## 9. 输出骨架
-
-```markdown
-## 一句话结论
-
-产品线 / target：
-
-## 1. 用户操作与入口
-
-## 2. 事件/同步调用链
-
-## 3. 异步数据链
-
-## 4. 状态依赖与 UI 重建链
-
-## 5. Provider/Controller/状态身份与参数
-
-## 6. 逐跳源码证据
-
-## 7. 字段如何落到 UI
-
-## 8. Vue3 端到端等价实现
-
-## 9. React 端到端等价实现
-
-## 10. 生命周期、并发与清理
-
-## 11. 已证实、推断与未知边界
-```
-
-## 10. 完成条件
-
-- 起点是用户可感知操作，而非任意被选代码；
-- 一端追到 UI，另一端追到 API、缓存、数据库或插件；
-- Riverpod family 参数来源/相等性，或 ChangeNotifier Controller 的创建、持有、通知和生命周期说清；
-- 同一状态的所有可发现写入源均列出；
-- 明确哪些读取会重建、哪些只是快照、哪些是副作用；
-- 真实 Dart、Vue3、React 三套代码覆盖同一条完整业务链并能逐段对照；
-- 每个关键事实有实时路径/行号，未知部分不猜；
-- endpoint、Token、密钥、证书与生产配置已脱敏。
+输出一句业务结论、上下文卡、三条链、状态身份表、字段血缘、逐跳证据、生命周期/竞态与未知边界。设备、地图和平台矩阵只在影响结论时从项目地图加载。

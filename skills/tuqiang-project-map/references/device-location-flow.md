@@ -1,132 +1,64 @@
 # Tuqiang 设备目录 → 选择 → 定位状态 → UI
 
-本页只适用于 Tuqiang，是 Riverpod family、跨 shared package runtime 与混合状态的代表链。Laoying 的 GPS/设备链必须从 `apps/laoying_app/lib/app` 另行追踪。
+本页保留设备链特有事实；Provider 通用语义见 [Riverpod 拓扑](riverpod-topology.md)，设备目录和消息的个人/企业分流先读 [账号模式](account-mode.md)。
 
-## 1. 状态不是一份
+## 状态与目录请求
 
-```text
-DeviceListPage
-  ├─ Widget setState：分页 loading/筛选 UI
-  ├─ shared_device::deviceCatalogProvider：目录、分页、statusesById
-  └─ 点击设备
-       -> DeviceCoreCommands.setModelFromList
-       -> selectedDeviceProvider / deviceIdentityProvider(deviceId)
-       -> DeviceCoreRuntime（app 注入外部定位/消息上下文）
-       -> selectedLocationDeviceProvider
-       -> deviceLocationSnapshotProvider(LocationDeviceRef)
-       -> presentation Provider / 页面 watch
-       -> UI
-```
+`DeviceListPage` 同时持有分页/筛选 `setState` 与 `deviceCatalogProvider`。目录摘要、当前选择、定位快照、presentation 和页面局部值各有 owner，不是一份“设备全局状态”。
 
-目录摘要、当前选择、定位快照、模块状态与页面局部值各有 owner，不能合并成“设备全局状态”。
+    DeviceListPage
+    → deviceCatalogProvider（目录、分页、statusesById）
+    → DeviceCoreCommands.setModelFromList
+    → selectedDeviceProvider / deviceIdentityProvider(deviceId)
+    → DeviceCoreRuntime → selectedLocationDeviceProvider
+    → deviceLocationSnapshotProvider → presentation → UI
 
-## 2. 目录入口与请求
+页面：`apps/tuqiang_app/lib/app/home/device_list_page.dart`；关键 symbol：`DeviceListPage`、`requestDeviceList`、`_loadMoreData`、`pullToRefresh`、`_selectDevice`。数据边界：
 
-页面：`apps/tuqiang_app/lib/app/home/device_list_page.dart`
+- `packages/shared/shared_device/lib/src/application/providers/device_catalog_provider.dart`
+- `packages/shared/shared_device/lib/src/application/device_catalog_repository.dart`
+- `packages/shared/shared_device/lib/src/data/http_device_catalog_repository.dart`
+- `packages/shared/shared_device/lib/src/domain/device_catalog_query.dart::DeviceAccountMode`
 
-关键 symbol：`DeviceListPage`、`requestDeviceList`、`_loadMoreData`、`pullToRefresh`、`_selectDevice`。首次 build 会触发目录请求；页面 watch `deviceCatalogProvider`，分页 loading 仍由 `setState` 管理。
+    requestDeviceList
+    → accountMode/filter/department/page + request scope
+    → _requestDevicePage → DeviceCatalogRepository.fetchPage
+    → HttpDeviceCatalogRepository → TQHttp
+    → model/index state → 页面重建
 
-状态：`packages/shared/shared_device/lib/src/application/providers/device_catalog_provider.dart`
+主目录请求、批量 `statusesById` 和首次页尽力唤醒是三个独立异步分支。核验 requestVersion、owner liveness 与账号 scope；一条辅助支路失败不等于主请求失败。
 
-数据边界：
+## 选择、runtime 与页面分支
 
-- contract：`packages/shared/shared_device/lib/src/application/device_catalog_repository.dart`
-- HTTP 实现：`packages/shared/shared_device/lib/src/data/http_device_catalog_repository.dart`
+`_selectDevice` 先写共同选择状态，再按设备类型与状态进入页面族；可达叶子和范围门见 [变体事实](variant-surface.md) 与开发 Skill 的 [实施覆盖](../../tuqiang-dev/references/implementation-coverage.md)。
 
-```text
-requestDeviceList
-  -> _requestDevicePage(page/filter/requestVersion)
-  -> DeviceCatalogRepository.fetchPage
-  -> HttpDeviceCatalogRepository
-  -> TQHttp（只引用 API 常量名）
-  -> model/index state 发布
-  -> 页面重建
-  ├─ unawaited 批量状态刷新 -> statusesById
-  └─ 首次第一页的 T20 尽力唤醒分支
-```
+shared_device 关键文件：`device_core_commands.dart`、`device_core_runtime.dart`、`device_selection_providers.dart`、`providers/device_core_providers.dart`、`domain/device_core_ref.dart`。
 
-requestVersion/mounted 防止旧筛选请求覆盖新结果。T20 唤醒、页面结果和批量状态是不同异步分支，单台唤醒失败不等于目录请求失败。
+设备变化时，`setModelFromList` 清旧 core family，并经 `DeviceCoreRuntime.invalidateExternalContext` 委托 app 清外部上下文；同一设备仍会 seed identity、发布 selected device，再按能力请求状态。`shared_device`、`shared_location` 与 `shared_message` 在 `LocationContainerHost` 和 `bootstrap.dart` 的 runtime override 组合。
 
-## 3. 点击设备与路由分支
+## 根 Host 与定位
 
-`DeviceListPage._selectDevice` 先检查升级/兼容，再调用 `ref.read(deviceCoreCommandsProvider).setModelFromList(...)`，然后按设备类型、scene 与服务状态进入不同 route。共同状态写入发生在路由分支前，但页面实现并不共同：GPS 还会按基础服务、novice mode 以及 normal/person/keys/pet scene 分流；LBS、Tag、MiFi 与 Camera 各走独立页面族，Camera 又按 jank/driving/parking/monitor 等 camera scene 分支。必须按实际 model 继续追每个最终 route/Page。
+`LocationContainerHost` watch 目录、当前选择、定位/消息/presentation，listen 变化并激活当前设备：
 
-入口后的“设备详情”“更多详情”“更多设置”也要继续追：GPS 普通、人员、base/novice、Pet callback、MiFi、Beacon、Camera 与 Tag 并不保证复用同一个 Page 或同一组参数。当前离线客服卡片就在 GPS、person、scene、Pet、Wi-Fi/MiFi 多个页面分别消费，说明共享组件不等于只有一个页面入口。
+    selectedDeviceProvider
+    → LocationContainerHost listener
+    → post-frame 检查 context.mounted + expectedDeviceId + expectedRevision
+    → requestDeviceCoreExternalContext
+    → 再比较 expectedDeviceId 与 selectedLocationDeviceProvider.deviceRef
+    → app runtime 请求 profile/capabilities/snapshot/message
 
-开发调查的完整分支索引与搜索方法见 [variant-surface.md](variant-surface.md)。只有任务命中本节所述设备选择、设备首页/详情、“更多详情/更多设置”或跨设备状态卡片入口，并且实时源码存在两个以上 route/Page 或页面消费叶子时，才启用设备范围门；此时用户若未明确全部或指定 `deviceType/scene/cameraScene`，项目地图应先返回当前候选页面矩阵，把范围决定交给用户与 `tuqiang-dev`。共享组件、当前打开页面或单个复现设备不能代替范围确认；普通 GPS 页面文案或与这些入口无关的局部 UI 不得仅因目录位置触发提问。
-
-## 4. shared_device 写入与 app runtime
-
-文件：
-
-- `packages/shared/shared_device/lib/src/application/device_core_commands.dart`
-- `packages/shared/shared_device/lib/src/application/device_core_runtime.dart`
-- `packages/shared/shared_device/lib/src/application/device_selection_providers.dart`
-- `packages/shared/shared_device/lib/src/application/providers/device_core_providers.dart`
-- `packages/shared/shared_device/lib/src/domain/device_core_ref.dart`
-
-`setModelFromList` 清理旧设备 core family，调用注入的 `DeviceCoreRuntime.invalidateExternalContext(model)`，seed identity，发布 selected device，再按能力请求 Wi-Fi/module 等状态。`requestSelectedLocationContext` 通过 `DeviceCoreRuntime.requestExternalContext` 委托 app。
-
-不要再描述成 `DeviceCoreCommands` 直接构造/清理 location family。跨 `shared_device`、`shared_location`、`shared_message` 的组合发生在 `apps/tuqiang_app/lib/app/coordinators/location_container_host.dart` 与 `bootstrap.dart` 的 runtime override。
-
-## 5. 根 Host 激活外部上下文
-
-`LocationContainerHost` watch 目录、当前选择、定位/消息/展示状态，listen 选择和目录变化，并通过 post-frame 激活已选设备：
-
-```text
-selectedDeviceProvider 发布
-  -> LocationContainerHost listener
-  -> addPostFrameCallback + revision/deviceId 校验
-  -> DeviceCoreCommands.requestSelectedLocationContext
-  -> app runtime 请求 location profile/capabilities/snapshot/message
-```
-
-目录批量状态通过 `applyCatalogStatus` 同步给当前定位快照；主动 refresh 是另一条来源。最近核验中 `gpsModuleList` 不在 `FeatureRouterRegistry` 的 location-on-push 刷新集合，首次进入时主要依靠根 Host；回答前仍需实时复查。
-
-## 6. 定位 key、请求与展示
-
-文件：
+定位边界：
 
 - `packages/shared/shared_location/lib/src/domain/device/location_device_ref.dart`
 - `packages/shared/shared_location/lib/src/application/location_providers.dart`
-- `packages/shared/shared_location/lib/src/application/location_dependencies.dart`
 - `packages/shared/shared_location/lib/src/application/location_runtime.dart`
 - `packages/shared/shared_location/lib/src/data/location_status_repository.dart`
 - `packages/shared/shared_location/lib/src/presentation/location_presentation_provider.dart`
 
-`LocationDeviceRef.tryFromDevice` 会判断设备类型/Camera scene；selected device 不一定产生定位 key。key 由 `deviceId + deviceType` 判等。
+`LocationDeviceRef.tryFromDevice` 可能不为 selected device 生成定位 key。snapshot 需核验 pending 去重、generation/liveness/scope、错误时旧状态策略，以及 `LocationRuntime.updatePosition` 如何连接 app-local Manager。
 
-```text
-deviceLocationSnapshotProvider(ref)
-  -> DeviceLocationSnapshotNotifier.refresh
-  -> pending future 去重 + generation/mounted
-  -> LocationStatusRepository.fetchStatus
-  -> TQHttp
-  -> applyStatus
-  -> DeviceLocationSnapshotState
-  -> 注入的 LocationRuntime.updatePosition（app 连接旧 Manager）
-  -> presentation/page watch -> UI
-```
+## 清理
 
-错误会保留旧 status 并记录 error；不要说失败必然清空。页面可能同时 watch identity、profile、snapshot、presentation 或 Manager 镜像值，最终要追到 Text/Image/按钮/地图 marker。
+切设备的 core/external-context 清理与 autoDispose 条件见 [Riverpod 拓扑](riverpod-topology.md)；切账号的目录、选择、定位、消息、pending 与 cache 见 [账号模式](account-mode.md)。logout 由 `session_reset_registry.dart` 聚合 reset participants，语言切换的清理范围更窄；根 Host 持续 watch 会延长当前 key 生命周期。
 
-## 7. 清理
-
-- 切设备：`DeviceCoreCommands` 清旧 core family，并由 app runtime 清理目标外部上下文；旧 location key 失去根 Host/页面监听后进入 autoDispose 条件。
-- logout：`session_reset_registry.dart` 聚合 device/location/message/app 与 Auth/GPS/Camera/Pet 等 reset participants。
-- 语言切换：`language_change_coordinator.dart` 只清部分设备/GPS/广告/逆地理状态，不等于 logout。
-- 根 Host 的持续 watch 会让当前 key 活得比单页面更久。
-
-## 8. 实时核验
-
-```powershell
-Set-Location -LiteralPath $tuqiangRoot
-rg -n "requestDeviceList|_loadMoreData|pullToRefresh|_selectDevice|setModelFromList" apps/tuqiang_app/lib/app/home/device_list_page.dart
-rg -n "_openDeviceMoreSettings|更多详情|设备详情|更多设置|openDeviceDetail|DeviceDetail" apps packages --glob '*.dart'
-rg -n "TQOfflineCustomerServiceCard|isCustomerServiceAvailableProvider" apps packages --glob '*.dart'
-rg -n "deviceCatalogProvider|class DeviceCatalogNotifier|_requestDevicePage|requestVersion|T20|fetchStatuses" packages/shared/shared_device/lib
-rg -n "class DeviceCoreRuntime|invalidateExternalContext|requestExternalContext|selectedDeviceProvider|deviceIdentityProvider" packages/shared/shared_device/lib
-rg -n "class LocationContainerHost|applyCatalogStatus|requestSelectedLocationContext|selectedLocationDeviceProvider" apps/tuqiang_app packages/shared --glob '*.dart'
-rg -n "class LocationDeviceRef|class DeviceLocationSnapshotNotifier|fetchStatus|applyStatus|locationPresentationProvider" packages/shared/shared_location/lib
-rg -n "<目标状态字段>|<目标展示文案或getter>" apps packages --glob '*.dart'
-```
+实时定位以上事实时，以 `requestDeviceList/_selectDevice`、`DeviceAccountMode/scopeAtRequest`、`DeviceCoreRuntime`、`LocationContainerHost`、`LocationDeviceRef` 与 `locationPresentationProvider` 为检索 seed。

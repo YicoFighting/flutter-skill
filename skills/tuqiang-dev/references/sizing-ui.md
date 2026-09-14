@@ -1,44 +1,28 @@
-# 尺寸适配与 UI 组件规范（sc）
+# 尺寸适配与 UI
 
-## 1. 设计尺寸
-
-`core_base` 的 `TQSizeFit` 以 375 宽设计稿为基准，最大缩放约为 1.2：
+`core_base` 的 `TQSizeFit` 以当前项目约定的 375 宽设计稿为基准，最大缩放约 1.2。`.sc` 主要用于设计稿布局尺寸、间距、圆角和字号：
 
 ```dart
 Padding(padding: EdgeInsets.all(15.sc))
 SizedBox(height: 8.sc)
-Text('标题', style: TextStyle(fontSize: 16.sc))
+Text('标题'.tr, style: TextStyle(fontSize: 16.sc))
 ```
 
-`.sc` 主要用于设计稿中的布局尺寸、间距、圆角和字号。系统栏高度、边框宽度、动画时长、
-算法参数、比例、flex、约束和 API 数值不应机械套 `.sc`。使用 `horizontalSpace`、
-`verticalSpace` 时也先确认它表达的是设计间距。
+系统栏高度、边框宽度、动画时长、算法参数、比例、flex、约束和 API 数值不机械套 `.sc`。`horizontalSpace/verticalSpace` 也只表达设计间距。
 
-## 2. 安全区和公共 UI
+## 安全区与公共 UI
 
-- 底部按钮、BottomSheet 和输入区域用 `SafeArea` 或 `Screen.bottomSafeHeight`；
-- 不手算刘海、手势条和系统栏高度，优先使用 `Screen` 封装；
-- 新页面先查 `packages/core/core_ui/lib/`，统一顶栏用实际存在的 `TQAppBar`；
-- Toast、loading、空态、确认按钮等优先复用当前产品已经采用的公共组件；
-- 途强单业务组件放 Feature；老鹰业务组件放对应 LY app-local owner；稳定无业务 UI 才进入 `core_ui`；
-- 途强可沿用现有 TQ 品牌 token；老鹰品牌色、文案和图片由自身 skin/asset owner 提供，不能因复用 `core_ui` 泄漏途强视觉。
+- 底部按钮、BottomSheet、输入区使用 `SafeArea` 或 `Screen.bottomSafeHeight`；
+- 不手算刘海、手势条和系统栏，优先用现有 `Screen` 封装；
+- 新页面先查 `packages/core/core_ui/lib`，优先实际存在的 `TQAppBar`、Toast、loading、空态和按钮；
+- 单业务组件放 Feature，稳定无业务 UI 才进入 `core_ui`；
+- build 只读取/订阅状态，副作用沿现有事件、初始化或 listener；
+- 高频更新区域可拆子 Widget 或用 Riverpod `select`，不要把 `const` 解释为永不 rebuild。
 
-## 3. 布局防御
+## 多语言布局
 
-- `Column` 中的可滚动内容需要明确高度约束，通常使用 `Expanded`/`Flexible`；
-- 文字受多语言影响时设置合适的 `maxLines`、`overflow` 或允许换行；
-- 高频更新区域拆成子 Widget，或用 Riverpod `select` 缩小重建范围；
-- `const` 用于确实不依赖运行时状态的对象；不要把它解释成“整棵树不会 rebuild”；
-- 平板、折叠屏和大字体只在布局确实受影响时验证，不要求每个小改动都做完整设备矩阵。
+任何可见文本先执行 [i18n 流程](i18n.md)。为德语等长文本检查换行、`maxLines/overflow` 和按钮宽度；Arabic 检查 RTL、方向图标、对齐与数字/单位。不要用固定高度掩盖翻译溢出。
 
-## 4. 图标和资源
+## 资源与验证
 
-设计稿有对应切图时使用目标产品 owner asset 常量。缺少目标业务图片时先索要，不得用
-Canvas、文字叠加、系统图标或生成图片替代；只有标准语义控件才考虑 `Icons.*`。资源路径、
-package 参数和倍率目录遵循 [assets-guide.md](assets-guide.md)。
-
-## 5. 验证
-
-影响 UI 的行为改动：对应 package analyze 和必要的 Widget/页面验证；
-影响公共 UI、尺寸工具或平台安全区：先枚举两产品消费者；只影响单一产品时检查该产品两个 target 并记录另一产品不受影响证据，同时影响两产品调用或公共 contract 时才检查四 target。
-按上述证据选择 ProductScope boundary，必要时补真机检查。
+设计稿有切图时使用真实 owner asset；缺业务图片按 [资源规范](assets-guide.md) 索要，不以 Canvas、叠字、系统图标或生成图替代。影响 UI 时运行对应 package analyze/Widget 测试，并按风险检查小屏、宽屏/折叠态、大字体、Android/iOS/HarmonyOS 和个人/企业模式。
