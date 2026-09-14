@@ -1,6 +1,6 @@
 # Tuqiang 三端兼容
 
-Android/iOS 使用 `standard` 宿主，HarmonyOS 使用 `ohos`；`standard` 不是两端运行证明。最低交付、iOS 交接与地图七行统一见 [实施覆盖](implementation-coverage.md)。
+Android/iOS 使用 `standard` 宿主，HarmonyOS 使用 `ohos`；`standard` 不是两端运行证明。受影响端覆盖、必要 iOS 验证交接与地图候选统一见 [实施覆盖](implementation-coverage.md)。
 
 ## 公共代码边界
 

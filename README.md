@@ -1,6 +1,6 @@
 # flutter-skill
 
-版本 2.1.1。四个 Skill 只服务 Tuqiang 产品，通过当前任务的业务路径或绑定项目动态定位仓库，不绑定盘符和目录名。项目移动、改名或换机器后，打开新位置的项目或在任务中指定新路径即可，技能库无需修改。
+版本 2.2.0。四个 Skill 只服务 Tuqiang 产品，通过当前任务的业务路径或绑定项目动态定位仓库，不绑定盘符和目录名。项目移动、改名或换机器后，打开新位置的项目或在任务中指定新路径即可，技能库无需修改。
 
 | Skill | 职责 |
 |---|---|
@@ -9,13 +9,14 @@
 | [tuqiang-dev](skills/tuqiang-dev/SKILL.md) | 开发、修复、测试与评审 |
 | [tuqiang-change-retrospective](skills/tuqiang-change-retrospective/SKILL.md) | 用户显式要求后，只读复盘并生成学习 Markdown |
 
-2.1.1 修正根目录发现的可移植性；保留 2.1.0 的只读根校验、Android flavor/分发渠道与 SDK/测试范围。共用规则继续按需加载：
+2.2.0 将开发验证改为按改动风险分级：三端先检查影响，分析/测试聚焦受影响模块，构建按需触发，通过后停止重复检查；同时保留动态根目录发现与构建渠道事实。共用规则继续按需加载：
 
 - [根目录](skills/tuqiang-project-map/references/project-root-discovery.md)：用户路径优先；脚本验证 Git 跟踪标记、package identity 与 worktree。
 - [构建上下文](skills/tuqiang-project-map/references/build-runtime-context.md)：allvendor/combined/firebase、Walle channel、原生依赖与标准/OHOS SDK。
 - [账号模式](skills/tuqiang-project-map/references/account-mode.md)：personal / enterprise / both / unknown 与 isEnterprise 传播链。
 - [国际化](skills/tuqiang-dev/references/i18n.md)：当前 manifest、全 locale、占位符、缺 key 回显和语言切换。
 - [异步生命周期](skills/tuqiang-dev/references/async-lifecycle.md)：owner、新鲜度、身份与资源四道防线。
+- [测试与验证](skills/tuqiang-dev/references/testing.md)：局部展示、业务逻辑、跨包契约、原生/打包四级范围与升级/停止条件。
 - [实施覆盖](skills/tuqiang-dev/references/implementation-coverage.md)：三端、地图和设备 route leaf 的条件矩阵。
 - [复盘输出](skills/tuqiang-change-retrospective/references/report-contract.md)：Bug、需求与混合模式的 Markdown 契约。
 

@@ -6,10 +6,10 @@
 
 1. 沿入口、route、Provider/Controller/Manager、Repository、asset 和测试确定 owner。
 2. 检查公开 barrel/API 与真实调用方；包外不 import 其他 package 的私有 src。
-3. 在同 owner 选 2–4 个同类样本，优先相同操作、生命周期、accountMode 和平台边界；不足再看相邻 owner，最后才看公开 core/shared/plugin。
+3. 局部修改优先延续当前实现；需要新模式时先选一个操作、生命周期、accountMode 和平台边界直接可比的同 owner 样本。确有差异再扩大到相邻样本或公开 core/shared/plugin，不设固定样本数量。
 4. Model、Repository、State、Widget 和测试可分别参考不同样本，不复制整套脚手架。
 
-对样本至少核对：账号来源/两侧调用，family key/写入/reset，DTO null/清空语义，Repository failure/注入，Widget i18n/订阅/清理，route/asset owner，以及最小可证伪测试。
+只核对与本次改动相关的样本维度：账号来源/两侧调用，family key/写入/reset，DTO null/清空语义，Repository failure/注入，Widget i18n/订阅/清理，route/asset owner，以及最小可证伪测试。
 
 ## 复用阶梯
 
@@ -21,4 +21,4 @@
 
 不新增纯转发 wrapper、大量 nullable callback/互斥 boolean、假想未来 base/service、泄露私有 Model/route/Provider 的 API，也不恢复已拆除的 shared_business。
 
-记录 accountMode、owner、复用 symbol、2–4 个样本、选择理由、最小范围和未决策项。完成后确认公开 API/调用者一致，且无无关迁移、改名或状态库替换；多解按 [澄清门](requirement-clarification.md) 停止。
+按需记录 owner、复用 symbol、实际比较的样本与选择理由；简单修改无需另写采样报告。完成后确认公开 API/调用者一致，且无无关迁移、改名或状态库替换；多解按 [澄清门](requirement-clarification.md) 停止。

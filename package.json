@@ -1,6 +1,6 @@
 {
   "name": "flutter-skill",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "服务 Tuqiang 的四个 Agent Skills：只读根校验、项目事实地图、Web 链路讲解、开发与复盘；覆盖账号模式、国际化、异步生命周期与构建渠道差异",
   "keywords": [
     "antigravity",
@@ -40,8 +40,8 @@
     {
       "name": "tuqiang-dev",
       "path": "skills/tuqiang-dev",
-      "version": "2.1.0",
-      "description": "按 Tuqiang 真实 owner 开发，强制检查个人/企业模式、国际化、异步发布及三端条件覆盖"
+      "version": "2.2.0",
+      "description": "按 Tuqiang 真实 owner 开发，按改动风险选择验证范围，检查账号、国际化、异步与受影响平台，避免重复全量分析和构建"
     },
     {
       "name": "tuqiang-project-map",
