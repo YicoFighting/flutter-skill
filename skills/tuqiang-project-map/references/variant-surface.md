@@ -6,6 +6,8 @@
 
 `standard → Android/iOS`，`ohos → HarmonyOS`。target 需由 tracked app、pubspec identity 与入口共同证明；命中 channel、PlatformView、权限、资源或原生 SDK 时继续追各平台目录。一次 `standard` analyze/build 不能证明 Android 与 iOS 运行行为相同。
 
+涉及推送、广告、ABI、原生地图依赖或安装包差异时，再按 [构建与运行上下文](build-runtime-context.md) 区分 Android flavor 与分发渠道；不要用默认 allvendor 包的结果关闭其他变体。
+
 ## 地图实现面
 
 公共选择层位于 `packages/plugins/tq_map_plugin`：

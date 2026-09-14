@@ -5,6 +5,24 @@
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-09-14
+
+### Added
+- 新增 `tuqiang-project-map/scripts/validate_project_root.py`：只读验证显式候选的 Git 根、四个 tracked 标记与三个 pubspec identity；支持子目录、源码文件及 worktree，输出规范化路径与 HEAD，拒绝缺失/未跟踪标记、错误 identity 和越界标记。
+- 新增 `references/build-runtime-context.md`：根据当前 Tuqiang Gradle、推送工厂与工具源码，索引 `allvendor/combined/firebase`、Walle 分发渠道、推送 module、广告真实/空实现、Manifest、ABI 和标准/OHOS SDK 选择。
+
+### Changed
+- 四个 Skill 与根包统一升级至 2.1.0；四入口按需关联构建上下文，教学追到原生实现，开发补充 flavor/channel 覆盖，复盘记录实际产物与 SDK 验证证据。
+- 根目录协议明确当前服务 `D:\Code\tuqiang`，用户新指定 checkout/worktree 优先；区分技能库 cwd 与业务源码根，避免因二者不同重复阻塞。
+- 测试规范补充标准/OHOS SDK 预检、owner 包测试、两个独立边界脚本、迁移测试真实范围与 pub get 副作用；存在 package 解析写入冲突时串行执行，并比较验证前后的相关 diff。
+- 同步根 README、四个 Skill README、模块与变体索引、覆盖台账、评审清单和复盘契约；说明四个 Skill 的同根完整安装依赖。
+
+### Fixed
+- 修正子目录或源码文件候选必须与 Git 根字符串相等的错误限制，以规范化 Git 根和 tracked identity 判定。
+- 防止把 `combined` 旧注释当成实际极光依赖、把母包视为已写渠道产物、把 `firebase` 视为仅 Google 地图，或用默认 allvendor 验证结果覆盖所有构建变体。
+- 防止认为 OHOS 配置快照会恢复所有解析/构建产物、宿主 test 会覆盖业务包，或迁移测试只读且覆盖全部平台；提示 standard run 当前会无条件补默认 flavor，iOS 需核对 scheme/参数。
+- 将新版文件同步至当前用户 Gemini 与 Codex 同名技能目录并逐文件校验 SHA-256，消除全局旧入口的双产品规则。执行策略拒绝删除 Codex 中 5 个已退休 reference，暂保留这些未被新版入口引用的旧文件；Gemini 文件集合与工作区一致。
+
 ## [2.0.1] - 2026-09-14
 
 ### Added

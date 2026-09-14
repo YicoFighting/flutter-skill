@@ -3,7 +3,7 @@ name: tuqiang-project-map
 description: 为 Tuqiang Flutter monorepo 从当前源码定位仓库事实、个人/企业账号模式、模块 owner、状态/数据拓扑及平台、地图和设备页面变体；用于架构、路由、依赖、业务链或影响面调查。只提供证据，不修改代码或输出 Web 教学。
 license: Apache-2.0
 metadata:
-  version: "2.0.1"
+  version: "2.1.0"
 ---
 
 # Tuqiang 项目地图
@@ -21,6 +21,7 @@ metadata:
        owner: <symbol/package | unknown>
        entry: <event | unknown>
        observableEnd: <UI/state/storage/plugin | unknown>
+       buildVariant: <涉及构建/原生差异时填写 flavor/channel/SDK>
        deviceOrMapScope: <相关时填写>
 
 3. 登录/session、请求/DTO、设备目录、消息、权限、缓存、页面可见性、账号切换或退出一律读取 [账号模式](references/account-mode.md)。账号模式来自当前 isEnterprise 传播链，不是 accountType、target 或 flavor；证据不足写 unknown。
@@ -40,6 +41,7 @@ metadata:
 | 读取条件 | Reference |
 |---|---|
 | 首次定位或 checkout 不明 | [project-root-discovery.md](references/project-root-discovery.md) |
+| 构建、推送、广告、ABI 或安装包差异 | [build-runtime-context.md](references/build-runtime-context.md) |
 | 账号敏感行为（强制） | [account-mode.md](references/account-mode.md) |
 | 分层、依赖与状态体系 | [architecture-overview.md](references/architecture-overview.md) |
 | app/feature/shared/core/plugin owner | [module-catalog.md](references/module-catalog.md) |

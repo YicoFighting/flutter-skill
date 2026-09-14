@@ -3,7 +3,7 @@ name: flutter-to-web
 description: 面向 Vue3/React 开发者解释 Tuqiang Flutter monorepo 的真实业务链；从当前源码核验个人/企业账号、用户事件、异步数据、Riverpod/混合状态与 UI，并按需给出 Web 对照。只讲解，不修改代码。
 license: Apache 2.0
 metadata:
-  version: "2.0.1"
+  version: "2.1.0"
 ---
 
 # Tuqiang Flutter 业务链讲解
@@ -17,6 +17,7 @@ metadata:
     product: Tuqiang
     accountMode: personal | enterprise | both | unknown
     platform/target: Android/iOS standard | HarmonyOS ohos | multiple | unknown
+    buildVariant: <仅构建/原生差异相关时记录 flavor/channel>
     entry: <操作、路由或生命周期>
     end: <UI、Repository、缓存或插件边界>
 
@@ -57,7 +58,7 @@ metadata:
 | 约束、尺寸、多语言布局与字段展示 | [layout-ui.md](references/layout-ui.md) |
 | Widget context、监听与资源释放 | [widget-lifecycle.md](references/widget-lifecycle.md) |
 
-设备、地图或定位问题再从项目地图读取对应专题；不要一次加载全部 reference。
+安装包差异、推送或广告链读取 [构建上下文](../tuqiang-project-map/references/build-runtime-context.md)，继续追原生 module、channel 与实际 factory；不要用相同 Dart 页面推断相同行为。设备、地图或定位问题再从项目地图读取对应专题；不要一次加载全部 reference。
 
 ## 完成条件
 

@@ -1,13 +1,14 @@
 # tuqiang-dev
 
-版本 2.0.1。只开发、修复、测试和评审 Tuqiang；强制检查 accountMode、可见文本和异步结果发布，平台/地图/设备矩阵按需展开。
+版本 2.1.0。只开发、修复、测试和评审 Tuqiang；强制检查 accountMode、可见文本和异步结果发布，平台/地图/设备矩阵按需展开。
 
 入口见 [SKILL.md](SKILL.md)。核心事实源：
 
 - [实施覆盖](references/implementation-coverage.md)
 - [国际化](references/i18n.md)
 - [异步生命周期](references/async-lifecycle.md)
-- [测试与验证](references/testing.md)
+- [测试与验证](references/testing.md)：SDK 选择、owner 测试、边界命令与副作用范围
+- [构建与运行上下文](../tuqiang-project-map/references/build-runtime-context.md)：Android flavor、Walle channel 与原生依赖
 
 其余 owner、状态、网络、路由、资源、权限和兼容专题均由 SKILL.md 按任务路由。
 

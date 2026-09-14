@@ -1,7 +1,7 @@
 {
   "name": "flutter-skill",
-  "version": "2.0.1",
-  "description": "服务 Tuqiang Flutter monorepo 的四个 Agent Skills：项目事实地图、Web 链路讲解、项目开发与变更复盘，内置个人/企业账号模式、国际化和异步生命周期门禁",
+  "version": "2.1.0",
+  "description": "服务 Tuqiang 的四个 Agent Skills：只读根校验、项目事实地图、Web 链路讲解、开发与复盘；覆盖账号模式、国际化、异步生命周期与构建渠道差异",
   "keywords": [
     "antigravity",
     "claude-code",
@@ -34,25 +34,25 @@
     {
       "name": "flutter-to-web",
       "path": "skills/flutter-to-web",
-      "version": "2.0.1",
+      "version": "2.1.0",
       "description": "从用户操作跨文件追踪 Tuqiang 事件、异步数据、账号模式、状态与 UI，并按需提供 Vue3 或 React 心智映射"
     },
     {
       "name": "tuqiang-dev",
       "path": "skills/tuqiang-dev",
-      "version": "2.0.1",
+      "version": "2.1.0",
       "description": "按 Tuqiang 真实 owner 开发，强制检查个人/企业模式、国际化、异步发布及三端条件覆盖"
     },
     {
       "name": "tuqiang-project-map",
       "path": "skills/tuqiang-project-map",
-      "version": "2.0.1",
+      "version": "2.1.0",
       "description": "动态校验 Tuqiang checkout，提供账号模式、架构、状态、平台、地图与设备页面事实索引"
     },
     {
       "name": "tuqiang-change-retrospective",
       "path": "skills/tuqiang-change-retrospective",
-      "version": "2.0.1",
+      "version": "2.1.0",
       "description": "在 Tuqiang 变更完成后追溯 Git 因果，复盘账号模式、国际化、异步防线和业务链并生成学习 Markdown"
     }
   ]

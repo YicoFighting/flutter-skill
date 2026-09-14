@@ -39,13 +39,17 @@
 
 “花瓣地图”只是 Map Kit 的业务称谓，不新增 SDK 或 `TQMapSourceType`。共享 Dart 证据可跨行引用，但平台差异与验证状态分开；不可达行附 `无需修改` 证据。POI、街景、外部导航等独立 channel 另建子表。
 
+## Android 构建变体（条件触发）
+
+原生依赖、推送、广告、ABI、Manifest 或渠道差异按 [构建上下文](../../tuqiang-project-map/references/build-runtime-context.md) 增补 flavor/channel。`combined` 母包与写入渠道后的产物分开验证；默认 `allvendor` 结果不证明其他包可用。地图七行是平台/后端候选，若该改动还受 flavor 影响，则在对应行补充实际可达组合；无关任务不扩表。
+
 ## 设备页面范围
 
 命中设备列表/搜索、首页/详情、“更多详情/设置”或服务状态卡片时，枚举 `deviceType`、scene/category、cameraScene、服务/账号/分享状态、route、最终 Page、目标 Widget 和真实点击区域。多个独立叶子且范围不明时，确认前不写代码；单一叶子仍检查共享组件、Provider、route 或 plugin 对其他叶子的回归。
 
 ## 覆盖台账
 
-| 变更类型 | 账号模式 | 平台/target | 设备/route leaf | 地图 scene/后端 | 代码状态 | 验证状态/证据 |
+| 变更类型 | 账号模式 | 平台/target（相关时附 flavor/channel） | 设备/route leaf | 地图 scene/后端 | 代码状态 | 验证状态/证据 |
 |---|---|---|---|---|---|---|
 
 代码状态：`已实现/已修复`、`共享实现覆盖`、`无需修改`、`待用户决定`、`iOS 专属实现待同事`；最后一项只允许 Bug 的 iOS 原生专属问题，新需求不得用它跳过代码。验证等级统一见 [测试规范](testing.md)。

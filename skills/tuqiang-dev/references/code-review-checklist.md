@@ -13,6 +13,7 @@
 | owner/公共 API | 位于真实 app/feature/shared/core/plugin；跨包只用公开 API；全部现有调用契约已查 |
 | 平台/地图/设备 | Bug Android+OHOS 与 iOS 影响；新需求三端；地图七行；确认范围内的 route leaf |
 | asset/布局/权限 | pubspec/package/语言状态正确；无假切图；.sc、SafeArea、权限用途与真机流程合理 |
+| 原生依赖/推送/广告/打包 | 核对 flavor、Walle channel、实际 module/factory、Manifest 和 ABI；参考项目地图构建上下文 |
 | 验证/diff | 覆盖台账、聚焦 tests、standard/ohos、boundary、build/真机与未执行项如实；无无关重构、敏感值、BOM 或 diff whitespace |
 
 不要把一次 mounted、一次 .tr、一次 standard analyze 或“公共实现”当作整类风险已关闭。

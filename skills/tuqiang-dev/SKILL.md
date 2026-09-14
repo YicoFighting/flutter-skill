@@ -2,7 +2,7 @@
 name: tuqiang-dev
 description: 开发、修复、测试或评审 Tuqiang Flutter monorepo；修改账号、请求、缓存、页面、状态、路由、国际化或异步逻辑时，强制区分个人/企业模式，并按需覆盖 Android、iOS、HarmonyOS、地图和设备页面变体。
 metadata:
-  version: "2.0.1"
+  version: "2.1.0"
 ---
 
 # Tuqiang Flutter 开发
@@ -19,6 +19,7 @@ metadata:
     用户行为与验收：<条件、操作、可观察结果>
     accountMode：personal | enterprise | both | unknown
     平台/target：Android/iOS standard | HarmonyOS ohos | multiple | unknown
+    构建变体：<仅涉及原生/打包差异时填写 flavor/channel/SDK>
     owner：<app/feature/shared/core/plugin>
     用户可见文本：是 | 否
     异步后发布 UI/状态/副作用：是 | 否
@@ -72,6 +73,7 @@ Provider/family、网络和路由分别读取 [状态](references/state-manageme
 | 可见文本、语言切换与 RTL | [i18n.md](references/i18n.md) |
 | 尺寸、安全区与多语言布局 | [sizing-ui.md](references/sizing-ui.md) |
 | 设计源和 package asset | [assets-guide.md](references/assets-guide.md) |
+| 构建、推送、广告、渠道与 SDK 选择 | [构建上下文](../tuqiang-project-map/references/build-runtime-context.md) |
 | 测试命令和验证证据 | [testing.md](references/testing.md) |
 | 权限流程 | [permissions.md](references/permissions.md) |
 | 平台插件与降级 | [compatibility.md](references/compatibility.md) |

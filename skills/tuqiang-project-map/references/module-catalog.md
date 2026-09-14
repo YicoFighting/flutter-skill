@@ -73,6 +73,7 @@
 - 尚未下沉的 manager/model/viewmodel/tools 位于 `apps/tuqiang_app/lib/app/legacy_shared`；设备列表等组合页面也可位于 App 层。当前位置是事实，不代表最终设计归属。
 - 自研插件位于 `packages/plugins`，覆盖文件、日志、地图、P2P、推送、信号和视频原生能力；平台差异还可能位于 `packages/adapter` 与宿主目录。
 - 公共资源位于 `packages/assets_common`；feature 私有资源位于 `packages/feature/<owner>/assets` 并由 asset 常量暴露。
+- Android 推送还包含 plugin 内原生 Gradle module，广告由宿主选择真实或空实现；依赖选择和运行时工厂见 [构建上下文](build-runtime-context.md)，不能仅看 Dart pubspec。
 - 个人/企业账号相关 owner 先按 [account-mode.md](account-mode.md) 追 session、composition、Repository 与缓存，不以“公共包”推断 `both`。
 
 ## Owner 定位顺序

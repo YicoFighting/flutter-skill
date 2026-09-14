@@ -17,6 +17,7 @@
 | 字段 | 内容 |
 |---|---|
 | 模式/product/accountMode/target | Bug、需求或混合；Tuqiang；personal/enterprise/both/unknown；standard/ohos/both/unknown |
+| 构建上下文（相关时） | platform、flavor、distributionChannel、SDK；区分母包、分渠道产物及各自验证证据 |
 | 范围与基线 | commit/range/diff/file/symbol；分支、short HEAD、相关未提交状态 |
 | 日期与验证 | 本地日期；用户确认、test、analyze、真机/集成分别记录 |
 | Git 置信度 | 引入、暴露、修复分别为已确认/高度可能/候选/无法确定/不适用 |

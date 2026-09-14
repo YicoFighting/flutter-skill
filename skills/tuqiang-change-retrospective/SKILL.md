@@ -3,7 +3,7 @@ name: tuqiang-change-retrospective
 description: 仅在用户明确要求时，复盘已经完成的 Tuqiang Flutter Bug、需求或混合改动；基于当前源码、Git 与验证证据生成学习 Markdown，覆盖账号模式、国际化、异步生命周期和业务链。只读调查，不修改业务代码或 Git。
 license: Apache-2.0
 metadata:
-  version: "2.0.1"
+  version: "2.1.0"
 ---
 
 # Tuqiang 变更复盘
@@ -23,6 +23,7 @@ metadata:
     product: Tuqiang
     accountMode: personal | enterprise | both | unknown
     target: standard | ohos | both | unknown
+    buildVariant: <构建/原生差异相关时的 flavor/channel/SDK>
     scope: <commit/range/diff/file/symbol>
     acceptance: <症状或目标、期望、验证状态>
     output: <用户路径、项目约定或 docs/learning>
@@ -38,6 +39,7 @@ metadata:
 | 引入、暴露、修复与防线缺失 | [git-causality.md](references/git-causality.md) |
 | 每次最终文档 | [report-contract.md](references/report-contract.md) |
 | owner 或业务链不清 | [项目地图](../tuqiang-project-map/SKILL.md) |
+| 构建/渠道/原生依赖影响结论 | [构建上下文](../tuqiang-project-map/references/build-runtime-context.md) |
 | 可见文本或语言切换 | [国际化](../tuqiang-dev/references/i18n.md) |
 | 实现约束需要核验 | [开发规范](../tuqiang-dev/SKILL.md) 的对应 reference |
 | 用户要求 Web 对照 | [flutter-to-web](../flutter-to-web/SKILL.md) |
