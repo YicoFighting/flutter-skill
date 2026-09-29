@@ -1,6 +1,6 @@
 # Tuqiang 模块目录与职责
 
-本目录用于定位当前 owner，不代替源码核验。先确认账号模式与运行入口，再由 import、barrel/router、composition、调用者和测试证明归属。
+本目录用于定位当前 owner，不代替源码核验。从问题对应的入口查 import、barrel/router、composition 或调用者；账号/平台仅在影响归属和行为时展开。
 
 ## Apps 与宿主
 
@@ -24,7 +24,7 @@
 | `core_log` | Dart/native 统一日志能力 |
 | `core_region` | 地区检测 |
 | `core_share` | 跨平台分享 |
-| `core_ui` | 公共 UI、navigation contracts、checked registry、route effect、session reset contract |
+| `core_ui` | 公共 UI、navigation contracts、checked registry、route effect、session reset contract；`adaptive_layout.dart` 提供分栏与自适应路由 |
 | `core_union` | 跨 core 公共能力 |
 | `core_webview` | WebView 工具与页面基础设施 |
 
@@ -41,7 +41,7 @@
 | `shared_advertising` | 广告 model/state/repository、曝光与点击 | package barrel、根 Provider override |
 | `shared_command` | 跨设备指令、远程设置与指令历史 | package barrel、调用方 |
 | `shared_device` | 设备 identity、目录、能力、选择与外部 runtime contract | `device_catalog_provider.dart`、`device_core_commands.dart`、`device_core_runtime.dart` |
-| `shared_location` | 定位状态、属性、能力、逆地理编码与展示派生 | `location_providers.dart`、`src/data`、`src/presentation` |
+| `shared_location` | 定位状态、属性、能力、逆地理编码、展示派生与地图面板 | `location_providers.dart`、`src/presentation/location_display_utils.dart`、`widgets/map_panel_layout.dart` |
 | `shared_media` | 播放、进度、文件、下载与视频设备 key | `media_download_queue_provider.dart`、`src/data` |
 | `shared_message` | 消息、告警、设备摘要与已读状态 | package barrel、根 Provider override |
 
@@ -78,12 +78,9 @@
 
 ## Owner 定位顺序
 
-1. 确认 `accountMode`、平台和可观察入口。
-2. 从 Page/route/asset 常量查定义、barrel 与最终 builder。
-3. 查 feature router/contract、shared 领域包和 `bootstrap.dart` override。
-4. 多业务共用且带业务语义时核对 `shared_*`；无业务语义基础设施再核对 `core_*`。
-5. 涉及原生能力时查 plugin、adapter、宿主 override 与目标平台实现。
-6. 多个 owner 都合理且需求不足以排除时，列证据并请求最小澄清。
+从 Page/route/asset 常量查定义与调用者；跨包 contract 继续追 feature router 和 `bootstrap.dart` override。带业务语义的共用能力先查 `shared_*`，基础设施查 `core_*`；原生能力再追 plugin、adapter 和宿主。归属已明确即可停止，不要求每题都读所有层。
+
+调查现有状态、展示函数或组件是否可复用时，使用 [本地封装与复用](../../tuqiang-dev/references/local-style-and-reuse.md) 的入口与边界；本技能只报告事实。
 
 ## 实时核验
 

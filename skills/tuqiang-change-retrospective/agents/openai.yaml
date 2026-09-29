@@ -1,7 +1,7 @@
 interface:
   display_name: "途强变更复盘"
-  short_description: "复盘 Tuqiang 已完成改动，核对账号模式、国际化与异步防线"
-  default_prompt: "使用 $tuqiang-change-retrospective 复盘刚完成的 Tuqiang 改动，核对 accountMode、国际化和异步生命周期，并生成学习 Markdown。"
+  short_description: "按改动规模复盘 Tuqiang 已完成需求或修复，记录证据与验证"
+  default_prompt: "使用 $tuqiang-change-retrospective 复盘刚完成的 Tuqiang 改动，说明关键原因或实现、证据与验证，生成简洁的学习 Markdown。"
 
 policy:
   allow_implicit_invocation: false

@@ -1,39 +1,24 @@
-# Bug 复盘剧本
+# Bug 复盘
 
-用于已完成的 Tuqiang Bug 或 hybrid 中的 Bug 卡。先确定被破坏的不变量，再追传播链、Git 角色和缺失防线。
+解释已经完成的 Tuqiang 修复：用户看到什么、正确行为是什么、哪条约束被破坏、修复如何恢复它。仅追能连接原因与症状的证据；期望若来自推测须标明。
 
-## 问题卡
+## 原因与修复
 
-| 字段 | 内容 |
-|---|---|
-| accountMode / target | personal/enterprise/both/unknown；standard/ohos/both/unknown；附依据 |
-| 症状与触发 | 用户所见；入口、参数、时序、设备、账号或生命周期条件 |
-| 期望 / 实际 / 不变量 | 正确规则、偏离结果、任何时序和模式都必须成立的约束 |
-| 验证 | 用户确认、测试、静态、真机/集成分别记录 |
+从触发条件找到错误发生点和最终消费者。简单默认值或条件修复可以用一段前后对照；跨文件、异步或响应式问题再区分事件、数据完成和状态/UI 更新，不强制完整泳道图。
 
-期望若来自推测就标推断。账号相关结论读 [账号模式事实](../../tuqiang-project-map/references/account-mode.md)，不从 accountType 或目录猜。
+说明修复阻断了哪一步，以及已有测试、复现或用户确认实际证明了什么。当前代码写 `path:line`，历史代码写 `path@sha`，不伪造旧行号；未提交修复注明其工作区状态。
 
-## 因果与三条流
+## 只查相关防线
 
-    根因/防线缺失 → 错误身份/参数/时序/资源
-    → Repository/Provider/Manager 错误写入 → UI/副作用 → 症状
+- 账号来源或数据隔离问题：[账号模式](../../tuqiang-project-map/references/account-mode.md)。
+- 文案、缺 key、fallback 或展示取值问题：[国际化与展示边界](../../tuqiang-dev/references/i18n.md)。
+- 重复封装、计算与副作用混杂：[本地风格与复用](../../tuqiang-dev/references/local-style-and-reuse.md)。
+- 旧结果、owner 或资源问题：[异步生命周期](../../tuqiang-dev/references/async-lifecycle.md)。
 
-再拆成同步事件、异步数据、状态/UI 三条泳道，标出 await、loading/error/empty、重复操作、旧响应和身份切换；不得画成同步栈。
+规则用于解释本次原因与修复，不扩大为全账号、全语言、全平台检查。
 
-针对范围判断：账号来源、请求/DTO、缓存/Provider identity、UI 与 reset；可见文本的硬编码、缺 key、占位符和翻译缓存；异步的 owner、新鲜度、account/device/key/session 身份和资源释放。详细定义回到 [账号模式](../../tuqiang-project-map/references/account-mode.md)、[国际化](../../tuqiang-dev/references/i18n.md) 与 [异步生命周期](../../tuqiang-dev/references/async-lifecycle.md)，纯 Repository 不机械要求 mounted。
+## 历史和预防
 
-## 修复证据
+用户要求历史归因，或它影响根因结论时，按 [Git 因果](git-causality.md) 区分引入、暴露、修复和防线缺失；不把最近提交或 blame 结果自动认定为根因。
 
-| 步骤 | 修复前 | 修复后 | 恢复的不变量 |
-|---|---|---|---|
-| 模式/参数 |  |  |  |
-| 异步/数据 |  |  |  |
-| 状态/UI/清理 |  |  |  |
-
-最小证据覆盖入口、错误条件、修复点、最终消费者和回归测试。历史代码写 path@sha，当前代码写 path:line；不伪造旧行号。
-
-## Git 与预防
-
-按 [Git 因果](git-causality.md) 分开缺陷引入、问题暴露、修复与防线缺失，每个角色独立给证据和置信度。本次实际排查只写发生过的步骤，推荐流程另列。
-
-预防措施必须对应本根因：代码门禁、修复前失败/修复后通过的测试、2–4 个评审问题、脱敏可观测字段，以及相关账号/target/语言/key/前后台回归。最终结构与检查统一按 [输出契约](report-contract.md)。
+预防措施应直接对应根因，例如现有边界中的一处约束或能复现本症状的回归用例。没有证据的历史、排查步骤或测试结果如实保留未知，不为凑数量追加评审问题与检查矩阵。文档形式见 [输出约定](report-contract.md)。

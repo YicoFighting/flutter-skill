@@ -9,9 +9,9 @@
 - 定位权限与系统定位服务开关分别判断；
 - 平台差异集中在 manager/plugin/adapter，不散落页面；
 - 权限文案属于用户可见文本，必须按 [国际化规范](i18n.md) 覆盖当前所有 locale；
-- 个人/企业流程若入口或能力不同，分别验证；没有差异时任务卡标记 `both`。
+- 个人/企业流程若入口或能力不同，分别验证；共同实现可合并说明。
 
-原生声明在 `apps/standard/android`、`apps/standard/ios`、`apps/ohos/ohos`。按 [平台覆盖门](implementation-coverage.md) 逐端检查权限项、用途文案、channel/authority 与 Dart 行为：Bug 闭环 Android+OHOS 并列 iOS 影响；新需求三端代码完整。某端无需修改必须有已有声明或不可达证据。
+原生声明在 `apps/standard/android`、`apps/standard/ios`、`apps/ohos/ohos`。按 [实施覆盖](implementation-coverage.md) 检查本次受影响端的权限项、用途文案、channel/authority 与 Dart 行为；通用需求核对可达端，用户明确范围优先。无需修改用现有声明或不可达证据说明。
 
 真机行为按风险覆盖：
 
@@ -20,4 +20,4 @@
 → 永久拒绝 → 设置引导 → 系统服务关闭/恢复
 ```
 
-运行受影响 package/target analyze、`-ProductScope tuqiang` 与 contract 测试。没有真机结果时写“未执行/交接”，不能从编译通过推断授权流程通过。
+按 [测试规范](testing.md) 选择受影响 owner 的检查；原生权限配置或边界变化才增加对应宿主/构建/架构检查。没有真机结果时写“未执行/交接”，不能从编译通过推断授权流程通过。

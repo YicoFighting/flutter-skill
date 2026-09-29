@@ -12,7 +12,7 @@
 | FutureProvider.autoDispose.family | monitorDeviceInfoProvider | keyed AsyncValue 与底层 Future |
 | NotifierProvider.autoDispose.family | mediaDownloadQueueProvider、cameraProvisioningFlowProvider | build(key)、state 与 lifecycle epoch |
 
-每条链记录声明、State/Notifier、Container、key 来源、写入、消费、销毁/reset 和账号 scope。
+先查问题对应的声明、key、写入或消费；生命周期/跨账号问题再展开 Container、销毁/reset 与账号 scope，不把整张拓扑当作每次回答的前置条件。
 
 provider(arg) 选择 keyed 实例，不是给全局 State 临时传参。展示 key 字段和 ==/hashCode；数据受账号模式影响时，还要证明 key、上游 cache scope 或 reset 隔离了账号。代表 value object：DeviceCoreRef、LocationDeviceRef、VideoDeviceRef。
 
@@ -48,4 +48,4 @@ invalidateExternalContext/requestExternalContext 只是 contract callback，必�
 
 ## 调查输出
 
-除 Riverpod 外同时搜索 setState、Manager、Controller、Timer/Stream、plugin callback、直接 HTTP 与持久化。最终按“定义 → key/实例 → 写入 → 保存 → 订阅/读取 → UI → 清理”输出当前路径、symbol 和实时行号，不能把 shared 目录名当作 owner 结论。
+沿当前链实际经过的 setState、Manager、Controller、Timer/Stream、plugin callback、HTTP 或持久化补足证据，不为凑全状态类型扩大搜索。输出能解释问题的关键跳与当前行号；只有完整状态调查才展开“定义 → key/实例 → 写入 → 保存 → 消费 → 清理”。

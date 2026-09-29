@@ -1,50 +1,25 @@
-# 完整业务链追踪
+# 跨文件业务链追踪
 
-从用户可感知入口解释 Tuqiang 事件、数据、状态和 UI。上下文卡沿用 SKILL.md；账号敏感链先读项目地图的 [账号模式事实](../../tuqiang-project-map/references/account-mode.md)。
+用于用户要求完整流程，或必须跨文件才能解释的行为。单个字段、函数或组件问题无需展开所有维度。
 
-## 三条链
+从用户给定的入口或 symbol 开始，围绕问题沿上下游取证：谁触发、参数从哪来、实际实现是谁、数据在哪转换/写入、最终谁消费。只有并发写入、账号/设备切换或退出影响结论时，再追旁路和清理。
 
-    事件：操作/生命周期 → Widget → Command/Notifier/Controller → Repository
-    数据：route/key/input → HTTP/cache/plugin → DTO/Model → State
-    更新：state/Manager/cache → notify/derive → build/listener → UI/副作用
+涉及异步或响应式更新时，区分：
 
-按时间拼合，但不要伪装成同步栈。每个 await、listener、post-frame 和 rebuild 都标出触发者。
+    事件：操作/生命周期 → Widget callback → command
+    数据：输入 → HTTP/cache/plugin → Model/错误 → State
+    更新：状态通知/派生 → build/listener → UI/副作用
 
-## 从锚点向外追
+这些是分析维度，不是每次必交的三个图。await、listener、post-frame 与 rebuild 要说明触发关系，不能连成同步栈。
 
-| 方向 | 问题 |
-|---|---|
-| 向上 | 谁创建 Widget/Provider/Controller；哪个 route、builder、override、用户事件或 callback 让代码运行 |
-| 向下 | 参数如何进入 Repository/HTTP/cache/plugin；DTO 如何映射；loading/error/empty 在哪发布 |
-| 向旁 | 谁还写同一 State/Manager/cache；refresh、push、Timer、session reset 是否竞争 |
-| 向外 | 哪个 watch/select/listener/mapper 消费哪个字段，最终哪个 Widget 或插件变化 |
+## 关键证据
 
-遇到 contract provider、runtime callback、route registry 或 barrel 继续追到实际实现，不能停在接口。账号模式逐段记录分流、共享与汇合；both 必须有个人和企业两条证据。
+- route、contract provider、callback 或 barrel 不能替代实际 builder/override/实现。
+- 状态身份仅追影响当前行为的 family key、account/device/session 和 reset；路由参数、action 参数与持久 State 分开讲。
+- 字段问题沿“来源 → Model/mapper → 消费者”追一次。fallback、空值和展示兼容统一参考 [国际化与展示边界](../../tuqiang-dev/references/i18n.md)，指出当前由谁负责，避免建议在多层重复处理。
+- 要解释“为什么采用这种实现”时，先核验现有 owner 和封装，参考 [本地风格与复用](../../tuqiang-dev/references/local-style-and-reuse.md)。
+- 账号模式确实改变此链时才展开分流，依据 [账号模式事实](../../tuqiang-project-map/references/account-mode.md)；声称两种账号都成立必须有两侧证据。
 
-## 状态与字段
+检索优先从相关 owner 目录的精确 symbol 与引用开始，必要时扩大到 route、数据边界和最终消费。用当前路径与行号支持关键因果，未知的后端或插件内部行为写清停止点。
 
-对关键状态记录：
-
-| 定义/类型 | family key 与 account scope | 依赖 | 写入 | 消费 | dispose/reset |
-|---|---|---|---|---|---|
-
-路由参数、family key、单次 action 参数、State 字段和 accountMode 分开解释。字段血缘写成“外部字段 → DTO/Model → State/mapper → Widget 字段”，并覆盖 null/default、错误和空态。
-
-## 检索顺序
-
-1. 精确 symbol 与引用；
-2. route 常量、arguments 和最终 builder；
-3. Provider/Notifier/Manager/Controller 声明与读写；
-4. Repository/TQHttp/cache/plugin 与 DTO；
-5. Widget 字段、visibility、loading/error/empty；
-6. dispose/invalidate/reset、账号或 key 切换。
-
-优先在相关 owner 目录用 rg -n，常见名加类型和路径约束。只引用当前行号和最小连续源码，不复制旧 reference 行号或敏感配置。
-
-## Web 对照
-
-先说明 Flutter/Riverpod 事实，再映射用户指定框架。完整实现必须逐段对应 operation、route/props、accountMode、keyed store/query、异步请求、状态写入、selector/effect、UI 和 cleanup；未要求时不展开两套代码。
-
-## 完成
-
-输出一句业务结论、上下文卡、三条链、状态身份表、字段血缘、逐跳证据、生命周期/竞态与未知边界。设备、地图和平台矩阵只在影响结论时从项目地图加载。
+输出先给业务结论，再解释必要的链和证据。Web 对照按用户指定框架给出；完整示例才需要逐段对应操作、参数、请求、状态、UI 和清理。

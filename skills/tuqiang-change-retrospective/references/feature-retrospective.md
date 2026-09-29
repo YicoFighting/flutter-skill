@@ -1,36 +1,21 @@
-# 需求复盘剧本
+# 需求复盘
 
-用于已完成的 Tuqiang 需求或 hybrid 的需求主线。按“用户价值 → 可验收行为 → 规则 → 数据/状态 → 实现 → 证据”下钻，不按文件清单叙述。产品理由只有用户、工单或明确说明可证明时才写事实。
+解释已完成的 Tuqiang 需求，或混合改动中的需求主线。从“用户目标 → 可验收行为 → 关键实现 → 证据”展开；不按文件清单堆叙述。产品动机只有用户、工单或明确说明支持时才写为事实。
 
-## 范围与取舍
+## 聚焦真正的决定
 
-记录 accountMode、target、用户入口、正常/loading/empty/error/权限/取消分支、不在范围内行为，以及代码存在、测试通过、用户确认、真机未验证等不同状态。both 必须有两侧证据。
+- 哪个行为完成了，验收来自哪里，哪些部分尚未验证？
+- 使用了哪个现有 owner、状态、函数或组件，为什么适合本次需求？规则见 [本地风格与复用](../../tuqiang-dev/references/local-style-and-reuse.md)。只调查实际新增或变化的部分，不将需求复盘扩展为全仓重构评审。
+- 如果数据流决定行为，追输入、关键转换/状态写入和最终消费者；不涉及数据流的样式或文本变更无需三条流或血缘表。
+- loading/error/empty、账号/平台、生命周期等分支仅在影响验收时展开，不能用“代码已存在”替代验证结果。
 
-| 决策 | 证据 |
-|---|---|
-| owner 与复用 | route、barrel、调用方、测试、pubspec；复用的现有 symbol/contract |
-| 状态与数据 | Widget State、Provider family/Notifier、Manager/cache；Repository/HTTP/plugin/storage |
-| 平台与账号 | standard/ohos adapter/override；模式来源、请求/DTO、cache、UI、reset |
+需要说明取舍时用当前契约和调用方证据支持，“为了可维护性”本身不能证明原因。Git 无法证明开发顺序时，可标“按最终 diff 解释”，不编造开发经过。
 
-“为了可维护性”不是证据；说明为何选择现有 owner 和契约。
+## 条件性核验
 
-## 输入输出与三条流
+- 账号差异：[账号模式](../../tuqiang-project-map/references/account-mode.md)。声称两种账号均成立需要两侧证据。
+- 翻译、fallback 或展示值：[国际化与展示边界](../../tuqiang-dev/references/i18n.md)。核验兼容处理由谁承担，避免将多层兜底描述为必要实践。
+- 新增计算或副作用：[本地风格与复用](../../tuqiang-dev/references/local-style-and-reuse.md)。核验本地封装及纯函数/IO 边界。
+- 生命周期或竞态：[异步生命周期](../../tuqiang-dev/references/async-lifecycle.md)。
 
-| 输入/来源 | accountMode/身份 | 转换/校验 | 状态写入 | 输出/消费者 | 证据 |
-|---|---|---|---|---|---|
-
-输入可来自操作、route/deep link/push/native callback、family key、session、API/cache/plugin 或 bootstrap。若个人/企业任一列不同，分两行。
-
-    同步事件：操作 → Widget callback → command → 发起数据操作
-    异步数据：输入/身份 → await → Model/错误 → 接受或丢弃
-    状态/UI：状态写入 → 派生/通知 → Widget 或副作用
-
-说明 accountMode 和参数如何产生、数据在哪转换、State 按何种 key/session 隔离、谁消费，以及离开页面、切账号/设备、重复操作和旧响应如何处理。
-
-## 防线与证据
-
-只对相关项记录账号入口/请求/cache/UI/reset，i18n 的复用 key/全 locale/占位符/动态翻译，以及异步 owner/新鲜度/身份/释放。详细规则回到 [账号模式](../../tuqiang-project-map/references/account-mode.md)、[国际化](../../tuqiang-dev/references/i18n.md) 和 [异步生命周期](../../tuqiang-dev/references/async-lifecycle.md) 事实源。
-
-最小源码覆盖入口、状态 owner、数据边界、账号分支、写入、最终 UI/副作用和测试。按解决问题的逻辑顺序讲实现；Git 无法证明实际开发顺序时标“按最终 diff 教学重组”。
-
-hybrid 中每个 Bug 卡说明它是新引入、暴露旧问题还是独立修复，影响主链哪一步和哪种 accountMode，并给 Git 四类角色与回归；复杂项读取 [Bug 剧本](bug-retrospective.md)。最终结构按 [输出契约](report-contract.md)。
+混合改动在相关步骤说明 Bug 是新引入、暴露旧问题还是独立修复；证据不足时保留未知，不强行给四类 Git 角色。复杂 Bug 读取 [Bug 复盘](bug-retrospective.md)，输出按 [输出约定](report-contract.md)。

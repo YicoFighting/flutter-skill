@@ -1,65 +1,46 @@
 ---
 name: flutter-to-web
-description: 面向 Vue3/React 开发者解释 Tuqiang Flutter monorepo 的真实业务链；从当前源码核验个人/企业账号、用户事件、异步数据、Riverpod/混合状态与 UI，并按需给出 Web 对照。只讲解，不修改代码。
+description: 面向 Vue3/React 开发者，从当前 Tuqiang 源码解释目标功能、状态与 UI，并按需给出 Web 对照。只讲解，不修改代码。
 license: Apache 2.0
 metadata:
-  version: "2.1.0"
+  version: "2.2.0"
 ---
 
-# Tuqiang Flutter 业务链讲解
+# Tuqiang Flutter 讲解
 
-只解释 Tuqiang，不搜索、比较或汇报其他产品线业务。目标不是逐句翻译 Dart，而是从用户可感知操作讲清数据如何取得、状态如何发布、UI 为什么变化。代码修改与验证交给 tuqiang-dev。
+围绕用户的问题解释当前 Tuqiang 实现。先讲结论，再用最短的源码因果链说明为什么；不逐句翻译 Dart，不扩展到其他产品线。需要修改业务代码时使用 tuqiang-dev。
 
-## 上下文
+## 先确定问题边界
 
-按 [项目根目录协议](../tuqiang-project-map/references/project-root-discovery.md) 校验当前 checkout，并先标注：
+按 [根目录协议](../tuqiang-project-map/references/project-root-discovery.md) 确认 checkout 并读取项目 AGENTS.md。已有有效上下文可复用；路径、symbol、行号和依赖版本以当前源码为准。
 
-    product: Tuqiang
-    accountMode: personal | enterprise | both | unknown
-    platform/target: Android/iOS standard | HarmonyOS ohos | multiple | unknown
-    buildVariant: <仅构建/原生差异相关时记录 flavor/channel>
-    entry: <操作、路由或生命周期>
-    end: <UI、Repository、缓存或插件边界>
+单个字段、组件或状态问题，只追足以解释它的入口、转换和消费；用户要求完整流程或局部证据无法解释行为时，才展开跨文件链。账号、平台、构建差异只在会改变结论时核验并说明，不要求输出固定上下文卡。
 
-登录/session、HTTP/DTO、设备目录、消息、权限、缓存、页面可见性、首页/Mine、切换或退出账号时，必须读取 [账号模式事实](../tuqiang-project-map/references/account-mode.md) 并核验 isEnterprise 传播链。unknown 不得静默当成公共行为；多个解释会改变结论且源码无法排除时，只问一个必要问题。
+账号敏感逻辑读取 [账号模式事实](../tuqiang-project-map/references/account-mode.md)，沿实际 `isEnterprise` 来源核验；不能从目录、accountType 或 target 猜测，也不能将 unknown 当成共享行为。
 
-事实优先级：项目 AGENTS.md 与当前源码/pubspec/lockfile/测试/tool/CI → 本次核验后的 [项目地图](../tuqiang-project-map/SKILL.md) → 当前依赖版本的一手官方文档 → Web 类比。路径、symbol、版本和行号每次重查。
+## 解释规则
 
-## 追踪闭环
-
-跨文件问题读取 [完整追踪](references/full-flow-tracing.md)，状态问题再读 [状态与 Riverpod](references/state-and-riverpod.md)。始终分开：
-
-    事件：用户操作 → Widget 回调 → Command/Notifier → Repository
-    数据：请求 → await → DTO/Model → State/缓存
-    更新：状态通知 → 派生重算 → build/listener → 字段展示
-
-按问题裁剪，但不可漏掉真实入口与 route builder、Provider override/composition、请求或插件边界、loading/error/empty、状态写入与最终消费、key/session/accountMode 身份，以及 dispose/invalidate/reset。不要把异步完成和响应式重建画成同步调用栈。
-
-每个关键状态说明六项：定义、实例身份/family key、依赖 read/watch/listen/select、写入源、UI 消费、生命周期与旧结果淘汰。路由参数、family key、账号模式、单次 action 参数和 State 字段不能混为一类。
-
-## 证据与 Web 对照
-
-每个关键跳提供当前仓库相对路径、1-based 行号、最小 Dart 证据及其因果作用；优先 rg -n 搜 symbol。只展示接口名和语义，不泄露 endpoint、Token、Key、证书或生产配置。
-
-- 用户指定 Vue3 或 React：只给该框架。
-- 未指定：给简洁 Web 心智模型。
-- 只有明确要求迁移、完整实现或双框架比较时才展开代码；操作、route/props、accountMode、keyed store/query、请求、状态、UI 和 cleanup 必须与 Dart 链逐段对应。
-
-常用近似：Widget.build ≈ render/template；StatefulWidget ≈ 组件局部状态；Provider.family ≈ keyed store/query；watch(select) ≈ selector/computed；ProviderScope override ≈ Context/provide 组合根。类比不能替代框架事实。
+- 关键结论提供当前路径、1-based 行号和必要的最小源码；区分事实、推断与证据停止点，不复制旧 reference 的行号。
+- 遇到接口、barrel、route registry 或 Provider override，追到影响本题的实际实现；无需遍历无关入口和分支。
+- 异步和重建相关问题区分“事件发起、数据完成、状态通知/UI 消费”，不要画成同步调用栈。只解释影响结论的身份、错误/空态、竞态与清理。
+- 讲状态时按需说明定义、实例 key、写入和消费；不要把 route 参数、family key、单次 action 参数和 State 字段混为一类。
+- 用户指定 Vue3 或 React 时只用该框架；未指定时给简短心智模型。只有用户要求时才展开完整代码或双框架比较，且标明类比与真实 Flutter 行为的差别。
+- 解释现有封装和数据来源；若当前实现有问题，应指出证据，不把它作为推荐模式，也不顺手修改代码。
 
 ## 按需读取
 
-| 场景 | Reference |
+| 问题 | Reference |
 |---|---|
-| 完整跨文件链路与字段血缘 | [full-flow-tracing.md](references/full-flow-tracing.md) |
-| Riverpod family、混合状态与生命周期 | [state-and-riverpod.md](references/state-and-riverpod.md) |
-| route、arguments/result 与 effect | [routing.md](references/routing.md) |
-| Future、HTTP、账号身份与竞态 | [async-networking.md](references/async-networking.md) |
-| 约束、尺寸、多语言布局与字段展示 | [layout-ui.md](references/layout-ui.md) |
-| Widget context、监听与资源释放 | [widget-lifecycle.md](references/widget-lifecycle.md) |
+| 完整流程或跨文件字段血缘 | [完整追踪](references/full-flow-tracing.md) |
+| Provider、混合状态、实例身份 | [状态与 Riverpod](references/state-and-riverpod.md) |
+| 页面入口、传参和返回值 | [路由](references/routing.md) |
+| 请求、异步结果和竞态 | [异步网络](references/async-networking.md) |
+| 约束、布局和字段展示 | [布局 UI](references/layout-ui.md) |
+| Widget 生命周期或资源释放 | [Widget 生命周期](references/widget-lifecycle.md) |
+| 翻译 fallback、默认文案或展示取值 | [国际化与展示边界](../tuqiang-dev/references/i18n.md) |
+| 本地状态/函数/组件复用、新增计算的纯函数边界 | [本地风格与复用](../tuqiang-dev/references/local-style-and-reuse.md) |
+| 平台、渠道或原生 SDK 差异 | [构建上下文](../tuqiang-project-map/references/build-runtime-context.md) |
 
-安装包差异、推送或广告链读取 [构建上下文](../tuqiang-project-map/references/build-runtime-context.md)，继续追原生 module、channel 与实际 factory；不要用相同 Dart 页面推断相同行为。设备、地图或定位问题再从项目地图读取对应专题；不要一次加载全部 reference。
+项目规则和当前源码优先于 references；只读取当前问题需要的资料。设备、地图、定位等 owner 不明时，从 [项目地图](../tuqiang-project-map/SKILL.md) 定位。
 
-## 完成条件
-
-回答必须包含上下文卡、三条链、关键状态身份、账号分支、实时证据、外部边界和按用户需要选择的 Web 对照；明确 loading/error/empty、竞态、缓存与清理，并区分已证实事实、推断和未知。
+回答长度跟随问题规模：能用一段结论和两处证据讲清就到此为止；复杂流程再用链图或表格，不固定输出三条链、全状态卡或全量风险检查。

@@ -4,12 +4,13 @@
 
 | Diff 风险 | 必查 |
 |---|---|
-| 登录/session/请求/cache/UI 分支 | accountMode 来源是 isEnterprise；personal/enterprise 的请求、identity/cache、UI、切换/退出与测试均闭合 |
-| 可见文本或语言切换 | 当前 manifest 全 locale、非空值、占位符、动态翻译；Auth/Mine、Arabic RTL；运行 i18n validator |
+| 登录/session/请求/cache/UI 分支 | 按本次改变的账号行为核验 isEnterprise 与相关两侧分支；身份/隔离变化再追请求、cache、UI 和切换/退出，不因已有分支审计整条会话 |
+| 可见文本或语言切换 | 按 [国际化](i18n.md) 区分 key/已译文本/业务值；无重复翻译、fallback 或逐层兼容；相关 key 全 locale/占位符校验，切语言与 RTL 按可达范围验证 |
 | await/Timer/listener/plugin | owner、新鲜度、account/device/key/session 身份、资源释放；success/catch/finally/whenComplete 全出口 |
-| Riverpod | WidgetRef mounted；Notifier 每轮 epoch；StateNotifier super.dispose；onDispose 不冒充 await barrier；autoDispose 命令有监听/keepAlive |
+| Riverpod | 复用已有状态身份与订阅；本次改变异步发布、重算/销毁或命令保活时才按 [异步规则](async-lifecycle.md) 检查对应 owner，不为同步 Provider 新增 epoch |
 | JSON/网络 | DTO/parser 收窄动态类型；nullable/default/清空语义、错误和脱敏正确 |
 | State/route | family key、route/action 参数和 State 字段不混；arguments/result/栈与 route effect 不意外变化 |
+| 复用/新增计算 | 按 [复用与纯函数](local-style-and-reuse.md) 复用已有状态/函数/组件；新计算显式输入、无全局读取/副作用/输入修改 |
 | owner/公共 API | 位于真实 app/feature/shared/core/plugin；跨包只用公开 API；全部现有调用契约已查 |
 | 平台/地图/设备 | 受影响端的共享/专属实现；真实地图行为变化才检查七候选；确认范围内受影响的 route leaf |
 | asset/布局/权限 | pubspec/package/语言状态正确；无假切图；.sc、SafeArea、权限用途与真机流程合理 |

@@ -7,7 +7,7 @@
 - 沿用 `core_http` 的 `TQHttp` 和当前 owner 的 loading/error/timeout 处理，不在 Feature 内另建 Dio。
 - `ResultModel` 以 `result.success` 判断成功，错误文案沿当前约定使用 `result.desc`；`result.data` 在 Repository/parser 边界通过 `TCheck<T>` 或明确 parser 收窄。
 - 请求 DTO 与响应 Model 分开；required、nullable、默认值、兼容字段和“省略/显式清空”来自接口契约。
-- 不把 `List<dynamic>` 或未校验 JSON 扩散到业务层；Model 不承载页面标题、按钮等 UI 文案。
+- 不把 `List<dynamic>` 或未校验 JSON 扩散到业务层；有契约依据的字段兼容只在 parser/Model 边界标准化一次，下游不重复兜底。新增映射遵守 [纯函数规则](local-style-and-reuse.md)，Model 不承载页面标题、按钮等 UI 文案。
 - endpoint、DTO/Model 和 Repository 放真实 Feature 或职责匹配的 `shared_*` owner。是否抽 Repository 接口取决于已有边界、注入和测试需求，不堆单点空壳。
 
 ## 账号、异步与安全
@@ -20,4 +20,4 @@
 
 ## 验证
 
-覆盖 DTO/parser 边界、personal/enterprise 契约、成功/失败/超时及相关并发；命令和证据等级统一见 [测试规范](testing.md)。fake 通过不等于后端联调通过。
+按本次改变的边界选择 DTO/parser、账号分支、成功/失败/超时或并发用例；不因文件含请求就全量覆盖。命令和证据等级统一见 [测试规范](testing.md)。fake 通过不等于后端联调通过。

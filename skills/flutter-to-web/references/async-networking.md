@@ -1,40 +1,15 @@
 # Tuqiang 异步与网络链
 
-只解释当前代码实际经过的 Repository、TQHttp、cache、database 或 plugin；不要套统一分层模板，也不要展示 endpoint、Token、Key、证书或生产配置。
+解释目标行为实际经过的 Repository、TQHttp、cache、database 或 plugin，不套统一分层模板。沿本题相关部分追踪：
 
-## 请求链
+    UI/command 输入 → 实际数据边界 → Model/错误 → State/cache → 消费者
 
-逐跳说明：
+参数或字段问题重点说明来源和转换；加载失败问题重点说明错误在哪产生、发布和消费。无需每次展开所有 loading/success/empty/error 分支。
 
-    UI/route/family key
-    → Command/Notifier/Manager
-    → Repository 或直接 TQHttp/plugin
-    → path/method/header/DTO symbol
-    → ResultModel/TCheck/fromJson
-    → State/cache
-    → Widget/listener
+请求隔离相关问题核验实际 accountMode/session/device/query scope，以及发布时是否仍接受该结果；依据 [账号模式事实](../../tuqiang-project-map/references/account-mode.md)，不从 accountType 或目录猜测。
 
-记录参数来源、默认值、序列化、响应字段映射和 loading/success/empty/error。字段血缘必须落到最终 Widget 使用的属性。
+生命周期/竞态问题分清 owner 存活、结果新鲜度、身份匹配与资源释放。它们不能互相替代，具体规则统一见 [异步生命周期](../../tuqiang-dev/references/async-lifecycle.md)。说明当前代码实际存在的保护与缺口，不把理想写法当作事实。
 
-## 账号身份
+翻译和展示兼容见 [国际化与展示边界](../../tuqiang-dev/references/i18n.md)；计算与 IO 的分工见 [本地风格与复用](../../tuqiang-dev/references/local-style-and-reuse.md)。共享规则只在对应问题出现时读取。
 
-请求可能通过 isEnterprise、DeviceAccountMode、personal/enterprise Repository/path、identifier 或 callback 分流。发起时记录 accountMode/session/device/query scope；await 后发布前验证仍是同一身份。cache、pending Future 和 family key 也必须隔离，否则 owner 仍 mounted 也会串数据。
-
-完整判定读项目地图的 [账号模式事实](../../tuqiang-project-map/references/account-mode.md)，不用 accountType、target 或调用目录猜模式。
-
-## 异步边界
-
-区分四件事：
-
-| 问题 | 常见证据 |
-|---|---|
-| owner 存活 | mounted、StateNotifier mounted、active/lifecycle epoch |
-| 结果新鲜 | generation/requestVersion |
-| 身份匹配 | account/device/family key/session 快照 |
-| 资源释放 | cancel/close/removeListener/unregister |
-
-检查 success、catch、finally、whenComplete、Timer/Stream 和 plugin callback。FutureProvider dispose 后会忽略旧状态发布，但不会自动取消底层请求或外部副作用。具体实现规则统一读取 tuqiang-dev 的 [异步生命周期](../../tuqiang-dev/references/async-lifecycle.md)。
-
-## Web 心智
-
-Future ≈ Promise，Repository ≈ API client/queryFn，AsyncValue ≈ query 状态。generation 类似 request id，family key 类似 query key，accountMode/session 必须进入身份。类比不能省略当前 Dart 的请求、映射、发布和清理证据。
+Future ≈ Promise，Repository ≈ API client/queryFn，AsyncValue ≈ query 状态。类比只服务当前问题。只引用接口 symbol 和语义，不展示 endpoint、Token、Key、证书或生产配置。

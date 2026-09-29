@@ -1,6 +1,6 @@
 # Tuqiang 状态管理
 
-Tuqiang 当前是 Riverpod、Manager/单例、Widget State、Controller、缓存与插件状态并存的混合架构。先核对当前 pubspec/lockfile；最近审计基线为 Riverpod 2.6.1。沿目标 owner 的现有模式修改，不为统一 API 重写存量。
+Tuqiang 当前是 Riverpod、Manager/单例、Widget State、Controller、缓存与插件状态并存的混合架构。先核对当前 pubspec/lockfile；最近审计基线为 Riverpod 2.6.1。先复用已有状态与 selector，沿目标 owner 的现有订阅/写入模式修改，不另建重复状态。新增派生计算遵守 [纯函数规则](local-style-and-reuse.md)，状态发布仍由原 owner 负责。
 
 ## 状态身份图
 

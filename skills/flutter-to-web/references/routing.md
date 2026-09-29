@@ -1,23 +1,11 @@
 # Tuqiang 路由导航
 
-路由链必须追齐：
+解释页面去向或传参时，追到实际 builder/Page；仅有 route string、barrel 或 contract 不足以确认行为：
 
-    用户/系统入口 → route 常量 → Navigator/封装 → arguments
-    → app/feature registry → builder → Page
-    → pop result / observer / refresh / analytics 等 effect
+    用户/系统入口 → 导航封装与 arguments → registry/builder → Page
 
-不能停在 route string、barrel 或 contract。核验 push/pushReplacement/popUntil 等栈语义、arguments 的类型/默认值/null 处理、最终 Page 以及返回后谁消费 result。
+返回刷新、副作用或栈行为属于问题时，再追 pop result、observer、pushReplacement/popUntil 等调用。无需为简单页面入口枚举全部导航 effect。
 
-分开五类身份：
+区分 route 参数（页面上下文）、family key（Provider 实例）、accountMode（账号分支）、action 参数（一次命令）和 State 字段（留存结果）。只展开当前入口经过的类型、默认值和转换。
 
-| 值 | 作用 |
-|---|---|
-| route 参数 | 把页面上下文送到入口 |
-| family key | 选择 Provider 实例 |
-| accountMode | 决定账号身份与可能的请求/UI 分支 |
-| action 参数 | 控制一次命令 |
-| State 字段 | 留存请求或计算结果 |
-
-Web 中可近似为 router params/location state → component props → keyed store/query → navigation effect，但最终以当前 Dart builder、Provider override 和副作用证据为准。
-
-设备详情任务必须继续追 deviceType/scene/cameraScene 到最终 Page 和点击区域，不能用第一个 route 代表所有设备。
+Web 可近似为 router params/location state → component props → keyed store/query；仍以当前 Dart builder 和 Provider override 为证据。设备页面若受 deviceType/scene/cameraScene 分流影响，继续追到对应 Page 与点击区域，不用第一个 route 代表所有设备。

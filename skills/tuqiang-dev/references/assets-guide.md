@@ -33,6 +33,6 @@ PNG/SVG/动画帧中的文字、语言、状态、主题和业务含义都是产
 
 - 路径、大小写、文件存在性、pubspec、package 参数和倍率配对；
 - 每种语言/状态/accountMode 实际选中目标文件；
-- 对应 Feature 资源/contract 测试、`standard/ohos` 和 `-ProductScope tuqiang`；
+- 按 [测试规范](testing.md) 选择必要的资源/contract 检查；改变打包或依赖边界才增加宿主/构建/架构检查；
 - 新页面按风险检查小屏、宽屏/折叠态和三端；
 - `git diff --check`，并确认没有临时或生成占位资源。

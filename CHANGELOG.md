@@ -5,6 +5,25 @@
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-09-29
+
+### Added
+- 开发规范明确“本地状态/selector、函数/formatter、组件/服务优先”与真实调用契约核验；缺少能力时新增业务计算必须显式输入、确定输出、无副作用，不隐式读取时钟、语言、Provider、单例或可变集合。
+- 国际化建立 source key、已译展示值、业务数据和 code/enum 四类契约；翻译只做一次，字段优先级与空值兼容只由一个 owner 处理，保留不同层真实缺失状态所需的 null 检查。
+- 补充当前 CoreAdaptiveLayout/Sections/PaneViewport/Master/PageRoute、地图面板、设备状态和展示函数检索入口，说明局部分栏尺寸、可见性与整窗 Screen 的区别。
+
+### Changed
+- 根包与 tuqiang-dev 升至 2.3.0；tuqiang-project-map、flutter-to-web、tuqiang-change-retrospective 升至 2.2.0，同步根/各 Skill README 与 package.json。四个目录已递归同步至当前用户 Gemini 全局目录，50 个文件的集合与 SHA-256 校验一致。
+- 四入口按问题与实际变更加载 references；删除必填上下文卡、统一全链路输出和固定长报告要求。简单讲解提供最短因果证据，复杂链路与历史归因按需展开，复盘仍保持显式调用及只写新 Markdown 的边界。
+- 国际化和本地复用/纯函数由 dev 的两个 reference 单点维护，其余 Skill 直接链接；状态、网络、评审与测试说明对齐，IO/状态发布仍由已有 owner 承载，不借机迁移存量 API。
+- 路由、权限、资源和覆盖文档统一按实际风险选择验证，删除残留的固定双宿主/全边界检查及无条件叶子范围询问；已有授权与源码可决定的细节直接实施。
+
+### Fixed
+- 根据当前 Tuqiang 源码修正语言选择仅 zh/en 与 manifest 仍保留多 locale 资源的混淆；覆盖依据继续使用 manifest，RTL 运行检查按本次可达语言触发。
+- 明确 TQI18nManager 已执行当前语言 → manifest fallback → 原 key，且只对 null 缺键回退；禁止页面 safeTr/trOrDefault、已译 getter 二次 .tr、译文反查状态和猜测旧字段兼容，缺译应修复资源。
+- 修正 StrongApp 仍通过 routes 表接入的过时描述，改为 onGenerateRoute → AppRouters.generateRoute → 分栏白名单/普通路由；新增 UI 说明防止在 pane 中误用整窗尺寸或重复硬编码分栏断点。
+- 保留语义相同的既有有状态 API 复用，避免把“新增纯函数”误解为重写全部旧实现；新增函数的确定性、输入不变和依赖显式化按真实业务边界验证。
+
 ## [2.2.0] - 2026-09-14
 
 ### Added

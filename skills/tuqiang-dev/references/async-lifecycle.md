@@ -20,7 +20,7 @@
 | 纯 Repository/解析，只返回值 | 无 Widget 生命周期门 | 由调用方负责 | 只取消真实可取消资源 |
 | `StatefulWidget` / `ConsumerState` 后续 `setState`、导航、Toast/Dialog、读取 `context` 或使用 `WidgetRef` | 每个 async gap 后检查 `mounted` 或目标 `context.mounted`；已销毁后也不得 `ref.read/invalidate` | 可重复操作或参数可切换时加 operation token 与参数快照 | `dispose` 释放自建资源；外部 controller 在 `didUpdateWidget` 重绑 |
 | `StateNotifier` 后续读写 `state` | `mounted` | generation/requestVersion + device/key/session/accountMode 快照 | override `dispose` 先失效 token、取消资源，最后必须 `super.dispose()`，使 mounted=false 并释放内部监听 |
-| Riverpod 2.6.1 `Notifier/AutoDisposeNotifier` | 不写不存在的 `ref.mounted`；每轮 `build` 恢复 active 状态并注册 `ref.onDispose`，dispose/recompute 时使该轮 lifecycleVersion 失效 | 每次异步操作捕获当前 lifecycleVersion，并由统一 `_isCurrent(version, key, session)` 校验 | `ref.onDispose` 只做同步取消/解绑或启动无需等待的兜底清理；需要顺序保证的异步清理由显式可 `await` 的 shutdown/clear 完成 |
+| Riverpod 2.6.1 `Notifier/AutoDisposeNotifier` | 不写不存在的 `ref.mounted`；每轮 `build` 恢复 active 状态并注册 `ref.onDispose`，dispose/recompute 时使该轮 lifecycleVersion 失效 | 每次操作捕获 lifecycleVersion，发布前在 owner 边界读取最新值并比较；优先复用现有校验 | `ref.onDispose` 只做同步取消/解绑或启动无需等待的兜底清理；需要顺序保证的异步清理由显式可 `await` 的 shutdown/clear 完成 |
 | `FutureProvider.autoDispose` 仅返回 `AsyncValue` | 无手写 mounted；dispose/recompute 后 Riverpod 忽略旧实例的状态发布 | family key 隔离实例；Future 内有外部副作用时另加 token | 底层 Future/HTTP 不会自动终止；支持取消时在同步 `onDispose` 发起取消 |
 | `ChangeNotifier`/普通 Controller | `_isDisposed`，销毁后不 `notifyListeners` | generation/operation + 身份快照 | override `dispose` 成对释放 |
 | Timer/Stream/plugin/外部 listener | 回调触碰 owner 前检查存活 | restart/replacement 时使旧 token 失效 | `cancel/removeListener/setMethodCallHandler(null)`；外部 owner 禁用不可移除的匿名 listener |
@@ -35,32 +35,19 @@ Flutter Riverpod 2.6.1 的 Widget `build/initState/dispose/didUpdateWidget/didCh
 
 仅 `read(autoDisposeProvider(key).notifier).load()` 不建立监听，不能保证异步 operation 期间实例存活。需要命令型 autoDispose owner 持续工作时，必须有真实 `watch/listen`，或由 Provider 按业务显式 `keepAlive`；不要为掩盖 owner 错误无条件保活。
 
-## StateNotifier 推荐结构
+## 发布边界
 
-```dart
-Future<void> load(DeviceKey key) async {
-  final version = ++_requestVersion;
-  final session = _sessionSnapshot();
-  final result = await repository.load(key);
-  if (!_isCurrent(version, key, session)) return;
-  state = state.withResult(result);
-}
+复用 owner 已有的 requestVersion、身份与存活判断。没有现成防线时，在启动请求前捕获本次 version/key/session，await 返回后先检查 owner 存活，再读取**此时最新**的 version/key/session 比较，通过后才发布；不能拿请求前的“当前值”与自身比较。
 
-bool _isCurrent(int version, DeviceKey key, SessionSnapshot session) {
-  return mounted &&
-      version == _requestVersion &&
-      key == _currentKey &&
-      session == _sessionSnapshot();
-}
-```
+状态读取、计数递增和发布留在已有异步 owner。确需提取比较函数时，按 [纯函数规则](local-style-and-reuse.md) 显式传入捕获值与当前值，不新建隐式读取实例字段、Provider 或 session 的 helper，也不为简单比较增加空包装。已有有状态 guard 可复用，不要求为纯度迁移存量。
 
-示例表达的是四类门，不要求每个 owner 使用相同字段名。Riverpod `Notifier` 的实例可能跨依赖重算复用，而上一轮 `ref.onDispose` 会在重算时触发。因此不能只做一次 `_disposed = true`：每轮 `build` 都要恢复 active 状态、为该轮注册同步 dispose 回调并推进/失效 epoch；异步操作捕获 epoch，发布前同时校验 active、epoch 与身份。资源字段若会在下一轮 `build` 被覆盖，dispose 闭包应捕获本轮资源，不能误关新一轮资源。
+Riverpod `Notifier` 的实例可能跨依赖重算复用，而上一轮 `ref.onDispose` 会在重算时触发。因此不能只做一次 `_disposed = true`：每轮 `build` 都要恢复 active 状态、为该轮注册同步 dispose 回调并推进/失效 epoch；异步操作捕获 epoch，发布前同时校验 active、epoch 与身份。资源字段若会在下一轮 `build` 被覆盖，dispose 闭包应捕获本轮资源，不能误关新一轮资源。
 
 `ref.onDispose` 是同步通知，不会等待 `Future`。可以同步 `cancel/removeListener/close`，或用 `unawaited` 启动无需顺序保证的兜底清理；logout、切账号、销毁下载任务等必须等待完成的流程，应提供显式 `Future<void> shutdown/clear`，由调用方先 `await`，再 invalidate/dispose。
 
 ## 测试配方
 
-使用可控 `Completer` 或 fake，不使用真实网络和固定 sleep：
+按本次改变的异步行为选择用例，使用可控 `Completer` 或 fake，不使用真实网络和固定 sleep：
 
 1. **销毁**：启动 → unmount/dispose/container.dispose → 完成 Future → 不抛异常、不发布状态或导航。
 2. **乱序**：A 启动、B 启动，按相反顺序完成 → 只保留最新 operation。
@@ -70,10 +57,6 @@ bool _isCurrent(int version, DeviceKey key, SessionSnapshot session) {
 
 项目内可检索的成熟证据包括 `device_catalog_provider.dart` 的 requestVersion + scope、`media_download_queue_provider.dart` 在每轮 `build` 恢复 active 并由 `ref.onDispose` 推进 lifecycleVersion 的做法，以及 `trace_provider_lifecycle_test.dart`、`video_alarm_notifier_lifecycle_test.dart` 的可控异步测试。样本只证明对应机制，不代表可整段照搬；引用前必须用 `rg -n` 在当前 checkout 重新定位，不保存历史行号。
 
-## 异步台账
+## 评审范围
 
-diff 新增或修改 `await/then/unawaited/Timer/listen/addListener/setMethodCallHandler/state=/setState/notifyListeners` 时，评审至少记录：
-
-```text
-入口 | owner | 发布点 | 存活门 | 新鲜度/身份门 | 清理点 | 测试
-```
+只复查本次改变的异步发布或资源生命周期，沿入口找发布点、有效性条件、清理与测试证据；简单变更用短段说明即可。同步 `state =` 或文件里已有 `await` 不单独触发全页审计，不要求固定字段台账。

@@ -1,6 +1,6 @@
 # 平台、账号模式、地图与设备覆盖门
 
-只为本次改动影响的可达维度建表；简单共享改动可用一句证据说明，无需展开表格。不生成平台 × 账号 × 地图 × 设备的机械笛卡尔积。候选事实来自项目地图的 [变体调查](../../tuqiang-project-map/references/variant-surface.md)、[账号模式](../../tuqiang-project-map/references/account-mode.md) 与当前源码。继承 SKILL 开工卡；混合变更分别套标准，影响行为或契约的 `unknown` 必须先澄清。
+只为本次改动影响的可达维度建表；简单共享改动可用一句证据说明，无需展开表格。不生成平台 × 账号 × 地图 × 设备的机械笛卡尔积。候选事实来自项目地图的 [变体调查](../../tuqiang-project-map/references/variant-surface.md)、[账号模式](../../tuqiang-project-map/references/account-mode.md) 与当前源码。以 SKILL 的验收行为和已确定范围为准；影响行为或契约的未知按 [澄清规则](requirement-clarification.md) 处理。
 
 ## 平台实现与验证分开
 
@@ -48,13 +48,13 @@
 
 ## 设备页面范围
 
-改变设备分流、共享详情行为或服务状态规则时，枚举 `deviceType`、scene/category、cameraScene、服务/账号/分享状态、route、最终 Page、目标 Widget 和真实点击区域。多个独立叶子且范围不明时，确认前不写代码；单一叶子仍检查共享组件、Provider、route 或 plugin 对其他叶子的回归。
+改变设备分流、共享详情行为或服务状态规则时，枚举 `deviceType`、scene/category、cameraScene、服务/账号/分享状态、route、最终 Page、目标 Widget 和真实点击区域。只有不同叶子会改变实现且用户/源码都不能确定范围时，暂停依赖该选择的改动；单一叶子仍检查共享组件、Provider、route 或 plugin 对其他叶子的回归。
 
 ## 覆盖台账
 
 | 变更类型 | 账号模式 | 平台/target（相关时附 flavor/channel） | 设备/route leaf | 地图 scene/后端 | 代码状态 | 验证状态/证据 |
 |---|---|---|---|---|---|---|
 
-代码状态：`已实现/已修复`、`共享实现覆盖`、`无需修改`、`待用户决定`、`iOS 专属实现待同事`；最后一项只允许 Bug 的 iOS 原生专属问题，新需求不得用它跳过代码。验证等级统一见 [测试规范](testing.md)。
+代码状态：`已实现/已修复`、`共享实现覆盖`、`无需修改`、`待用户决定`、`受阻`；范围内代码仍需完成，实际限制要说明，不能以缺少本机设备为由省略实现。验证等级统一见 [测试规范](testing.md)。
 
 完成时关闭本次受影响的实际可达行；个人/企业、平台、地图及 route leaf 按触发条件检查；每个共享实现或无需修改都有当前源码证据，代码状态与验证证据不混写。

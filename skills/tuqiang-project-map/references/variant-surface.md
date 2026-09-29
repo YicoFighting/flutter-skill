@@ -41,6 +41,6 @@
 | Tag | Tag location |
 | 其他设备类型 | Wi-Fi/MiFi 页面族 |
 
-从每个 route 追到最终 Page，再从“更多详情/设备详情/更多设置”事件追一层；同时反查 `feature_device_management` 的其他选择入口与 `bootstrap.dart` 注入。存在多个可达叶子且用户未说明全部还是指定类型时，列候选后最小澄清；普通局部 UI 不机械触发全设备询问。
+从问题可达的 route 追到最终 Page；仅当需求涉及“更多详情/设备详情/更多设置”或公共入口时继续追对应事件与其他调用者。多个叶子不自动触发提问：先由用户给定页面、设备和源码收窄，仍有会改变结论的范围歧义才澄清。
 
 实时定位以上事实时，以设备类型/scene、最终 Page、`TQMapSourceType/TQMapUseSceneType`、平台 factory id、OHOS `MapComponent` 和目标 Widget 为检索 seed。

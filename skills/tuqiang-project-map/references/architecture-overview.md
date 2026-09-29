@@ -16,8 +16,8 @@ apps/ohos ─────┘                    └> packages/shared/* ──┼
 | 宿主 | 标准端与 HarmonyOS 平台初始化 | `apps/standard/lib/main.dart::main`、`apps/ohos/lib/main.dart::main` |
 | 启动协调 | 首屏前环境/用户/i18n/HTTP/缓存任务与首帧后任务 | `apps/tuqiang_app/lib/app/coordinators/app_startup_data_coordinator.dart::AppStartupDataCoordinator` |
 | Composition root | 根 `ProviderScope` overrides、跨 feature/runtime callback、平台能力注入 | `apps/tuqiang_app/lib/bootstrap.dart::getApp` |
-| App 壳 | 首屏、生命周期、尺寸、locale、`MaterialApp` | `apps/tuqiang_app/lib/app.dart::StrongApp` |
-| Dart 路由 | app alias、自有页面、checked feature routes、动态参数 | `apps/tuqiang_app/lib/app/router/app_router.dart::AppRouters` |
+| App 壳 | 首屏、生命周期、分栏尺寸、locale、`MaterialApp` | `apps/tuqiang_app/lib/app.dart::StrongApp` |
+| Dart 路由 | app alias、checked feature routes、动态参数与自适应页面路由 | `apps/tuqiang_app/lib/app/router/app_router.dart::AppRouters` |
 | 路由元数据 | native routes、screen secure、route effects、刷新分类 | `apps/tuqiang_app/lib/app/router/feature_router_registry.dart::FeatureRouterRegistry` |
 | 业务 owner | 独立用户流程与跨 feature 领域状态 | `packages/feature/*`、`packages/shared/shared_*` |
 | App-local 边界 | 尚未下沉或只由 App 组合的 manager/model/viewmodel/tools | `apps/tuqiang_app/lib/app` |
@@ -27,9 +27,9 @@ apps/ohos ─────┘                    └> packages/shared/* ──┼
 ## 关键组合事实
 
 - `bootstrap.dart::getApp` 是跨包注入证据。feature/shared 只看到 contract provider 或 runtime callback 时，继续追根 override 到最终 Page、Manager、Repository 或 plugin。
-- `AppRouters.getRouters` 负责 Dart route map 与 checked feature route 合并；`FeatureRouterRegistry` 负责 native route 和 effect/security/refresh 元数据。
+- `AppRouters` 合并并持有 Dart route map；`StrongApp` 当前通过 `onGenerateRoute` 接入，`generateRoute` 按路由选择 `CoreAdaptivePageRoute` 或 `MaterialPageRoute`。`getRouters` 返回 map 副本，不等于当前 MaterialApp 直接使用 `routes`。`FeatureRouterRegistry` 负责 native route 和 effect/security/refresh 元数据。
 - `shared_device::DeviceCoreRuntime` 通过 app composition 注入定位/消息外部上下文，避免 shared 包反向依赖。
-- `core_ui` 除 Widget 外还导出 navigation contracts、checked registry、route effect 和 `SessionResetParticipant`；owner 不能仅由包名推断。
+- `core_ui` 除 Widget 外还包含 navigation contracts、checked registry、route effect、`SessionResetParticipant` 与 `adaptive_layout.dart` 的分栏/路由能力；owner 和导入入口不能仅由包名推断。
 - `core_*` 不应依赖 shared、feature 或 app。修改公共 API 时反查当前仓库全部调用者。
 
 ## 混合状态体系

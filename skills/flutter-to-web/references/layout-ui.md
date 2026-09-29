@@ -10,8 +10,8 @@ Flutter 约束由父向子传，尺寸由子向父回传，ParentData 决定位�
 | LayoutBuilder/MediaQuery | container/viewport query |
 | SafeArea | safe-area inset |
 
-解释实际页面时只追影响目标字段的约束：父约束、主/交叉轴、scroll owner、SafeArea、keyboard inset、文本换行/ellipsis 和状态分支。不要用通用 CSS 教程代替源码。
+只追影响目标字段或布局的父约束、轴向、scroll owner、inset 和状态分支。Tuqiang 的 .sc、core_ui 组件和尺寸初始化以当前源码为准，不用通用 CSS 教程替代解释。
 
-Tuqiang 的 .sc、core_ui 组件和宿主尺寸初始化必须从当前代码核验。多语言 UI 同时检查长文本、Arabic RTL、方向性图标、数字/单位和语义标签；账号模式可能改变 visibility、权限和空态。
+字段展示沿“Model/State → mapper/条件 → Widget 属性”追到消费点；fallback 和兼容规则参考 [国际化与展示边界](../../tuqiang-dev/references/i18n.md)。涉及组件选择时核验 [本地风格与复用](../../tuqiang-dev/references/local-style-and-reuse.md)，先指出项目已有封装。
 
-最终说明“State/Model 字段 → mapper/条件 → Widget 属性 → 布局结果”，并分别覆盖 loading/error/empty。溢出或点击问题还要确认最终 hit target、嵌套 Gesture/InkWell 与滚动约束。
+多语言、loading/error/empty、RTL、账号 visibility 仅在影响本题时展开。溢出或点击问题检查最终 hit target、嵌套 Gesture/InkWell 和滚动约束。

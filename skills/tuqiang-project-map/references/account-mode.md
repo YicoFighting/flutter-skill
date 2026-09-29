@@ -1,6 +1,6 @@
 # 个人/企业账号模式
 
-这是 accountMode 的唯一事实源。登录/session、请求/DTO、设备目录、消息、权限、缓存、页面可见性、切换或退出账号必须读取。
+这是 accountMode 的检索索引，判定仍以当前源码为准。调查登录/session、账号相关请求、权限、缓存或页面可见性时读取；仅查纯展示、尺寸或包依赖时不必展开。
 
 | 值 | 证据 |
 |---|---|
@@ -9,7 +9,7 @@
 | both | 需求覆盖两种模式，且两侧分别核验 |
 | unknown | 证据不足；若会改变行为，停止推断并最小澄清 |
 
-这是同一 Tuqiang App 的运行时维度，不是 AppTarget、flavor、平台或独立构建。standard/ohos 与 accountMode 必须分栏记录。
+这是同一 Tuqiang App 的运行时维度，独立于 AppTarget、flavor 和平台；不要由 standard/ohos 推断账号模式。
 
 ## 判定链
 
@@ -27,7 +27,9 @@
 
 TQGlobalModel.isEnterprise 在用户尚未恢复时也可能返回 false；必须同时证明有效 session/identifier。模式经 callback、构造参数、query 或 cache scope 改名后，继续追到终点。
 
-## 必查维度
+## 按问题核验
+
+从下表选择会影响结论的维度。登录/退出/切换等完整会话调查需要连通身份写入、消费与清理；查单个接口时先确认它的模式输入和实现，不自动扩展全部登录流程。
 
 | 维度 | 要回答 |
 |---|---|
@@ -41,7 +43,7 @@ TQGlobalModel.isEnterprise 在用户尚未恢复时也可能返回 false；必�
 | 并发 | await 后是否仍匹配发起时的 mode/identifier/session |
 | 测试 | 个人、企业、切换、退出和恢复覆盖哪些受影响分支 |
 
-不相关项写“不涉及 + 证据”。both 可共用实现，但必须有共同 symbol 和两侧入口证据。
+both 可共用实现，但必须有共同 symbol 和两侧入口证据。无关项不输出空表或“不涉及”占位。
 
 ## 红线
 
@@ -51,4 +53,4 @@ TQGlobalModel.isEnterprise 在用户尚未恢复时也可能返回 false；必�
 - 缺失模式字段写 unknown，不能默认为个人。
 - mounted 只证明 owner 存活，不能证明结果仍属于当前账号。
 
-最终结论必须写 accountMode、判定来源、上表各项结果和未核验的一侧；不能只写“已兼容个人/企业”。
+结论涉及账号时写明模式与判定来源；只查了一侧就说明范围，不能只写“已兼容个人/企业”。

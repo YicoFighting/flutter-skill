@@ -45,9 +45,13 @@ Repository 与遗留直接 `TQHttp` 并存。代表 owner：设备 `shared_devic
     → AppI18nRepository.installStartupTranslations
     → AppI18nLoader.loadManifest/loadLocales
     → TQI18nManager.installTranslations
-    → StrongApp locale/supportedLocales + tr/keyTr/multiKeyTr
+    → StrongApp locale + tr/keyTr/multiKeyTr
 
-后续按需加载经 `ensureLanguageLoaded → loadLocales → mergeTranslations`。本页只报告 owner 与运行链；manifest、缺 key、翻译缓存和修改门禁见开发 Skill 的 [国际化规范](../../tuqiang-dev/references/i18n.md)。
+后续按需加载经 `ensureLanguageLoaded → loadLocales → mergeTranslations`。
+
+2026-09-29 核验：`TQI18nManager.supportLangList` 与 `StrongApp.supportedLocales` 仅列中文/英文，但 manifest 和 `TQLanguageType` 仍保留九种语言，`initLanguage/fromString` 仍可能恢复旧语言。设置入口、系统 locale、资源清单和实际加载集合是不同事实，不能互相推断。
+
+本页只报告 owner 与运行链；查缺 key、fallback、展示值来源或多层重复兼容时，直接读取 [国际化与展示取值](../../tuqiang-dev/references/i18n.md)。
 
 ## 尺寸、UI 与资源
 
@@ -56,6 +60,14 @@ Repository 与遗留直接 `TQHttp` 并存。代表 owner：设备 `shared_devic
 - `core_base/lib/tq_screen.dart::Screen`
 - `apps/tuqiang_app/lib/app.dart::StrongApp`
 
-逻辑缩放与 `devicePixelRatio` 不同；`.sc`、`Screen.scale` 和 `StrongApp.TextScaler` 按当前实现解释。公共 UI/导航 contract 在 `packages/core/core_ui/lib`，展示 mapper 在 `shared_device/shared_location` 的 presentation，公共资源在 `packages/assets_common`，Feature 资源在 `packages/feature/<owner>/assets`。
+逻辑缩放与 `devicePixelRatio` 不同。当前 `TQSizeFit` 含 `maxScale`，`StrongApp` 按分栏后的可用宽度初始化；`.sc`、`Screen.scale` 和 TextScaler 仍需区分。分栏路由与方向入口见 [启动与路由](startup-routing.md)。
+
+当前本地封装检索入口：
+
+- `core_ui/lib/adaptive_layout.dart`：窗口/分栏布局与路由；`shared_location/lib/src/presentation/widgets/map_panel_layout.dart`、`map_scrollable_bottom_card.dart`：地图面板、视口与底部卡片。
+- `shared_device/lib/src/presentation/device_core_presentation.dart`、`device_display_utils.dart`：设备展示取值；`shared_location/lib/src/presentation/location_presentation_mapper.dart`、`location_display_utils.dart`：定位展示、日期/距离偏好。
+- `core_base/lib/tq_measurement_util.dart`、`tq_time_util.dart`：单位与日期计算；公共 Widget/导航 contract 在 `core_ui/lib`，公共资源在 `packages/assets_common`。
+
+入口不代表所有 helper 都是纯函数：部分展示方法读取当前语言或注入的偏好。调查复用与纯函数边界时读 [本地封装与复用](../../tuqiang-dev/references/local-style-and-reuse.md)。
 
 资源链追“实际文件 → pubspec → Dart asset 常量/参数 → Flutter 或三端原生消费者”。目标资源缺失时报告并询问来源，不虚构 Canvas、临时资源或默认替代。

@@ -1,26 +1,22 @@
 # flutter-skill
 
-版本 2.2.0。四个 Skill 只服务 Tuqiang 产品，通过当前任务的业务路径或绑定项目动态定位仓库，不绑定盘符和目录名。项目移动、改名或换机器后，打开新位置的项目或在任务中指定新路径即可，技能库无需修改。
+版本 2.3.0。四个 Skill 只服务 Tuqiang，通过用户当前指定或绑定的业务项目定位 checkout，不绑定盘符和目录名。源码变更后重新核验目标 symbol，references 作为检索入口，不作为永久事实。
 
-| Skill | 职责 |
-|---|---|
-| [tuqiang-project-map](skills/tuqiang-project-map/SKILL.md) | 从当前 checkout 核验根目录、账号模式、owner、链路和变体事实 |
-| [flutter-to-web](skills/flutter-to-web/SKILL.md) | 向 Vue3/React 开发者解释事件、异步数据、状态与 UI |
-| [tuqiang-dev](skills/tuqiang-dev/SKILL.md) | 开发、修复、测试与评审 |
-| [tuqiang-change-retrospective](skills/tuqiang-change-retrospective/SKILL.md) | 用户显式要求后，只读复盘并生成学习 Markdown |
+| Skill | 版本 | 职责 |
+|---|---|---|
+| [tuqiang-project-map](skills/tuqiang-project-map/SKILL.md) | 2.2.0 | 按问题定位 owner、账号、状态、平台与变体证据 |
+| [flutter-to-web](skills/flutter-to-web/SKILL.md) | 2.2.0 | 用最短证据链解释行为，按需提供 Vue3/React 对照 |
+| [tuqiang-dev](skills/tuqiang-dev/SKILL.md) | 2.3.0 | 本地复用优先，最小实现，按风险验证 |
+| [tuqiang-change-retrospective](skills/tuqiang-change-retrospective/SKILL.md) | 2.2.0 | 显式要求后按改动规模生成学习 Markdown |
 
-2.2.0 将开发验证改为按改动风险分级：三端先检查影响，分析/测试聚焦受影响模块，构建按需触发，通过后停止重复检查；同时保留动态根目录发现与构建渠道事实。共用规则继续按需加载：
+本版精简四个入口和重复模板：简单任务不再强制上下文卡、完整链路、全量矩阵或长报告；只加载影响当前问题的规则。
 
-- [根目录](skills/tuqiang-project-map/references/project-root-discovery.md)：用户路径优先；脚本验证 Git 跟踪标记、package identity 与 worktree。
-- [构建上下文](skills/tuqiang-project-map/references/build-runtime-context.md)：allvendor/combined/firebase、Walle channel、原生依赖与标准/OHOS SDK。
-- [账号模式](skills/tuqiang-project-map/references/account-mode.md)：personal / enterprise / both / unknown 与 isEnterprise 传播链。
-- [国际化](skills/tuqiang-dev/references/i18n.md)：当前 manifest、全 locale、占位符、缺 key 回显和语言切换。
-- [异步生命周期](skills/tuqiang-dev/references/async-lifecycle.md)：owner、新鲜度、身份与资源四道防线。
-- [测试与验证](skills/tuqiang-dev/references/testing.md)：局部展示、业务逻辑、跨包契约、原生/打包四级范围与升级/停止条件。
-- [实施覆盖](skills/tuqiang-dev/references/implementation-coverage.md)：三端、地图和设备 route leaf 的条件矩阵。
-- [复盘输出](skills/tuqiang-change-retrospective/references/report-contract.md)：Bug、需求与混合模式的 Markdown 契约。
+- [本地复用与纯函数](skills/tuqiang-dev/references/local-style-and-reuse.md)：优先使用已有状态、函数、组件；缺少的业务计算显式输入、确定输出、无副作用。IO/状态发布保留在既有 owner，不迁移存量。
+- [国际化与展示取值](skills/tuqiang-dev/references/i18n.md)：区分 source key、已译 label 和业务值；翻译一次，统一 fallback，字段兼容在一个边界处理。manifest 与语言选择列表分开核验。
+- [当前 UI 与分栏](skills/tuqiang-dev/references/sizing-ui.md)：复用已有自适应布局/路由，区分 pane 与整窗；[项目地图](skills/tuqiang-project-map/references/infrastructure-and-cross-cutting.md) 提供当前封装入口。
+- [按风险验证](skills/tuqiang-dev/references/testing.md)：局部改动聚焦相关检查，必要验证通过后停止。账号、异步、平台和构建专题仍由各入口按需路由。
 
-其他入口和 reference 只说明触发条件并链接事实源。详细版本记录见 [CHANGELOG.md](CHANGELOG.md)。
+完整变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 结构
 
@@ -81,7 +77,7 @@ Codex 可用 $skill-name 显式调用；除复盘 Skill 保持显式调用外，
 
 - 修改 Skill 时同步版本、根 package.json、CHANGELOG、根 README 与对应 Skill README。
 - 运行 skill-creator 的 quick_validate.py，并验证脚本、链接、UTF-8 无 BOM 与 diff。
-- 完成后精确同步当前用户的 Gemini 全局目录；本次同时覆盖更新 Codex 同名副本并校验哈希；执行策略禁止删除的 5 个旧 reference 暂保留，新版入口不引用它们。
+- 完成后递归同步当前用户的 Gemini 全局目录并校验文件集合与 SHA-256；安装到其他客户端时使用对应目的目录，不写死用户名。
 - 未经用户明确要求，不执行 git commit 或 git push。
 
 许可证：Apache 2.0。
