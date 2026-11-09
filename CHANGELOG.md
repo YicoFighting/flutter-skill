@@ -5,6 +5,25 @@
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-09
+
+### Added
+- 四个入口统一要求在根目录校验后读取业务仓库 `AGENTS.md`，并按需读取 `DESIGN.md` 与 `.codex/skills`（`tuqiang-flutter-conventions`、`tuqiang-flutter-architecture`、`tuqiang-lanhu-image-assets`、`tuqiang-figma-flutter-development`）；与本技能冲突时以项目规则为准，并提示部分项目 skill 条目引用了其他仓库的 symbol，使用前需核对。
+- 项目地图新增鸿蒙百度地图事实：Tuqiang OHOS 宿主经 `apps/ohos/lib/map_ohos_view_host.dart` 将 bMap/aMap 两组 factory id 统一解析为 `TQBMap*` ArkTS 实现并预建底图；鸿蒙百度专属 Dart 逻辑只能以 `TQMapViewHost.usesOhosBaiduMap(mapType, scene)` 为启用条件；华为 Map Kit factory 仅服务老鹰宿主；`TQMapUseSceneType` 补充 `markers`。
+- 设备列表分流表补充强制升级、D38Max 狗、scene category `tag`、卡顿摄像头 `jankHomePage`、停车/高帧移动/行车摄像头与 monitor 分支。
+- 本地复用入口补充 `TQMobileScanner`、`TQAlert`/`CoreAlert`、`TQLoading`、`TQSheet`/`CoreSheet`、`TQNoDataWidget`、`TQColors`、定位展示 mapper 与 feature 内 `TQVideoBottomSheet`；架构索引补充 `flutter_lame_update` 插件、adapter 清单与 core_ui `src/neutral` 中性组件。
+
+### Changed
+- 四个 Skill 与根包统一升级至 2.4.0，同步根/各 Skill README 与 package.json 描述；四个目录已精确替换同步至当前用户 Gemini 全局目录，32 个文件的集合与 SHA-256 校验一致。
+- 压缩并合并 references，由 35 份降至 17 份：project-map 合并为 `architecture`、`state-device-flow`、`variants`、`infrastructure`（完整链路方法并入 SKILL.md）；dev 合并为 `state-async`、`ui-routing-assets`、`coverage`（需求澄清并入 SKILL.md）；flutter-to-web 六份对照合并为 `web-analogies`；复盘的 Bug/需求说明并入 `report-contract`。跨技能链接全部改指新文件。
+- 验证规范对齐业务仓库 `tuqiang-flutter-conventions`：默认不执行 `flutter test`、pub get、`run_migration_tests.ps1` 或修改无关 lockfile，只做静态分析、架构/边界脚本、i18n 脚本与 diff 审查；用户明确要求时才运行测试，未运行的测试如实标注"未执行（项目规则）"。
+- 资源规范改为引用项目蓝湖倍图规则（父目录 @2x、同级 `3.0x/` 放 @3x、pubspec 只声明父目录）；尺寸规范补充可选尺寸参数 null 默认值与颜色语义变量要求。
+
+### Fixed
+- 修正地图覆盖第 7 行仍为"华为 Map Kit"的过时描述，改为 HarmonyOS 百度 ArkTS，避免在 Tuqiang 鸿蒙端按花瓣实现排查或验收。
+- 修正设备分流表遗漏 D38Max、Tag scene 与多类摄像头路由，避免按旧分支判断页面族范围。
+- 修正测试规范默认执行 `flutter test --no-pub`、pub get 与迁移测试脚本，与业务仓库禁止规则冲突的问题。
+
 ## [2.3.0] - 2026-09-29
 
 ### Added

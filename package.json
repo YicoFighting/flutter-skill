@@ -1,7 +1,7 @@
 {
   "name": "flutter-skill",
-  "version": "2.3.0",
-  "description": "服务 Tuqiang 的四个 Agent Skills：按需调查、讲解、开发与复盘；优先本地复用、纯函数计算、单一国际化与展示取值边界",
+  "version": "2.4.0",
+  "description": "服务 Tuqiang 的四个 Agent Skills：按需调查、讲解、开发与复盘；业务仓库规范优先，本地复用、纯函数计算、单一国际化与展示取值边界",
   "keywords": [
     "antigravity",
     "claude-code",
@@ -34,25 +34,25 @@
     {
       "name": "flutter-to-web",
       "path": "skills/flutter-to-web",
-      "version": "2.2.0",
-      "description": "以当前源码的最短证据链解释 Tuqiang 行为，按需展开状态、异步与 Vue3/React 对照"
+      "version": "2.4.0",
+      "description": "以当前源码的最短证据链解释 Tuqiang 行为，按需给出 Vue3/React 对照"
     },
     {
       "name": "tuqiang-dev",
       "path": "skills/tuqiang-dev",
-      "version": "2.3.0",
-      "description": "复用 Tuqiang 本地状态、函数和组件，新增计算用纯函数，统一国际化与展示取值，按风险验证"
+      "version": "2.4.0",
+      "description": "遵守业务仓库规范，复用本地状态、函数和组件，新增计算用纯函数，统一国际化与展示取值，按风险验证"
     },
     {
       "name": "tuqiang-project-map",
       "path": "skills/tuqiang-project-map",
-      "version": "2.2.0",
-      "description": "从当前 checkout 按问题定位 Tuqiang owner、账号、状态与分栏/地图事实，证据足够即停止"
+      "version": "2.4.0",
+      "description": "从当前 checkout 按问题定位 Tuqiang owner、账号、状态与平台/地图/设备变体，证据足够即停止"
     },
     {
       "name": "tuqiang-change-retrospective",
       "path": "skills/tuqiang-change-retrospective",
-      "version": "2.2.0",
+      "version": "2.4.0",
       "description": "用户显式要求后，按变更规模生成有源码、Git 和验证证据的 Tuqiang 学习 Markdown"
     }
   ]

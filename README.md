@@ -1,32 +1,29 @@
 # flutter-skill
 
-版本 2.3.0。四个 Skill 只服务 Tuqiang，通过用户当前指定或绑定的业务项目定位 checkout，不绑定盘符和目录名。源码变更后重新核验目标 symbol，references 作为检索入口，不作为永久事实。
+版本 2.4.0。四个 Skill 只服务 Tuqiang，通过用户当前指定或绑定的业务项目定位 checkout，不绑定盘符和目录名。业务仓库自带的 `AGENTS.md`、`DESIGN.md` 与 `.codex/skills` 优先于本技能；references 是检索入口，不是永久事实。
 
 | Skill | 版本 | 职责 |
 |---|---|---|
-| [tuqiang-project-map](skills/tuqiang-project-map/SKILL.md) | 2.2.0 | 按问题定位 owner、账号、状态、平台与变体证据 |
-| [flutter-to-web](skills/flutter-to-web/SKILL.md) | 2.2.0 | 用最短证据链解释行为，按需提供 Vue3/React 对照 |
-| [tuqiang-dev](skills/tuqiang-dev/SKILL.md) | 2.3.0 | 本地复用优先，最小实现，按风险验证 |
-| [tuqiang-change-retrospective](skills/tuqiang-change-retrospective/SKILL.md) | 2.2.0 | 显式要求后按改动规模生成学习 Markdown |
+| [tuqiang-project-map](skills/tuqiang-project-map/SKILL.md) | 2.4.0 | 按问题定位 owner、账号、状态、平台/地图/设备变体证据 |
+| [flutter-to-web](skills/flutter-to-web/SKILL.md) | 2.4.0 | 用最短证据链解释行为，按需提供 Vue3/React 对照 |
+| [tuqiang-dev](skills/tuqiang-dev/SKILL.md) | 2.4.0 | 项目规则优先，本地复用，最小实现，按风险验证 |
+| [tuqiang-change-retrospective](skills/tuqiang-change-retrospective/SKILL.md) | 2.4.0 | 显式要求后按改动规模生成学习 Markdown |
 
-本版精简四个入口和重复模板：简单任务不再强制上下文卡、完整链路、全量矩阵或长报告；只加载影响当前问题的规则。
+本版按 2026-11-09 的 Tuqiang 源码更新事实（鸿蒙地图统一走百度 ArkTS、设备页面族新分支、新增公共组件、项目自带规范），并把 references 由 35 份合并为 17 份。
 
-- [本地复用与纯函数](skills/tuqiang-dev/references/local-style-and-reuse.md)：优先使用已有状态、函数、组件；缺少的业务计算显式输入、确定输出、无副作用。IO/状态发布保留在既有 owner，不迁移存量。
-- [国际化与展示取值](skills/tuqiang-dev/references/i18n.md)：区分 source key、已译 label 和业务值；翻译一次，统一 fallback，字段兼容在一个边界处理。manifest 与语言选择列表分开核验。
-- [当前 UI 与分栏](skills/tuqiang-dev/references/sizing-ui.md)：复用已有自适应布局/路由，区分 pane 与整窗；[项目地图](skills/tuqiang-project-map/references/infrastructure-and-cross-cutting.md) 提供当前封装入口。
-- [按风险验证](skills/tuqiang-dev/references/testing.md)：局部改动聚焦相关检查，必要验证通过后停止。账号、异步、平台和构建专题仍由各入口按需路由。
+- [变体与构建](skills/tuqiang-project-map/references/variants.md)：平台、地图 7 行候选、设备列表分流、flavor/渠道/SDK。
+- [本地复用与纯函数](skills/tuqiang-dev/references/local-style-and-reuse.md)、[国际化与展示取值](skills/tuqiang-dev/references/i18n.md)：已有能力优先，翻译一次，兼容只在一个边界。
+- [验证](skills/tuqiang-dev/references/testing.md)：遵守业务仓库"默认不执行 `flutter test`、不装依赖"，默认静态分析 + 确定性脚本 + diff。
 
 完整变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 结构
 
     skills/
-    ├─ tuqiang-project-map/
-    │  └─ scripts/validate_project_root.py
-    ├─ flutter-to-web/
-    ├─ tuqiang-dev/
-    │  └─ scripts/validate_tuqiang_i18n.py
-    └─ tuqiang-change-retrospective/
+    ├─ tuqiang-project-map/        # 7 references + scripts/validate_project_root.py
+    ├─ flutter-to-web/             # references/web-analogies.md
+    ├─ tuqiang-dev/                # 7 references + scripts/validate_tuqiang_i18n.py
+    └─ tuqiang-change-retrospective/  # report-contract.md、git-causality.md
 
 四个 Skill 通过相对路径共享事实源，必须将四个完整目录安装到同一个 skills 根，不能只复制 SKILL.md 或单独安装其中一个。
 

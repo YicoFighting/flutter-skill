@@ -2,62 +2,46 @@
 
 ## 启动主链
 
-标准端与 HarmonyOS 先进入各自 runner，再完成首屏前准备；APM runner 可能因环境不同，不把单一分支的文字顺序泛化。
+```text
+apps/standard/lib/main.dart::main → runStandardApp → bootstrap::_runApp
+apps/ohos/lib/main.dart::main → runOhosApp(callback) → _runApp → _runOhosApp
+  → _prepareOhosFlutterStartup → _initializeOhosPlatformBindings
+  → callback 配置 recorder/auth/map(configureOhosMapPlatformView)/vsdk binding
 
-    apps/standard/lib/main.dart::main
-    → runStandardApp → bootstrap::_runApp
+两端 → AppStartupDataCoordinator.prepareBeforeRunApp
+  非 APM：runApp(getApp()) → scheduleAfterFirstFrame
+  APM：UmengApmSdk.init(appRunner: … scheduleAfterFirstFrame … getApp)
+根组合：getApp → ProviderScope(overrides) → LocationContainerHost → StrongApp
+```
 
-    apps/ohos/lib/main.dart::main
-    → runOhosApp(callback) → bootstrap::_runApp → _runOhosApp
-    → _prepareOhosFlutterStartup → _initializeOhosPlatformBindings
-    → callback 配置 recorder/auth/map/vsdk binding
-
-    两端 → AppStartupDataCoordinator.prepareBeforeRunApp
-      非生产：runApp(getApp()) → scheduleAfterFirstFrame
-      生产 APM：scheduleAfterFirstFrame → appRunner 返回 getApp(...)
-
-`scheduleAfterFirstFrame` 只是注册首帧后任务，不证明 Widget 树按源码文字顺序完成。根组合固定为：
-
-    getApp → ProviderScope(overrides) → LocationContainerHost → StrongApp
+`scheduleAfterFirstFrame` 只注册首帧后任务，不证明 Widget 树按源码文字顺序完成；APM 分支两端略有差异，不把单一分支泛化。
 
 | 文件 | 关键 symbol | 追踪重点 |
 |---|---|---|
-| `apps/tuqiang_app/lib/app/coordinators/app_startup_data_coordinator.dart` | `prepareBeforeRunApp`、`scheduleAfterFirstFrame`、`_initializeI18n` | 环境、用户、i18n、HTTP、缓存与首帧边界 |
-| `apps/tuqiang_app/lib/bootstrap.dart` | `runStandardApp`、`runOhosApp`、`getApp` | 平台分支、root overrides、runtime/callback |
-| `apps/tuqiang_app/lib/app/coordinators/location_container_host.dart` | `LocationContainerHost` | 根 Riverpod 监听与设备外部上下文激活 |
-| `apps/tuqiang_app/lib/app.dart` | `StrongApp`、`getHomePage` | 首屏、生命周期、尺寸、locale 与 MaterialApp |
+| `app/coordinators/app_startup_data_coordinator.dart` | `prepareBeforeRunApp`、`scheduleAfterFirstFrame`、`_initializeI18n` | 环境、用户、i18n、HTTP、缓存与首帧边界 |
+| `bootstrap.dart` | `runStandardApp`、`runOhosApp`、`getApp` | 平台分支、root overrides、runtime/callback |
+| `app/coordinators/location_container_host.dart` | `LocationContainerHost` | 根 Riverpod 监听与设备外部上下文激活 |
+| `app.dart` | `StrongApp`、`getHomePage` | 首屏、生命周期、尺寸、locale |
 
-启动/恢复用户后把 `accountMode` 追到首笔请求；判定链见 [账号模式](account-mode.md)。
+启动/恢复用户后把 accountMode 追到首笔请求，见 [账号模式](account-mode.md)。
 
 ## Composition root
 
-`bootstrap.dart::getApp` 注入：
-
-- feature 导航/composition builder/app callback，以及 route observer、screen secure、平台插件和 AppTarget；
-- `shared_device` repository/runtime 与定位/消息外部上下文；`shared_location` repository/runtime 与 app-local Manager 副作用；
-- `shared_message` repository、`shared_media` session、`shared_advertising` repository/login state，以及账号模式 callback、请求 path/cache scope。
-
-feature/shared 只看到 contract provider 或 callback 时，回到 `getApp` 查 override，再追闭包最终调用的 Page、Manager、Repository 或 plugin。
+`getApp` 注入 feature 导航/composition builder/app callback、route observer、screen secure、平台插件与 AppTarget；`shared_device`/`shared_location` 的 repository、runtime 与外部上下文；`shared_message` repository、`shared_media` session、`shared_advertising` repository/登录态，以及账号模式 callback、请求 path/cache scope。feature/shared 只看到 contract 或 callback 时，回到 `getApp` 查 override，再追闭包最终调用的 Page、Manager、Repository 或 plugin。
 
 ## App 壳与路由
 
-`apps/tuqiang_app/lib/app.dart::StrongApp` 分开追：
-
-- `getHomePage` 根据 `AppRuntimeState` 等当前状态选择入口；
-- `initState` 启动 `ApplicationStartupCoordinator`；
-- `build` 按当前 route 与 pane 宽度更新 `TQSizeFit` 并创建 `MaterialApp`；
-- 当前只配置 `onGenerateRoute: AppRouters.generateRoute`，不能把仍存在的 `getRouters()` 当成 `MaterialApp.routes` 的实际接入；
-- locale 来自 `TQI18nManager.curLang`，`supportedLocales` 当前显式列 zh/en；它不是 manifest 的全部资源列表。builder 叠加 App 级 UI。
-
-`AppRouters` 负责 app route/兼容 alias、静态 map、checked feature routes 与动态参数；`FeatureRouterRegistry` 负责 native routes、screen secure、route effects 和刷新分类，不能合并归属。
+- `StrongApp.getHomePage` 按 `AppRuntimeState` 等状态选首屏；`initState` 启动 `ApplicationStartupCoordinator`。
+- `build` 由 `_topPageUsesPane/_updateSizeFit` 按路由与 `CoreAdaptiveLayout.canSplit` 更新 `TQSizeFit`，再创建 `MaterialApp`。
+- 只配置 `onGenerateRoute: AppRouters.generateRoute`；仍存在的 `getRouters()` 返回副本，不是 `MaterialApp.routes` 的实际接入。
+- locale 来自 `TQI18nManager.curLang`；`supportedLocales` 只列 zh/en，不等于 manifest 资源列表。
+- `AppRouters` 负责 app route、兼容 alias、checked feature routes 与动态参数；`FeatureRouterRegistry` 负责 native routes、screen secure、route effects 与刷新分类，二者不合并归属。
 
 ## 分栏与方向
 
-2026-09-29 核验的检索入口：
+- `AppRouters._paneRoutes/generateRoute`：白名单页面用 `CoreAdaptivePageRoute`，摄像头/视频等用 `MaterialPageRoute`；scheme 入口可显式 `allowPane: false`。
+- `core_ui/lib/adaptive_layout.dart`：`CoreAdaptiveMaster` 注册主页面，`CoreAdaptivePageRoute` 连接详情，`CorePaneViewport` 提供 pane 内 `MediaQuery`，`CoreAdaptiveSections` 做页内分区重排。
+- `HomePage` 使用 `CoreAdaptiveMaster`，设备选择等入口可 `closeDetails`。保留 master 的分栏与整页覆盖可见性不同，返回刷新要查实际 observer/listener。
+- standard 的 `AppOrientationObserver` 管普通页面方向，特殊页面（如横屏播放）保留自身策略。
 
-- `AppRouters._paneRoutes/generateRoute`：可分栏页面使用 `CoreAdaptivePageRoute`；摄像头、视频及其余页面保留 `MaterialPageRoute`，scheme 入口可显式 `allowPane: false`。
-- `core_ui/lib/adaptive_layout.dart`：`CoreAdaptiveMaster` 注册主页面，`CoreAdaptivePageRoute` 连接详情路由，`CorePaneViewport` 给子树提供 pane 尺寸；页面布局另有 `CoreAdaptiveSections`。
-- `HomePage` 使用 `CoreAdaptiveMaster`；设备选择等入口可调用 `closeDetails`。保留 master 的分栏路由与整页覆盖的可见性不同，涉及返回刷新时检查实际 observer/listener。
-- `StrongApp._topPageUsesPane/_updateSizeFit` 按路由和屏幕决定缩放宽度；standard 的 `AppOrientationObserver` 管理普通页面方向，特殊页面可保留自身策略。
-
-只定位路由时给出当前 builder、参数和 route 类型即可；生命周期、权限或首笔请求影响问题时再追。完整方法见 [端到端调查](requirement-trace-playbook.md)，现有封装用法见 [本地封装与复用](../../tuqiang-dev/references/local-style-and-reuse.md)。
+只定位路由时给出 builder、参数和 route 类型即可；生命周期、权限或首笔请求影响结论时再追。
